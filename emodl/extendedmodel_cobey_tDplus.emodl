@@ -119,11 +119,11 @@
 (param Ksym_D (/ 1 time_D))
 
 
-(param Kh1_D (/ fraction_hospitalized (- time_to_hospitalization time_D)))
-(param Kh2_D (/ fraction_critical (- time_to_hospitalization time_D) ))
-(param Kh3_D (/ fraction_dead  (- time_to_hospitalization time_D)))
+(param Kh1_D (/ fraction_hospitalized (+ time_to_hospitalization time_D)))
+(param Kh2_D (/ fraction_critical (+ time_to_hospitalization time_D) ))
+(param Kh3_D (/ fraction_dead  (+ time_to_hospitalization time_D)))
 
-(param Kr_m_D (/ 1 (- recovery_time_mild time_D )))
+(param Kr_m_D (/ 1 (+ recovery_time_mild time_D )))
 
 
 (param Kc (/ 1 time_to_critical))

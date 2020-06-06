@@ -115,9 +115,6 @@
 
 (param time_D @time_to_detection@)
 
-(param Ksys_D (/ 1 time_D))
-(param Ksym_D (/ 1 time_D))
-
 
 (param Kh1_D (/ fraction_hospitalized (- time_to_hospitalization time_D)))
 (param Kh2_D (/ fraction_critical (- time_to_hospitalization time_D) ))
@@ -143,7 +140,6 @@
 (time-event detection3 @detection_time_3@ ((d_Sys @d_Sys_incr3@))) 
 (time-event detection4 @detection_time_4@ ((d_Sys @d_Sys_incr4@))) 
 (time-event detection5 @detection_time_5@ ((d_Sys @d_Sys_incr5@))) 
-
 (reaction exposure   (S) (E) (* Ki S (/ (+ infectious_undet (* infectious_det reduced_inf_of_det_cases)) N )))
 (reaction infection_asymp_undet  (E)   (As)   (* Kl E (- 1 d_As)))
 (reaction infection_asymp_det  (E)   (As_det1)   (* Kl E d_As))
@@ -155,12 +151,12 @@
 (reaction severe_symptomatic (P)  (Sys_preD)  (* Ksys P))
 
 ; never detected 
-(reaction mild_symptomatic_undet (Sym_preD)  (Sym) (* Ksym_D Sym_preD (- 1 d_Sym)))
-(reaction severe_symptomatic_undet (Sys_preD)  (Sys)  (* Ksys_D Sys_preD (- 1 d_Sys)))
+(reaction mild_symptomatic_undet (Sym_preD)  (Sym) (* Sym_preD (- 1 d_Sym)))
+(reaction severe_symptomatic_undet (Sys_preD)  (Sys)  (* Sys_preD (- 1 d_Sys)))
 
 ; new detections  - time to detection is substracted from hospital time
-(reaction mild_symptomatic_det (Sym_preD)  (Sym_det2) (* Ksym_D Sym_preD d_Sym))
-(reaction severe_symptomatic_det (Sys_preD)  (Sys_det3)  (* Ksys_D Sys_preD d_Sys))
+(reaction mild_symptomatic_det (Sym_preD)  (Sym_det2) (* Sym_preD d_Sym))
+(reaction severe_symptomatic_det (Sys_preD)  (Sys_det3)  (* Sys_preD d_Sys))
 
 (reaction hospitalization_1   (Sys)   (H1)   (* Kh1_D Sys))
 (reaction hospitalization_2   (Sys)   (H2)   (* Kh2_D Sys))

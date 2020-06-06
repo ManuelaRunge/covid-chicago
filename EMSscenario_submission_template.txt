@@ -11,6 +11,14 @@ python runScenarios.py --running_location Local --region IL --experiment_config 
 
 
 
+
+python runScenarios.py --running_location Local --region EMS_7 --experiment_config EMSspecific_sample_parameters.yaml --emodl_template extendedmodel_cobey.emodl  --name_suffix "tDbase"
+python runScenarios.py --running_location Local --region EMS_7 --experiment_config EMSspecific_sample_parameters.yaml --emodl_template extendedmodel_cobey_tDplus.emodl  --name_suffix "tDplus"
+python runScenarios.py --running_location Local --region EMS_7 --experiment_config EMSspecific_sample_parameters.yaml --emodl_template extendedmodel_cobey_noDivision.emodl  --name_suffix "tDnoDivision"
+python runScenarios.py --running_location Local --region EMS_7 --experiment_config EMSspecific_sample_parameters.yaml --emodl_template extendedmodel_cobey_noTestDelay.emodl  --name_suffix "notD"
+
+
+
 ##### Scenario 3 - constant mitigation
 python runScenarios.py --running_location Local --region EMS_1 --experiment_config EMSspecific_sample_parameters.yaml --emodl_template extendedmodel_cobey.emodl  --name_suffix "scenario3"
 python runScenarios.py --running_location Local --region EMS_2 --experiment_config EMSspecific_sample_parameters.yaml --emodl_template extendedmodel_cobey.emodl  --name_suffix "scenario3"

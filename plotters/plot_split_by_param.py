@@ -18,7 +18,7 @@ datapath, projectpath, wdir,exe_dir, git_dir = load_box_paths()
 
 # first_day = date(2020, 2, 13) # IL
 # first_day = date(2020, 2, 18) # Chicago
-first_day = date(2020, 2, 28) # NMH
+first_day = date(2020, 2, 20) # NMH
 
 
 def plot_on_fig(df, channels, axes, color, label) :
@@ -28,7 +28,7 @@ def plot_on_fig(df, channels, axes, color, label) :
         mdf = df.groupby('time')[channel].agg([CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75]).reset_index()
 
         mdf['date'] = mdf['time'].apply(lambda x: first_day + timedelta(days=int(x)))
-        mdf = mdf[(mdf['date'] >= date(2020, 5, 1)) & (mdf['date'] <= date(2020, 10, 1))]
+        mdf = mdf[(mdf['date'] >= date(2020, 3, 1)) & (mdf['date'] <= date(2020, 12, 1))]
         ax.plot(mdf['date'], mdf['CI_50'], color=color, label=label)
         # ax.fill_between(mdf['date'].values, mdf['CI_2pt5'], mdf['CI_97pt5'],
         #                 color=color, linewidth=0, alpha=0.2)
@@ -42,8 +42,8 @@ def plot_on_fig(df, channels, axes, color, label) :
 
 if __name__ == '__main__' :
 
-    exp_names = ['20200430_EMS_11_RR_crit1to3',
-                 '20200430_EMS_11_RR_crit4to6']
+    exp_names = ['20200605_IL_EMS_testTDPlus',
+                 '20200604_IL_EMS_scen3_nochangeTD']
     capacity = {
         'hospitalized' : 0,
         'critical' : 0
@@ -52,7 +52,11 @@ if __name__ == '__main__' :
     fig = plt.figure(figsize=(8, 8))
     fig.subplots_adjust(right=0.97, wspace=0.2, left=0.1, hspace=0.25, top=0.95, bottom=0.07)
     palette = sns.color_palette('Set1', len(exp_names))
-    channels = ['infected', 'new_detected', 'new_deaths', 'hospitalized', 'critical', 'ventilators']
+   # channels = ['infected', 'new_detected', 'new_deaths', 'hospitalized', 'critical', 'ventilators']
+    channels = ['new_symptomatic_severe', 'new_symptomatic_mild', 'new_detected', 'new_detected_hospitalized', 'new_detected_deaths','new_deaths']
+    channels = ['Sym', 'Sym_preD', 'Sym_det2', 'Sys',
+                'Sys_preD', 'Sys_preD']
+
     axes = [fig.add_subplot(3, 2, x + 1) for x in range(len(channels))]
 
     for d, exp_name in enumerate(exp_names) :
@@ -63,14 +67,14 @@ if __name__ == '__main__' :
         df['ventilators'] = get_vents(df['crit_det'].values)
 
         plot_on_fig(df, channels, axes, color=palette[d], label=exp_name)
-    axes[-1].legend()
+    #axes[-1].legend()
     for c, channel in enumerate(channels) :
         if channel in capacity.keys() :
             ax = axes[c]
-            ax.plot([date(2020, 5, 1), date(2020, 10, 1)],
+            ax.plot([date(2020, 3, 1), date(2020, 12, 1)],
                     [capacity[channel], capacity[channel]], '--', linewidth=2, color='k')
 
-    plt.savefig(os.path.join(sim_output_path, 'projection.png'))
-    plt.savefig(os.path.join(sim_output_path, 'projection.pdf'), format='PDF')
+    plt.savefig(os.path.join(sim_output_path, 'projection_3.png'))
+    plt.savefig(os.path.join(sim_output_path, 'projection_3.pdf'), format='PDF')
     plt.show()
 
