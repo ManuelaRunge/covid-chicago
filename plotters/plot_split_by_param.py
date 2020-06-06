@@ -42,20 +42,24 @@ def plot_on_fig(df, channels, axes, color, label) :
 
 if __name__ == '__main__' :
 
-    exp_names = ['20200605_IL_EMS_testTDPlus',
-                 '20200604_IL_EMS_scen3_nochangeTD']
+   # exp_names = ['20200605_IL_EMS_testTDPlus',
+   #              '20200604_IL_EMS_scen3_nochangeTD']
+    exp_names = ['20200605_EMS_7_tDbase',
+                 '20200605_EMS_7_tDplus',
+                 '20200605_EMS_7_notD']
+#'20200605_EMS_7_tDnoDivision'
+
     capacity = {
         'hospitalized' : 0,
         'critical' : 0
     }
 
-    fig = plt.figure(figsize=(8, 8))
+    fig = plt.figure(figsize=(10, 8))
     fig.subplots_adjust(right=0.97, wspace=0.2, left=0.1, hspace=0.25, top=0.95, bottom=0.07)
     palette = sns.color_palette('Set1', len(exp_names))
-   # channels = ['infected', 'new_detected', 'new_deaths', 'hospitalized', 'critical', 'ventilators']
-    channels = ['new_symptomatic_severe', 'new_symptomatic_mild', 'new_detected', 'new_detected_hospitalized', 'new_detected_deaths','new_deaths']
-    channels = ['Sym', 'Sym_preD', 'Sym_det2', 'Sys',
-                'Sys_preD', 'Sys_preD']
+    #channels = ['infected', 'new_detected', 'new_deaths', 'hospitalized', 'critical', 'ventilators']
+    #channels = ['new_symptomatic_severe', 'new_symptomatic_mild', 'new_detected', 'new_detected_hospitalized', 'new_detected_deaths','new_deaths']
+    channels = [ 'symp_mild_preD', 'symp_severe_preD' , 'symp_mild_undet', 'symp_mild_det', 'symp_severe_undet', 'symp_severe_det']
 
     axes = [fig.add_subplot(3, 2, x + 1) for x in range(len(channels))]
 
@@ -66,8 +70,12 @@ if __name__ == '__main__' :
         df['symptomatic_census'] = df['symptomatic_mild'] + df['symptomatic_severe']
         df['ventilators'] = get_vents(df['crit_det'].values)
 
+        if "symp_mild_preD" not in df.columns:
+            df['symp_mild_preD'] = 0
+            df['symp_severe_preD'] = 0
+
         plot_on_fig(df, channels, axes, color=palette[d], label=exp_name)
-    #axes[-1].legend()
+    axes[-1].legend()
     for c, channel in enumerate(channels) :
         if channel in capacity.keys() :
             ax = axes[c]
