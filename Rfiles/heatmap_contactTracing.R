@@ -111,11 +111,11 @@ f_heatmap <- function(df, selected_outcome) {
   ## Parameter combinations that did run
   sink(file.path(exp_dir,paste0(geography,"_", ems,"_", selected_outcome, "_linear_models.txt")))
   cat("\ntidy(dfLM, fitlm)")
-  tidy(dfLM, fitlm)
+  print(tidy(dfLM, fitlm))
   cat("\naugment(dfLM, fitlm)")
-  augment(dfLM, fitlm)
+  print(augment(dfLM, fitlm))
   cat("\nglance(dfLM, fitlm)")
-  glance(dfLM, fitlm)
+  print(glance(dfLM, fitlm))
   sink()
   
   ### Generate prediction dataset
