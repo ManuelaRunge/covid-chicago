@@ -1,5 +1,5 @@
 experiment_setup_parameters:
-  'number_of_samples': 3
+  'number_of_samples': 5
   'number_of_runs': 3
   'duration': 370
   'monitoring_samples': 370 # needs to be smaller than duration
@@ -49,7 +49,7 @@ sampled_parameters:
     function_kwargs: {'low': 2.4, 'high': 3.5}
   'time_to_hospitalization':
     np.random: uniform
-    function_kwargs: {'low':3, 'high':6}
+    function_kwargs: {'low':5, 'high':6}
   'time_to_critical':
     np.random: uniform
     function_kwargs: {'low':4, 'high':6}
@@ -140,13 +140,13 @@ intervention_parameters:
   ### Reduce Ki due to stay-at-home policy
   'time_to_detection':
     np: linspace
-    function_kwargs: {'start':0.01, 'stop':1.9, 'num':4}
+    function_kwargs: {'start':0.5, 'stop':4.5, 'num':5}
   'reduced_inf_of_det_cases':
     np: linspace
     function_kwargs: {'start':0, 'stop':1, 'num':20}
   'd_As_ct1':
     np: linspace
-    function_kwargs: {'start':0, 'stop':1, 'num':2}
+    function_kwargs: {'start':0, 'stop':0, 'num':1}
   'd_Sym_ct1':
     np.random: uniform
     function_kwargs: {'start':0, 'stop':1, 'num':20}
