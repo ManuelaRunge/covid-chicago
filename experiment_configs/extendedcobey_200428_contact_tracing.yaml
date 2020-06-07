@@ -146,10 +146,10 @@ intervention_parameters:
     function_kwargs: {'start':0, 'stop':1, 'num':20}
   'd_As_ct1':
     np: linspace
-    function_kwargs: {'start':0, 'stop':0, 'num':1}
+    function_kwargs: {'start':0, 'stop':1, 'num':20}
   'd_Sym_ct1':
     np: linspace
-    function_kwargs: {'start':0, 'stop':1, 'num':20}
+    function_kwargs: {'start':0, 'stop':1, 'num':1}
   'd_SQ':
     np.random: uniform
     function_kwargs: {'low':0.80, 'high':0.80} 
