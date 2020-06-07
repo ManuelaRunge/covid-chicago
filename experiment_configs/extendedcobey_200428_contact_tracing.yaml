@@ -148,7 +148,7 @@ intervention_parameters:
     np: linspace
     function_kwargs: {'start':0, 'stop':0, 'num':1}
   'd_Sym_ct1':
-    np.random: uniform
+    np: linspace
     function_kwargs: {'start':0, 'stop':1, 'num':20}
   'd_SQ':
     np.random: uniform
