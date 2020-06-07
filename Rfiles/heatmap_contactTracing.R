@@ -79,13 +79,13 @@ getdata <- function(selected_ems) {
 
     subdat <- subdat %>%
       dplyr::group_by_at(.vars = groupvars) %>%
-      dplyr::summarize(value = sum(value)) %>%
-      mutate(region = "central")
+      dplyr::summarize(value = sum(value))
   }
 
   ### what time point to select?
   tempdat <- subdat %>%
-    filter(Date >= evaluation_window[1] & Date <= evaluation_window[2]) %>%
+    #filter(Date >= evaluation_window[1] & Date <= evaluation_window[2]) %>%
+    filter(Date >= evaluation_window[1]) %>%
     select(-c(time, sample_num, scen_num, run_num)) %>%
     group_by(Date, d_As_ct1, reduced_inf_of_det_cases, isolation_success, time_to_detection, outcome) %>%
     summarize(value.mean = mean(value)) %>%
@@ -114,7 +114,7 @@ f_heatmap <- function(df, selected_outcome, valuetype = "absolute") {
   #' The function returns a list of the heatmap plot, and the thresholds used to draw the lines, as well as the filtered lm prediction dataset
   #' @param df  dataset
   #' @param selected_outcome  name of the outcome variable 
-  #' @param valuetype  default "absolute", another option would be "growthRate"
+  #' @param valuetype  default "absolute", another option would be "growthRate"  - currently disabled
 
 
   if (selected_outcome == "ventilators") {
@@ -130,8 +130,9 @@ f_heatmap <- function(df, selected_outcome, valuetype = "absolute") {
 
   x <- dat$d_As_ct1
   y <- dat$isolation_success
-  if (valuetype == "absolute") z <- dat$value.mean
-  if (valuetype == "growth") z <- dat$growthRate
+  z <- dat$value.mean
+  #if (valuetype == "absolute") z <- dat$value.mean
+  #if (valuetype == "growth") z <- dat$growthRate
 
   lmok <- tryCatch( xyzmodel <- lm(z ~ y + x), error=function(e){cat("ERROR :",conditionMessage(e), "\n")} )
   if(!is.null(lmok)){
@@ -164,23 +165,26 @@ f_heatmap <- function(df, selected_outcome, valuetype = "absolute") {
 
   # if(valuetype=="absolute")flabel =  paste0(selected_outcome, "\n absolute predictions")
   # if(valuetype=="growth")flabel =  paste0(selected_outcome, "\n mean growth rate (%)")
-  if (valuetype == "absolute") flabel <- paste0("absolute predictions")
-  if (valuetype == "growth") flabel <- paste0("mean growth rate (%)")
-
+  #if (valuetype == "absolute") flabel <- paste0("absolute predictions")
+  #if (valuetype == "growth") flabel <- paste0("mean growth rate (%)")
+  flabel <-  paste0("Predicted ", selected_outcome)
 
   # https://stackoverflow.com/questions/14290364/heatmap-with-values-ggplot2
   matdatp <- ggplot(matdat, aes(x, y)) +
-    geom_tile(aes(fill = z)) +
-    # geom_text(aes(label = exposed), size = 5) +
-    geom_line(aes(x = x, y = ythreshold)) +
-    # scale_fill_gradient(low = "white", high = "red") +
+    geom_tile(aes(fill = z),alpha=0.9) +
+    geom_smooth(aes(x = x, y = ythreshold),method="lm", col="black",size=0.75) +
+    geom_point(data=dat, aes(x=d_As_ct1 , y = isolation_success),col="black", size = 2.8) +
+    geom_point(data=dat, aes(x=d_As_ct1 , y = isolation_success, fill =value.mean),col="black" ,shape=21, size = 2) +
+    #scale_fill_gradient2(low = "olivedrab3",mid='#f1a340',  high = "mediumvioletred", midpoint= 400) +
     scale_fill_viridis(option = "C", discrete = FALSE, direction = -1) +
     labs(
-      title = selected_outcome,
+      title = paste0("Test delay (days): ", testDelay),
+      subtitle="",
       x = "detections (P, As, Sym) (%)",
       y = "isolation success (%)",
       fill = flabel,
-      col = "", shape = "",
+      col = "",
+      shape = "",
       linetype = "",
       caption = paste0("Threshold: ", threshold)
     ) +
@@ -188,6 +192,8 @@ f_heatmap <- function(df, selected_outcome, valuetype = "absolute") {
     scale_x_continuous(breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
     scale_y_continuous(breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0))
 
+ 
+  ### Extracting threshold - lower grid
   xnew <- seq(0, 1, 0.2)
   ynew <- seq(0, 1, 0.2)
   # ...calculating prediction
@@ -198,9 +204,7 @@ f_heatmap <- function(df, selected_outcome, valuetype = "absolute") {
     dplyr::group_by(x) %>%
     dplyr::summarize(ythreshold = min(y))
 
-
   out_list <- list(matdatp, xyzmodel, heatmap_threshold, matdat)
-
 
   return(out_list)
   }else{
@@ -237,7 +241,8 @@ nexpsfiles <- list.files(file.path(ct_dir, simdate), pattern = "trajectoriesDat.
 trajectoriesDat <- sapply(nexpsfiles, read.csv, simplify = FALSE) %>%
   bind_rows(.id = "id") 
 
-trajectoriesDat <- subset(trajectoriesDat, time >= 100 & time <= 300)
+### Discard time entries before reopening date 
+trajectoriesDat <- subset(trajectoriesDat, time >= as.Date(reopeningdate) - as.Date(max(trajectoriesDat$startdate)))
 
 
 ## Parameter combinations that did run
@@ -281,7 +286,11 @@ for (ems in emsregions) {
   ### Thresholds from linear model
   h_thresholdDat <- list()
 
-  for (selected_outcome in c("critical", "hospitalized", "deaths", "ventilators")) {
+  # outcomeList <- c("critical", "hospitalized", "deaths", "ventilators")
+  # Focus on ICU beds 
+  outcomeList <- c("critical")
+  
+  for (selected_outcome in outcomeList ) {
     # selected_outcome = "critical"
 
     capacityline <- as.numeric(capacity[colnames(capacity) == selected_outcome])
@@ -290,7 +299,8 @@ for (ems in emsregions) {
       plotdat <- tempdat %>%
         filter(outcome == "crit_det") %>%
         mutate(value.mean = value.mean * 0.660,
-               outcome = selected_outcome) %>%
+               outcome = selected_outcome) %>% 
+        mutate(region =ems )  %>% 
         as.data.frame()
 
       threshold_param <- plotdat %>%
@@ -305,17 +315,31 @@ for (ems in emsregions) {
       
     } else {
       plotdat <- tempdat %>%
-        filter(outcome == selected_outcome) %>%
+        filter(outcome == selected_outcome) %>% 
+        mutate(region =ems )  %>% 
         as.data.frame()
 
+      peakTimes <- plotdat %>% 
+        group_by(isolation_success, d_As_ct1, time_to_detection, isolation_success_fct, d_As_ct1_fct) %>%
+        filter(value.mean == max(value.mean)) %>%
+        rename(Date_peak = Date)  %>% 
+        select(Date_peak, outcome, isolation_success, d_As_ct1, time_to_detection, isolation_success_fct, d_As_ct1_fct)
+      
+      ## Add peak date to plotdat
+      plotdat <- plotdat %>%
+        left_join(peakTimes, by =c("outcome","isolation_success", "d_As_ct1", "time_to_detection",
+                                   "isolation_success_fct", "d_As_ct1_fct")) 
+        
+      ## Filter dataset to get threshold values
       threshold_param <- plotdat %>%
-        filter(Date == max(Date)) %>%
+        filter(Date == Date_peak) %>%
         mutate(capacity = capacityline) %>%
         filter(outcome == selected_outcome) %>%
         filter(value.mean <= capacity) %>%
         group_by(d_As_ct1, time_to_detection) %>%
         filter(isolation_success == min(isolation_success)) %>%
         dplyr::select(region, d_As_ct1, isolation_success, time_to_detection, outcome, value.mean, capacity)
+      
     }
 
     thresholdDat[[selected_outcome]] <- threshold_param
@@ -338,7 +362,7 @@ for (ems in emsregions) {
     
     
     # selected_outcome = "critical"
-    p_plot <- ggplot(data = subset(plotdat, Date == max(plotdat$Date))) + 
+    p_plot <- ggplot(data = subset(plotdat, Date ==  plotdat$Date_peak)) + 
       theme_cowplot() +
       geom_point(aes(x = d_As_ct1, y = value.mean, col = isolation_success, shape = as.factor(time_to_detection)), size = 2.3) +
       labs(
@@ -391,7 +415,8 @@ for (ems in emsregions) {
 
 
     for (testDelay in unique(plotdat$time_to_detection)) {
-      heatmap_out <- f_heatmap(subset(plotdat, Date == max(plotdat$Date) &  time_to_detection == testDelay),
+      # testDelay=unique(plotdat$time_to_detection)[1]
+      heatmap_out <- f_heatmap(subset(plotdat, Date == plotdat$Date_peak &  time_to_detection == testDelay),
                                selected_outcome, valuetype = "absolute")
       
       if(heatmap_out==  "lm.fit not ok") next
