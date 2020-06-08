@@ -38,7 +38,6 @@
 (species RC2::EMS_1 0)
 (species RC2_det3::EMS_1 0)
 
-;(species Q::EMS_1 0)
 (species P_det::EMS_1 0)
 (species Sym_preD::EMS_1 0)
 (species Sym_det2a::EMS_1 0)
@@ -80,7 +79,7 @@
 (species RC2::EMS_2 0)
 (species RC2_det3::EMS_2 0)
 
-;(species Q::EMS_2 0)
+
 (species P_det::EMS_2 0)
 (species Sym_preD::EMS_2 0)
 (species Sym_det2a::EMS_2 0)
@@ -122,7 +121,6 @@
 (species RC2::EMS_3 0)
 (species RC2_det3::EMS_3 0)
 
-;(species Q::EMS_3 0)
 (species P_det::EMS_3 0)
 (species Sym_preD::EMS_3 0)
 (species Sym_det2a::EMS_3 0)
@@ -164,7 +162,6 @@
 (species RC2::EMS_4 0)
 (species RC2_det3::EMS_4 0)
 
-;(species Q::EMS_4 0)
 (species P_det::EMS_4 0)
 (species Sym_preD::EMS_4 0)
 (species Sym_det2a::EMS_4 0)
@@ -206,7 +203,6 @@
 (species RC2::EMS_5 0)
 (species RC2_det3::EMS_5 0)
 
-;(species Q::EMS_5 0)
 (species P_det::EMS_5 0)
 (species Sym_preD::EMS_5 0)
 (species Sym_det2a::EMS_5 0)
@@ -248,7 +244,6 @@
 (species RC2::EMS_6 0)
 (species RC2_det3::EMS_6 0)
 
-;(species Q::EMS_6 0)
 (species P_det::EMS_6 0)
 (species Sym_preD::EMS_6 0)
 (species Sym_det2a::EMS_6 0)
@@ -290,7 +285,6 @@
 (species RC2::EMS_7 0)
 (species RC2_det3::EMS_7 0)
 
-;(species Q::EMS_7 0)
 (species P_det::EMS_7 0)
 (species Sym_preD::EMS_7 0)
 (species Sym_det2a::EMS_7 0)
@@ -332,7 +326,6 @@
 (species RC2::EMS_8 0)
 (species RC2_det3::EMS_8 0)
 
-;(species Q::EMS_8 0)
 (species P_det::EMS_8 0)
 (species Sym_preD::EMS_8 0)
 (species Sym_det2a::EMS_8 0)
@@ -374,7 +367,6 @@
 (species RC2::EMS_9 0)
 (species RC2_det3::EMS_9 0)
 
-;(species Q::EMS_9 0)
 (species P_det::EMS_9 0)
 (species Sym_preD::EMS_9 0)
 (species Sym_det2a::EMS_9 0)
@@ -416,7 +408,6 @@
 (species RC2::EMS_10 0)
 (species RC2_det3::EMS_10 0)
 
-;(species Q::EMS_10 0)
 (species P_det::EMS_10 0)
 (species Sym_preD::EMS_10 0)
 (species Sym_det2a::EMS_10 0)
@@ -458,7 +449,6 @@
 (species RC2::EMS_11 0)
 (species RC2_det3::EMS_11 0)
 
-;(species Q::EMS_11 0)
 (species P_det::EMS_11 0)
 (species Sym_preD::EMS_11 0)
 (species Sym_det2a::EMS_11 0)
@@ -466,8 +456,6 @@
 (species Sys_preD::EMS_11 0)
 (species Sys_det3a::EMS_11 0)
 (species Sys_det3b::EMS_11 0)
-
-
 
 
 
@@ -864,7 +852,6 @@
 (observe detected_EMS-1 detected_EMS_1)
 (observe detected_cumul_EMS-1 detected_cumul_EMS_1 )
 
-;(observe quarantined_EMS-1 Q::EMS_1)
 (observe presymptomatic_EMS-1 presymptomatic_EMS_1)
 
 (observe susceptible_EMS-2 S::EMS_2)
@@ -899,7 +886,6 @@
 (observe detected_EMS-2 detected_EMS_2)
 (observe detected_cumul_EMS-2 detected_cumul_EMS_2 )
 
-;(observe quarantined_EMS-2 Q::EMS_2)
 (observe presymptomatic_EMS-2 presymptomatic_EMS_2)
 
 (observe susceptible_EMS-3 S::EMS_3)
@@ -934,7 +920,6 @@
 (observe detected_EMS-3 detected_EMS_3)
 (observe detected_cumul_EMS-3 detected_cumul_EMS_3 )
 
-;(observe quarantined_EMS-3 Q::EMS_3)
 (observe presymptomatic_EMS-3 presymptomatic_EMS_3)
 
 (observe susceptible_EMS-4 S::EMS_4)
@@ -969,7 +954,6 @@
 (observe detected_EMS-4 detected_EMS_4)
 (observe detected_cumul_EMS-4 detected_cumul_EMS_4 )
 
-;(observe quarantined_EMS-4 Q::EMS_4)
 (observe presymptomatic_EMS-4 presymptomatic_EMS_4)
 
 (observe susceptible_EMS-5 S::EMS_5)
@@ -1004,7 +988,6 @@
 (observe detected_EMS-5 detected_EMS_5)
 (observe detected_cumul_EMS-5 detected_cumul_EMS_5 )
 
-;(observe quarantined_EMS-5 Q::EMS_5)
 (observe presymptomatic_EMS-5 presymptomatic_EMS_5)
 
 (observe susceptible_EMS-6 S::EMS_6)
@@ -1039,7 +1022,6 @@
 (observe detected_EMS-6 detected_EMS_6)
 (observe detected_cumul_EMS-6 detected_cumul_EMS_6 )
 
-;(observe quarantined_EMS-6 Q::EMS_6)
 (observe presymptomatic_EMS-6 presymptomatic_EMS_6)
 
 (observe susceptible_EMS-7 S::EMS_7)
@@ -1074,7 +1056,6 @@
 (observe detected_EMS-7 detected_EMS_7)
 (observe detected_cumul_EMS-7 detected_cumul_EMS_7 )
 
-;(observe quarantined_EMS-7 Q::EMS_7)
 (observe presymptomatic_EMS-7 presymptomatic_EMS_7)
 
 (observe susceptible_EMS-8 S::EMS_8)
@@ -1109,7 +1090,6 @@
 (observe detected_EMS-8 detected_EMS_8)
 (observe detected_cumul_EMS-8 detected_cumul_EMS_8 )
 
-;(observe quarantined_EMS-8 Q::EMS_8)
 (observe presymptomatic_EMS-8 presymptomatic_EMS_8)
 
 (observe susceptible_EMS-9 S::EMS_9)
@@ -1144,7 +1124,6 @@
 (observe detected_EMS-9 detected_EMS_9)
 (observe detected_cumul_EMS-9 detected_cumul_EMS_9 )
 
-;(observe quarantined_EMS-9 Q::EMS_9)
 (observe presymptomatic_EMS-9 presymptomatic_EMS_9)
 
 (observe susceptible_EMS-10 S::EMS_10)
@@ -1179,7 +1158,6 @@
 (observe detected_EMS-10 detected_EMS_10)
 (observe detected_cumul_EMS-10 detected_cumul_EMS_10 )
 
-;(observe quarantined_EMS-10 Q::EMS_10)
 (observe presymptomatic_EMS-10 presymptomatic_EMS_10)
 
 (observe susceptible_EMS-11 S::EMS_11)
@@ -1214,9 +1192,7 @@
 (observe detected_EMS-11 detected_EMS_11)
 (observe detected_cumul_EMS-11 detected_cumul_EMS_11 )
 
-;(observe quarantined_EMS-11 Q::EMS_11)
 (observe presymptomatic_EMS-11 presymptomatic_EMS_11)
-
 
 
 (param time_to_infectious @time_to_infectious@)
@@ -1266,7 +1242,6 @@
 (param Kh3_D (/ fraction_dead (- time_to_hospitalization time_D)))
 (param Kr_m_D (/ 1 (- recovery_time_mild time_D )))
 
-;(param d_SQ @d_SQ@)
 (param d_P @d_P@)
 (param d_As_ct1 @d_As_ct1@)
 (param d_Sym_ct1 @d_Sym_ct1@)
@@ -1471,43 +1446,6 @@
         
 (param Ki_back_EMS_11 (* Ki_EMS_11 @backtonormal_multiplier@))
 (time-event stopInterventions @socialDistanceSTOP_time@ ((Ki_EMS_11 Ki_back_EMS_11)))
-        
-;(time-event contact_tracing_start @contact_tracing_start_1@ ((S_EMS_11 (* S_EMS_11 (- 1 d_SQ))) (Q (* S_EMS_11 d_SQ))))
-;(time-event contact_tracing_end @contact_tracing_stop1@ ((S_EMS_11 (+ S_EMS_11 Q_EMS_11)) (Q_EMS_11 0)))
-        
-;(time-event contact_tracing_start @contact_tracing_start_1@ ((S_EMS_10 (* S_EMS_10 (- 1 d_SQ))) (Q (* S_EMS_10 d_SQ))))
-;(time-event contact_tracing_end @contact_tracing_stop1@ ((S_EMS_10 (+ S_EMS_10 Q_EMS_10)) (Q_EMS_10 0)))
-        
-;(time-event contact_tracing_start @contact_tracing_start_1@ ((S_EMS_9 (* S_EMS_9 (- 1 d_SQ))) (Q (* S_EMS_9 d_SQ))))
-;(time-event contact_tracing_end @contact_tracing_stop1@ ((S_EMS_9 (+ S_EMS_9 Q_EMS_9)) (Q_EMS_9 0)))
-        
-;(time-event contact_tracing_start @contact_tracing_start_1@ ((S_EMS_8 (* S_EMS_8 (- 1 d_SQ))) (Q (* S_EMS_8 d_SQ))))
-;(time-event contact_tracing_end @contact_tracing_stop1@ ((S_EMS_8 (+ S_EMS_8 Q_EMS_8)) (Q_EMS_8 0)))
-        
-;(time-event contact_tracing_start @contact_tracing_start_1@ ((S_EMS_7 (* S_EMS_7 (- 1 d_SQ))) (Q (* S_EMS_7 d_SQ))))
-;(time-event contact_tracing_end @contact_tracing_stop1@ ((S_EMS_7 (+ S_EMS_7 Q_EMS_7)) (Q_EMS_7 0)))
-        
-;(time-event contact_tracing_start @contact_tracing_start_1@ ((S_EMS_6 (* S_EMS_6 (- 1 d_SQ))) (Q (* S_EMS_6 d_SQ))))
-;(time-event contact_tracing_end @contact_tracing_stop1@ ((S_EMS_6 (+ S_EMS_6 Q_EMS_6)) (Q_EMS_6 0)))
-        
-;(time-event contact_tracing_start @contact_tracing_start_1@ ((S_EMS_5 (* S_EMS_5 (- 1 d_SQ))) (Q (* S_EMS_5 d_SQ))))
-;(time-event contact_tracing_end @contact_tracing_stop1@ ((S_EMS_5 (+ S_EMS_5 Q_EMS_5)) (Q_EMS_5 0)))
-        
-;(time-event contact_tracing_start @contact_tracing_start_1@ ((S_EMS_4 (* S_EMS_4 (- 1 d_SQ))) (Q (* S_EMS_4 d_SQ))))
-;(time-event contact_tracing_end @contact_tracing_stop1@ ((S_EMS_4 (+ S_EMS_4 Q_EMS_4)) (Q_EMS_4 0)))
-        
-;(time-event contact_tracing_start @contact_tracing_start_1@ ((S_EMS_3 (* S_EMS_3 (- 1 d_SQ))) (Q (* S_EMS_3 d_SQ))))
-;(time-event contact_tracing_end @contact_tracing_stop1@ ((S_EMS_3 (+ S_EMS_3 Q_EMS_3)) (Q_EMS_3 0)))
-        
-;(time-event contact_tracing_start @contact_tracing_start_1@ ((S_EMS_2 (* S_EMS_2 (- 1 d_SQ))) (Q (* S_EMS_2 d_SQ))))
-;(time-event contact_tracing_end @contact_tracing_stop1@ ((S_EMS_2 (+ S_EMS_2 Q_EMS_2)) (Q_EMS_2 0)))
-        
-;(time-event contact_tracing_start @contact_tracing_start_1@ ((S_EMS_1 (* S_EMS_1 (- 1 d_SQ))) (Q (* S_EMS_1 d_SQ))))
-;(time-event contact_tracing_end @contact_tracing_stop1@ ((S_EMS_1 (+ S_EMS_1 Q_EMS_1)) (Q_EMS_1 0)))
-        
-(time-event contact_tracing_start @contact_tracing_start_1@ ((d_As d_As_ct1) (d_P d_As_ct1) (d_Sym d_As_ct1)))
-;(time-event contact_tracing_end @contact_tracing_stop1@ ((d_As @d_As@) (d_P @d_P@) (d_Sym @d_Sym@)))
-    
 
 
 (reaction exposure_EMS_1  (S::EMS_1) (E::EMS_1) (* Ki_EMS_1 S::EMS_1 (/ (+ infectious_undet_EMS_1 (* infectious_det_EMS_1 reduced_inf_of_det_cases)) N_EMS_1 )))
