@@ -1,5 +1,5 @@
 experiment_setup_parameters:
-  'number_of_samples': 1
+  'number_of_samples': 100
   'number_of_runs': 3
   'duration': 370
   'monitoring_samples': 370 # needs to be smaller than duration
@@ -92,6 +92,10 @@ sampled_parameters:
   'd_P':
     np.random: uniform
     function_kwargs: {'low':0, 'high':0}
+  'reduced_inf_of_det_cases':
+    np.random: uniform
+    function_kwargs: {'low':0, 'high':0.3}
+  'd_As_ct1':
   'social_multiplier_1':
     np.random: uniform
     function_kwargs: {'low':0.7, 'high':0.9}
@@ -134,23 +138,22 @@ sampled_parameters:
     function_kwargs: {'low':0.565, 'high':0.835}
   'd_Sys_incr5':
     np.random: uniform
-    function_kwargs: {'low':0.682, 'high':0.835}    
+    function_kwargs: {'low':0.682, 'high':0.835}   
+  'reduced_inf_of_det_cases_ct1':
+    np.random: uniform
+    function_kwargs: {'low':0, 'high':1}
+  'd_As_ct1':
+    np.random: uniform
+    function_kwargs: {'low':0, 'high':0}
+  'd_Sym_ct1':
+    np.random: uniform
+    function_kwargs: {'low':0, 'high':1}    
 intervention_parameters:
   ### TIME-VARYING PARAMETER - EFFECT SIZE
   ### Reduce Ki due to stay-at-home policy
   'time_to_detection':
     np.random: uniform
     function_kwargs: {'low':0.5, 'high':4.5, 'size':3}
-  'reduced_inf_of_det_cases':
-    np.random: uniform
-    function_kwargs: {'low':0, 'high':1, 'size':10}
-  'd_As_ct1':
-    np.random: uniform
-    function_kwargs: {'low':0, 'high':0, 'size':1}
-  'd_Sym_ct1':
-    np.random: uniform
-    function_kwargs: {'low':0, 'high':1, 'size':10}
-   ### Use fixed dates or define detection time relative to  socialDistance_time3
 time_parameters:
   ### TIME-VARYING PARAMETER  - DATES
   ### Reduce Ki due to stay-at-home policy 
