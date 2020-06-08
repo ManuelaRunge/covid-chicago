@@ -1,5 +1,5 @@
 experiment_setup_parameters:
-  'number_of_samples': 5
+  'number_of_samples': 1
   'number_of_runs': 3
   'duration': 370
   'monitoring_samples': 370 # needs to be smaller than duration
@@ -139,20 +139,17 @@ intervention_parameters:
   ### TIME-VARYING PARAMETER - EFFECT SIZE
   ### Reduce Ki due to stay-at-home policy
   'time_to_detection':
-    np: linspace
-    function_kwargs: {'start':0.5, 'stop':4.5, 'num':5}
-  'reduced_inf_of_det_cases':
-    np: linspace
-    function_kwargs: {'start':0, 'stop':1, 'num':20}
-  'd_As_ct1':
-    np: linspace
-    function_kwargs: {'start':0, 'stop':1, 'num':20}
-  'd_Sym_ct1':
-    np: linspace
-    function_kwargs: {'start':0, 'stop':1, 'num':1}
-  'd_SQ':
     np.random: uniform
-    function_kwargs: {'low':0.80, 'high':0.80} 
+    function_kwargs: {'low':0.5, 'high':4.5, 'size':3}
+  'reduced_inf_of_det_cases':
+    np.random: uniform
+    function_kwargs: {'low':0, 'high':1, 'size':10}
+  'd_As_ct1':
+    np.random: uniform
+    function_kwargs: {'low':0, 'high':0, 'size':1}
+  'd_Sym_ct1':
+    np.random: uniform
+    function_kwargs: {'low':0, 'high':1, 'size':10}
    ### Use fixed dates or define detection time relative to  socialDistance_time3
 time_parameters:
   ### TIME-VARYING PARAMETER  - DATES
