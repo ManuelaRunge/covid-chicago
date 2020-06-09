@@ -1,5 +1,5 @@
 experiment_setup_parameters:
-  'number_of_samples': 100
+  'number_of_samples': 1
   'number_of_runs': 3
   'duration': 370
   'monitoring_samples': 370 # needs to be smaller than duration
@@ -43,34 +43,37 @@ fixed_parameters_global:
 sampled_parameters:
   'time_to_infectious':
     np.random: uniform
-    function_kwargs: {'low': 3.5, 'high':3.5}
+    function_kwargs: {'low': 3.4, 'high':4.5}
   'time_to_symptoms':
     np.random: uniform
-    function_kwargs: {'low': 2.5, 'high': 2.5}
+    function_kwargs: {'low': 2.4, 'high': 3.5}
+  'time_to_detection':
+    np.random: uniform
+    function_kwargs: {'low':2.0, 'high':2.0}
   'time_to_hospitalization':
     np.random: uniform
-    function_kwargs: {'low':5, 'high':5}
+    function_kwargs: {'low':3, 'high':6}
   'time_to_critical':
     np.random: uniform
-    function_kwargs: {'low':5, 'high':5}
+    function_kwargs: {'low':4, 'high':6}
   'time_to_death':
     np.random: uniform
-    function_kwargs: {'low':5, 'high':5}
+    function_kwargs: {'low':4, 'high':6}
   'recovery_time_asymp':
     np.random: uniform
-    function_kwargs: {'low':8, 'high':8}
+    function_kwargs: {'low':7, 'high':10}
   'recovery_time_mild':
     np.random: uniform
-    function_kwargs: {'low':8, 'high':8}
+    function_kwargs: {'low':7, 'high':10}
   'recovery_time_hosp':
     np.random: uniform
-    function_kwargs: {'low':5, 'high':5}
+    function_kwargs: {'low':4, 'high':6}
   'recovery_time_crit':
     np.random: uniform
-    function_kwargs: {'low':9, 'high':9}
+    function_kwargs: {'low':8, 'high':10}
   'fraction_symptomatic':
     np.random: uniform
-    function_kwargs: {'low':0.5, 'high':0.5}
+    function_kwargs: {'low':0.5, 'high':0.7}
   'fraction_severe':
     np.random: uniform
     function_kwargs: {'low':0.06, 'high':0.1}
@@ -80,6 +83,9 @@ sampled_parameters:
   'cfr': 
     np.random: uniform
     function_kwargs: {'low':0.01, 'high':0.03}
+  'reduced_inf_of_det_cases':
+    np.random: uniform
+    function_kwargs: {'low':0, 'high':0.3}
   'd_Sym':
     np.random: uniform
     function_kwargs: {'low':0.01, 'high':0.05}
@@ -91,10 +97,26 @@ sampled_parameters:
     function_kwargs: {'low':0, 'high':0}
   'd_P':
     np.random: uniform
-    function_kwargs: {'low':0, 'high':0}
-  'reduced_inf_of_det_cases':
+    function_kwargs: {'low':0, 'high':0} 
+  ### Contact tracing - increase detectioon of asymptomatic, presymptomatic and mild infections
+  ### Note detection of asymptomatic and presymptomatic assumed to be the same
+  ### (only used if corresponding emodl is defined)   
+  ### Random sampling of isolation success and detections     
+  'reduced_inf_of_det_cases_ct1':
+    np: linspace
+    function_kwargs: {'start':0, 'stop':1, 'num':10}  
+  'd_P_ct1':
     np.random: uniform
-    function_kwargs: {'low':0, 'high':0.3}
+    function_kwargs: {'low':0, 'high':0}
+  'd_As_ct1':
+    np.random: uniform
+    function_kwargs: {'low':0, 'high':0}
+  'd_Sym_ct1':
+    np.random: uniform
+    function_kwargs: {'low':0, 'high':1}    
+intervention_parameters:
+  ### TIME-VARYING PARAMETER - EFFECT SIZE
+  ### Reduce Ki due to stay-at-home policy
   'social_multiplier_1':
     np.random: uniform
     function_kwargs: {'low':0.7, 'high':0.9}
@@ -104,10 +126,12 @@ sampled_parameters:
   'social_multiplier_3':
     np.random: uniform
     function_kwargs: {'low':0.08, 'high':0.08}
+  ### Reset Ki to defined proporions of it's initial value  
+  ### (only used if corresponding emodl is defined)    
   'backtonormal_multiplier':
-    np.random: uniform
+    np: linspace
     # Add 'size' in function_kwargs to have multiple values instead of just one
-    function_kwargs: {'low':0.10, 'high':0.10} 
+    function_kwargs: {'start':0, 'stop':0.30, 'size': 3 }
   ### Gradual reopening (time-wise)
   'reopening_multiplier_1':
     np.random: uniform
@@ -120,7 +144,7 @@ sampled_parameters:
     function_kwargs: {'low':0.6, 'high':0.6}
   'reopening_multiplier_4':
     np.random: uniform
-    function_kwargs: {'low':0.9, 'high':0.9}   
+    function_kwargs: {'low':0.9, 'high':0.9}
   ### Increased testing - increased detectioon of severe symptomatic infections
   ### (only used if corresponding emodl is defined)    
   'd_Sys_incr1':
@@ -137,22 +161,7 @@ sampled_parameters:
     function_kwargs: {'low':0.565, 'high':0.835}
   'd_Sys_incr5':
     np.random: uniform
-    function_kwargs: {'low':0.682, 'high':0.835}   
-  'reduced_inf_of_det_cases_ct1':
-    np.random: uniform
-    function_kwargs: {'low':0, 'high':1}
-  'd_As_ct1':
-    np.random: uniform
-    function_kwargs: {'low':0, 'high':0}
-  'd_Sym_ct1':
-    np.random: uniform
-    function_kwargs: {'low':0, 'high':1}    
-intervention_parameters:
-  ### TIME-VARYING PARAMETER - EFFECT SIZE
-  ### Reduce Ki due to stay-at-home policy
-  'time_to_detection':
-    np: linspace
-    function_kwargs: {'start':1, 'stop':3, 'num':3}
+    function_kwargs: {'low':0.682, 'high':0.835}
 time_parameters:
   ### TIME-VARYING PARAMETER  - DATES
   ### Reduce Ki due to stay-at-home policy 

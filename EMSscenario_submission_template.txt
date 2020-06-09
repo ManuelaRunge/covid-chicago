@@ -53,7 +53,12 @@ python runScenarios.py --running_location Local --region IL --experiment_config 
 python runScenarios.py --running_location Local --region IL --experiment_config spatial_EMS_experiment.yaml --emodl_template extendedmodel_EMS_neverSIP.emodl --cfg_template model_B.cfg --name_suffix "EMS_contactTracing"
 python runScenarios.py --running_location Local --region IL --experiment_config spatial_EMS_experiment.yaml --emodl_template extendedmodel_EMS_interventionSTOPadj.emodl --cfg_template model_B.cfg --name_suffix "EMS_interventionSTOPadj10"
 
+## Contact tracing
 
+python runScenarios.py --running_location NUCLUSTER --region IL --experiment_config spatial_EMS_experiment.yaml --emodl_template extendedmodel_EMS_TD_contactTracing1.emodl --cfg_template model_B.cfg --name_suffix "EMS_AsPSym_rS6_heatmap"						  
+python runScenarios.py --running_location NUCLUSTER --region IL --experiment_config spatial_EMS_experiment.yaml --emodl_template extendedmodel_EMS_noTD_contactTracing1.emodl --cfg_template model_B.cfg --name_suffix "EMS_AsPSym_rS6_heatmap"						  
+python runScenarios.py --running_location NUCLUSTER --region IL --experiment_config spatial_EMS_experiment.yaml --emodl_template extendedmodel_EMS_TD_contactTracing2.emodl --cfg_template model_B.cfg --name_suffix "EMS_AsPSym_rS6_heatmap"						  
+python runScenarios.py --running_location NUCLUSTER --region IL --experiment_config spatial_EMS_experiment.yaml --emodl_template extendedmodel_EMS_noTD_contactTracing2.emodl --cfg_template model_B.cfg --name_suffix "EMS_AsPSym_rS6_heatmap"						  
 
 #### Age  model 
 python runScenarios.py --running_location Local --region EMS_11 --experiment_config age4grp_experiment.yaml --emodl_template extendedmodel_age4_homogeneous.emodl --cfg_template model_B.cfg --name_suffix "age4_homogeneous_test"
