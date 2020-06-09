@@ -19,7 +19,7 @@ source("processing_helpers.R")
 ct_dir <- file.path(simulation_output, "contact_tracing")
 
 # Define experiment iteration and simdate
-simdate <- "20200608"
+simdate <- "20200609_AsPSym"
 
 nexps <- list.files(file.path(ct_dir, simdate))
 exp_name <- simdate
@@ -321,7 +321,7 @@ sink()
 
 
 pplot <- ggplot(data=trajectoriesDat)+ theme_bw() + 
-  geom_point(aes(x=detection_success, y=isolation_success, col=as.factor(round(time_to_detection,0)), group=interaction(scen_num, run_num)),size=2)
+  geom_point(aes(x=detection_success, y=isolation_success, col=as.factor(round(time_to_detection,0))),size=2)
 ggsave(paste0("sample_points.png"),
        plot = pplot, path = file.path(ct_dir, simdate), width = 8, height = 6,  device = "png"
 )
@@ -720,6 +720,8 @@ if (allEMSatOnce) {
   (keepvars <- c(groupvars, emsvars))
 
   subdat <- trajectoriesDat %>% dplyr::select(keepvars)
+  
+  subdat <- filter(subdat, time_to_detection > 1)
  # rm(trajectoriesDat)
 
   subdat <- subdat %>%
@@ -886,8 +888,9 @@ if (allEMSatOnce) {
   vlineDat$region_label2 <- factor(vlineDat$region, levels = c(1:11), labels = labs)
 
   matdatp2 <- ggplot(data = tdat_wide, aes(x = x, y = y)) +
-    theme_cowplot() +
-    geom_polygon(data = datpol, aes(x = xpol, y = ypol, fill = as.factor(time_to_detection)), alpha = 0.5) +
+    theme_bw() +
+    geom_ribbon(data=tdat_wide, aes(x = x, y = fit,  ymin = lwr, ymax = upr, fill = as.factor(time_to_detection), group = time_to_detection)) +
+    #geom_polygon(data = datpol, aes(x = xpol, y = ypol, fill = as.factor(time_to_detection)), alpha = 0.5) +
     geom_smooth(
       data = subset(tdat_wide),
       aes(x = x, y = fit, col = as.factor(time_to_detection), group = time_to_detection),
@@ -907,19 +910,20 @@ if (allEMSatOnce) {
       x = "detections (P, As) (%)",
       y = "isolation success (%)"
     ) +
-    geom_vline(data = hlineDat, aes(xintercept = x), col = "grey") +
-    geom_hline(data = vlineDat, aes(yintercept = lwr), col = "grey") +
+   # geom_vline(data = hlineDat, aes(xintercept = x), col = "grey") +
+   # geom_hline(data = vlineDat, aes(yintercept = lwr), col = "grey") +
     theme(legend.position = "right")
 
 
-  ggsave(paste0("all_capacity_thresholds_2.png"),
+  ggsave(paste0("all_capacity_thresholds.png"),
     plot = matdatp2, path = file.path(exp_dir), width = 15, height = 10, dpi = 300, device = "png"
   )
-  ggsave(paste0("all_capacity_thresholds_2.pdf"),
+  ggsave(paste0("all_capacity_thresholds.pdf"),
     plot = matdatp2, path = file.path(exp_dir), width = 15, height = 10, dpi = 300, device = "pdf"
   )
 
 
+ 
 
   plotdat$region <- factor(plotdat$region, levels = c(1:11), labels = c(1:11))
 
