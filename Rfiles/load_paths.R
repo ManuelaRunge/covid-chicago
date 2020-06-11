@@ -1,8 +1,6 @@
 
 
-user_path <-  Sys.getenv("USERNAME")
-if(user_path=="") user_path <-  Sys.getenv("USER")
-
+user_path =  Sys.getenv("USERNAME")
 
 
 if('patri' %in%  user_path){
@@ -47,7 +45,7 @@ if('mrung' %in% user_path){
 
 
 if('mrm9534' %in%  user_path){
-  user_path =   Sys.getenv("USERPROFILE")  #'/home/mrm9534/'
+  user_path = 'C:/Users/mrm9534'  #'/home/mrm9534/'
   home_path = file.path(user_path, 'Box', 'NU-malaria-team', 'projects')
   data_path = file.path(user_path, 'Box', 'NU-malaria-team', 'data')
   git_dir = file.path(user_path, 'gitrepos', 'covid-chicago/')
