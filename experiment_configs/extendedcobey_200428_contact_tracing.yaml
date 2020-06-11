@@ -131,7 +131,7 @@ intervention_parameters:
   'backtonormal_multiplier':
     np: linspace
     # Add 'size' in function_kwargs to have multiple values instead of just one
-    function_kwargs: {'start':0, 'stop':0.30, 'size': 3 }
+    function_kwargs: {'start':0, 'stop':0.30, 'num': 3 }
   ### Gradual reopening (time-wise)
   'reopening_multiplier_1':
     np.random: uniform
