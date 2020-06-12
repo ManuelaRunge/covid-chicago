@@ -1,6 +1,12 @@
 ### Note specify running_location either Local or NUCLUSTER, if NUCLUSTER 
 
 
+python runScenarios.py --running_location Local --region IL --experiment_config spatial_EMS_experiment.yaml --emodl_template extendedmodel_EMS_noTD_contactTracing1.emodl --cfg_template model_B.cfg --name_suffix "test_noTD_contactTracing1"
+python runScenarios.py --running_location Local --region IL --experiment_config spatial_EMS_experiment.yaml --emodl_template extendedmodel_EMS_TD_contactTracing1.emodl --cfg_template model_B.cfg --name_suffix "test_TD_contactTracing1"
+python runScenarios.py --running_location Local --region IL --experiment_config spatial_EMS_experiment.yaml --emodl_template extendedmodel_EMS_noTD_contactTracing2.emodl --cfg_template model_B.cfg --name_suffix "test_noTD_contactTracing2"
+python runScenarios.py --running_location Local --region IL --experiment_config spatial_EMS_experiment.yaml --emodl_template extendedmodel_EMS_TD_contactTracing2.emodl --cfg_template model_B.cfg --name_suffix "test_TD_contactTracing2"
+
+
 #### Current scenarios to submit for civis
 python runScenarios.py --running_location Local --region IL --experiment_config spatial_EMS_experiment.yaml --emodl_template extendedmodel_EMS.emodl --cfg_template model_B.cfg --name_suffix "EMS_scenario3"						  
 python runScenarios.py --running_location Local --region IL --experiment_config spatial_EMS_experiment.yaml --emodl_template extendedmodel_EMS_interventionSTOPadj.emodl --cfg_template model_B.cfg --name_suffix "EMS_interventionSTOPadj30"
