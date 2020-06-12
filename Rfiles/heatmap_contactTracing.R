@@ -19,7 +19,7 @@ source("processing_helpers.R")
 ct_dir <- file.path(simulation_output, "contact_tracing")
 
 # Define experiment iteration and simdate
-simdate <- "20200609_AsPSym"
+simdate <- "20200611_1"
 
 nexps <- list.files(file.path(ct_dir, simdate))
 exp_name <- simdate
@@ -172,7 +172,7 @@ f_heatmap <- function(df, selected_outcome, scalePop = F) {
     dplyr::group_by(time_to_detection, x, statistic) %>%
     dplyr::summarize(ythreshold = min(y))
 
-  matdat <- left_join(matdat, tdat, by = c("time_to_detection", "x"))
+  #matdat <- left_join(matdat, tdat, by = c("time_to_detection", "x"))
 
   flabel <- paste0("Predicted ", selected_outcome)
 
@@ -321,7 +321,7 @@ sink()
 
 
 pplot <- ggplot(data=trajectoriesDat)+ theme_bw() + 
-  geom_point(aes(x=detection_success, y=isolation_success, col=as.factor(round(time_to_detection,0))),size=2)
+  geom_jitter(aes(x=detection_success, y=isolation_success, col=as.factor(round(time_to_detection,0))),size=2)
 ggsave(paste0("sample_points.png"),
        plot = pplot, path = file.path(ct_dir, simdate), width = 8, height = 6,  device = "png"
 )
@@ -721,7 +721,7 @@ if (allEMSatOnce) {
 
   subdat <- trajectoriesDat %>% dplyr::select(keepvars)
   
-  subdat <- filter(subdat, time_to_detection > 1)
+  #  subdat <- filter(subdat, time_to_detection > 1)
  # rm(trajectoriesDat)
 
   subdat <- subdat %>%
@@ -777,7 +777,7 @@ if (allEMSatOnce) {
 
   (dfLMCoef <- tidy(dfLM, fitlm))
   # augment(dfLM, fitlm)
-  # glance(dfLM, fitlm)
+  glance(dfLM, fitlm)
 
   ## Parameter combinations that did run
   sink(file.path(exp_dir, paste0("perEMS_", selected_outcome, "_linear_models.txt")))
@@ -790,9 +790,6 @@ if (allEMSatOnce) {
   print(summary(d$r.squared))
   print(tapply(d$r.squared, d$region, summary))
   sink()
-
-
-
 
   ### Generate prediction dataset
   xnew <- seq(0, 1, 0.01)
@@ -814,29 +811,30 @@ if (allEMSatOnce) {
   }
 
   matdat <- matdat_list %>% bind_rows()
-  # table(matdat$time_to_detection)
+  table(matdat$region)
+  table(matdat$time_to_detection)
+  
 
   tdat <- matdat %>%
     pivot_longer(cols = -c(region, capacity, x, y, time_to_detection), names_to = "statistic") %>%
-    filter(value <= capacity) %>%
-    dplyr::group_by(region, time_to_detection, x, statistic) %>%
+    mutate(BelowCapacity = ifelse(value <= capacity, 'yes', 'no')) %>%
+    dplyr::group_by(region, time_to_detection, x, statistic,BelowCapacity) %>%
     dplyr::summarize(ythreshold = min(y))
 
-  matdat <- left_join(matdat, tdat, by = c("time_to_detection", "x"))
+ # matdat <- left_join(matdat, tdat, by = c("region","time_to_detection", "x"))
 
   flabel <- paste0("Predicted ", selected_outcome)
 
   matdat$time_to_detection <- round(matdat$time_to_detection, 0)
   df$time_to_detection <- round(df$time_to_detection, 0)
 
-
-
-
   tdat_wide <- tdat %>% pivot_wider(names_from = "statistic", values_from = "ythreshold")
+  
+  table(tdat$region)
 
   tdat_wide %>%
     dplyr::filter(!is.na(fit)) %>%
-    group_by(region, time_to_detection, x) %>%
+    group_by(region, time_to_detection, BelowCapacity, x) %>%
     summarize(
       xmin = min(x), xmax = max(x),
       lwrmin = min(lwr), lwrmax = max(lwr)
@@ -847,9 +845,9 @@ if (allEMSatOnce) {
   ypol <- c(tdat_wide$lwr, rev(tdat_wide$upr))
   time_to_detection <- c(tdat_wide$time_to_detection, rev(tdat_wide$time_to_detection))
   region <- c(tdat_wide$region, rev(tdat_wide$region))
+  BelowCapacity <- c(tdat_wide$BelowCapacity, rev(tdat_wide$BelowCapacity))
 
-
-  datpol <- as.data.frame(cbind(xpol, ypol, time_to_detection, region))
+  datpol <- as.data.frame(cbind(xpol, ypol, time_to_detection, region, BelowCapacity))
 
   datpol$xpol <- as.numeric(datpol$xpol)
   datpol$ypol <- as.numeric(datpol$ypol)
@@ -865,13 +863,6 @@ if (allEMSatOnce) {
   datpol$time_to_detection <- round(datpol$time_to_detection, 0)
   tdat_wide$time_to_detection <- round(tdat_wide$time_to_detection, 0)
 
-  hlineDat <- tdat_wide %>%
-    group_by(region) %>%
-    filter(!is.na(lwr) & x == min(x))
-  vlineDat <- tdat_wide %>%
-    group_by(region) %>%
-    filter(!is.na(lwr) & lwr == min(lwr))
-
   regLabel <- df %>%
     select(region, capacity) %>%
     unique() %>%
@@ -882,17 +873,37 @@ if (allEMSatOnce) {
   labs <- c("EMS_1\n limit: 148", "EMS_2\n limit: 181", "EMS_3\n limit: 103", "EMS_4\n limit: 98", "EMS_5\n limit: 88", "EMS_6\n limit: 109",
             "EMS_7\n limit: 404", "EMS_8\n limit: 255", "EMS_9\n limit: 265", "EMS_10\n limit: 150", "EMS_11\n limit: 785")
 
-  datpol$region_label2 <- factor(datpol$region, levels = c(1:11), labels = labs)
-  tdat_wide$region_label2 <- factor(tdat_wide$region, levels = c(1:11), labels = labs)
-  hlineDat$region_label2 <- factor(hlineDat$region, levels = c(1:11), labels = labs)
-  vlineDat$region_label2 <- factor(vlineDat$region, levels = c(1:11), labels = labs)
+  datpol$region_label2 <- factor(as.numeric(datpol$region), levels = c(1:11), labels = labs)
+  tdat_wide$region_label2 <- factor(as.numeric(tdat_wide$region), levels = c(1:11), labels = labs)
 
-  matdatp2 <- ggplot(data = tdat_wide, aes(x = x, y = y)) +
-    theme_bw() +
-    geom_ribbon(data=tdat_wide, aes(x = x, y = fit,  ymin = lwr, ymax = upr, fill = as.factor(time_to_detection), group = time_to_detection)) +
-    #geom_polygon(data = datpol, aes(x = xpol, y = ypol, fill = as.factor(time_to_detection)), alpha = 0.5) +
+  
+  
+  #### TODO the criteria do not make sense yet!!!! To edit
+  txtdat = tdat_wide %>% ungroup() %>% 
+    select(region_label2, BelowCapacity) %>% unique() %>%  
+    group_by(region_label2) %>% 
+    summarize(BelowCapacity = sum(as.numeric(as.factor(BelowCapacity)))) %>%
+    mutate(label1 =ifelse(BelowCapacity==1, 'none below capacity', '')) %>%
+    as.data.frame()
+  
+  txtdat = tdat_wide %>% ungroup() %>% 
+    group_by(region_label2) %>% 
+    summarize(fitmax=max(fit,na.rm=T)) %>%
+    mutate(yval=0.50, xval=0.50, 
+           label2 =ifelse(fitmax==0, 'below capacity for any isolation success', '')) %>%
+    as.data.frame() %>% 
+    left_join(txtdat, by="region_label2") %>%
+    #unite(label, c(label1,label2),sep='')
+    mutate(label=ifelse(label1!='',label1,label2))
+  
+
+    
+  matdatp2 <- ggplot(data=tdat_wide) +
+    theme_cowplot() +
+    #geom_ribbon(data= subset(tdat_wide, BelowCapacity=='yes'), aes(x = x, y = fit,  ymin = lwr, ymax = upr, fill = as.factor(time_to_detection), group = time_to_detection)) +
+    geom_polygon(data = subset(datpol,BelowCapacity=='yes'), aes(x = xpol, y = ypol, fill = as.factor(time_to_detection)), alpha = 0.5) +
     geom_smooth(
-      data = subset(tdat_wide),
+      data = subset(tdat_wide, BelowCapacity=='yes'),
       aes(x = x, y = fit, col = as.factor(time_to_detection), group = time_to_detection),
       method = "lm", size = 1.3, show.legend = FALSE
     ) +
@@ -902,6 +913,7 @@ if (allEMSatOnce) {
     scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
     scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
     theme(panel.spacing = unit(2, "lines")) +
+    geom_text(data=txtdat, aes(x=xval, y=yval, label=label),col="grey",size=4) +
     facet_wrap(~region_label2, scales = "free") +
     labs(
       color = "time to detection",
@@ -910,8 +922,8 @@ if (allEMSatOnce) {
       x = "detections (P, As) (%)",
       y = "isolation success (%)"
     ) +
-   # geom_vline(data = hlineDat, aes(xintercept = x), col = "grey") +
-   # geom_hline(data = vlineDat, aes(yintercept = lwr), col = "grey") +
+    geom_vline(xintercept = c(-Inf, Inf)) +
+    geom_hline(yintercept =c(-Inf, Inf)) +
     theme(legend.position = "right")
 
 
