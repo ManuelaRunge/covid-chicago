@@ -19,7 +19,7 @@ source("processing_helpers.R")
 ct_dir <- file.path(simulation_output, "contact_tracing")
 
 # Define experiment iteration and simdate
-simdate <- "20200611_1"
+simdate <- "20200611_AsPSym"
 
 nexps <- list.files(file.path(ct_dir, simdate))
 exp_name <- simdate
@@ -913,7 +913,7 @@ if (allEMSatOnce) {
     scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
     scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
     theme(panel.spacing = unit(2, "lines")) +
-    geom_text(data=txtdat, aes(x=xval, y=yval, label=label),col="grey",size=4) +
+    #geom_text(data=txtdat, aes(x=xval, y=yval, label=label),col="grey",size=4) +
     facet_wrap(~region_label2, scales = "free") +
     labs(
       color = "time to detection",

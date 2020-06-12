@@ -1383,7 +1383,7 @@
 ;(time-event contact_tracing_end @contact_tracing_stop1@ ((d_As @d_As@) (d_P @d_P@) (d_Sym @d_Sym@)))
     
 
-(reaction exposure_EMS_1  (S::EMS_1) (E::EMS_1) (* Ki_EMS_1 S::EMS_1 (/ (+ infectious_undet_EMS_1 (* infectious_SymSys_det_EMS_1 reduced_inf_of_det_cases) (* infectious_AsP_det_EMS_1 reduced_inf_of_det_cases_ct1) ) N_EMS_1 )))
+(reaction exposure_EMS_1  (S::EMS_1) (E::EMS_1) (* Ki_EMS_1 S::EMS_1 (/ (+ infectious_undet_EMS_1 (* infectious_det_EMS_1 reduced_inf_of_det_cases)  ) N_EMS_1 )))
 
 (reaction infection_asymp_undet_EMS_1 (E::EMS_1)  (As::EMS_1)  (* Kl E::EMS_1 (- 1 d_As)))
 (reaction infection_asymp_det_EMS_1 (E::EMS_1)  (As_det1::EMS_1)  (* Kl E::EMS_1 d_As))
