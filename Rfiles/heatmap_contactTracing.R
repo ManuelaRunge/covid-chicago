@@ -121,8 +121,9 @@ f_heatmap <- function(df, selected_outcome, scalePop = F) {
       y = isolation_success,
       z = value
     ) %>%
-    group_by(N, time_to_detection, outcome) %>%
-    do(fitlm = lm(z ~ y + x, data = .))
+    group_by(N, region, time_to_detection, outcome) %>%
+    do(fitlm = lm(z ~ poly(y + x, 3), data = .))
+  #do(fitlm = lm(z ~ y + x, data = .))
 
   (dfLMCoef <- tidy(dfLM, fitlm))
   # augment(dfLM, fitlm)
@@ -132,8 +133,8 @@ f_heatmap <- function(df, selected_outcome, scalePop = F) {
   sink(file.path(exp_dir, paste0(geography, "_", ems, "_", selected_outcome, "_linear_models.txt")))
   cat("\ntidy(dfLM, fitlm)")
   print(tidy(dfLM, fitlm))
-  cat("\naugment(dfLM, fitlm)")
-  print(augment(dfLM, fitlm))
+  #cat("\naugment(dfLM, fitlm)")
+  #print(augment(dfLM, fitlm))
   cat("\nglance(dfLM, fitlm)")
   print(glance(dfLM, fitlm))
   sink()
@@ -172,7 +173,7 @@ f_heatmap <- function(df, selected_outcome, scalePop = F) {
     dplyr::group_by(time_to_detection, x, statistic) %>%
     dplyr::summarize(ythreshold = min(y))
 
-  #matdat <- left_join(matdat, tdat, by = c("time_to_detection", "x"))
+  matdat <- left_join(matdat, tdat, by = c("time_to_detection", "x"))
 
   flabel <- paste0("Predicted ", selected_outcome)
 
@@ -193,13 +194,12 @@ f_heatmap <- function(df, selected_outcome, scalePop = F) {
     geom_tile(aes(fill = fit), alpha = 0.9) +
     geom_smooth(
       data = subset(matdat, statistic == "fit"),
-      aes(x = x, y = ythreshold, group = statistic), method = "lm", col = "black", size = 0.75
+      aes(x = x, y = ythreshold, group = statistic), method="lm", formula=y ~ poly(x, 2, raw=TRUE), col = "black", size = 0.75
     ) +
     geom_smooth(
       data = subset(matdat, statistic != "fit"),
-      aes(x = x, y = ythreshold, group = statistic), method = "lm", col = "black", size = 0.75, linetype = "dashed"
+      aes(x = x, y = ythreshold, group = statistic), method="lm", formula=y ~ poly(x, 2, raw=TRUE), col = "black", size = 0.75, linetype = "dashed"
     ) +
-    geom_jitter(data = df, aes(x = detection_success, y = isolation_success, fill = value), shape = 21, size = 2.5) +
     # scale_fill_gradient2(low = "olivedrab3",mid='#f1a340',  high = "mediumvioletred", midpoint= 400) +
     scale_fill_viridis(option = "C", discrete = FALSE, direction = -1) +
     labs(
@@ -248,7 +248,7 @@ f_heatmap <- function(df, selected_outcome, scalePop = F) {
     geom_smooth(
       data = subset(tdat_wide),
       aes(x = x, y = fit, col = as.factor(time_to_detection), group = time_to_detection),
-      method = "lm", size = 1.3, show.legend = FALSE
+      method="lm", formula=y ~ poly(x, 2, raw=TRUE), size = 1.3, show.legend = FALSE
     ) +
     # geom_jitter(data=df, aes(x=detection_success , y = isolation_success,fill=value),shape=21, size = 2.5) +
     # scale_fill_gradient2(low = "olivedrab3",mid='#f1a340',  high = "mediumvioletred", midpoint= 400) +
@@ -376,41 +376,36 @@ for (ems in emsregions) {
         mutate(region = ems) %>%
         as.data.frame()
 
-      threshold_param <- plotdat %>%
-        filter(Date == max(Date)) %>%
-        mutate(
-          capacity = capacityline
-        ) %>%
-        filter(value <= capacity) %>%
-        group_by(detection_success, time_to_detection, scen_num, sample_num, run_num) %>%
-        filter(isolation_success == min(isolation_success)) %>%
-        dplyr::select(region, detection_success, isolation_success, time_to_detection, outcome, scen_num, sample_num, run_num, value, capacity)
+
     } else {
       plotdat <- tempdat %>%
         filter(outcome == selected_outcome) %>%
         mutate(region = ems) %>%
         as.data.frame()
 
-      peakTimes <- plotdat %>%
-        group_by(N, Ki, region, isolation_success, detection_success, time_to_detection, scen_num, sample_num, run_num) %>%
-        filter(value == max(value)) %>%
-        rename(Date_peak = Date) %>%
-        select(N, Ki, region, Date_peak, outcome, isolation_success, detection_success, time_to_detection, scen_num, sample_num, run_num)
-
-      ## Add peak date to plotdat
-      plotdat <- plotdat %>%
-        left_join(peakTimes, by = c("N", "Ki", "region", "outcome", "scen_num", "sample_num", "run_num", "isolation_success", "detection_success", "time_to_detection"))
-
-      ## Filter dataset to get threshold values
-      threshold_param <- plotdat %>%
-        filter(Date == Date_peak) %>%
-        mutate(capacity = capacityline) %>%
-        filter(outcome == selected_outcome) %>%
-        filter(value <= capacity) %>%
-        group_by(region, detection_success, time_to_detection, scen_num, sample_num, run_num) %>%
-        filter(isolation_success == min(isolation_success)) %>%
-        dplyr::select(region, N, Ki, Date_peak, scen_num, sample_num, run_num, detection_success, isolation_success, time_to_detection, outcome, value, capacity)
     }
+    
+    
+    peakTimes <- plotdat %>%
+      group_by(N, Ki, region, isolation_success, detection_success, time_to_detection, scen_num, sample_num, run_num) %>%
+      filter(value == max(value)) %>%
+      rename(Date_peak = Date) %>%
+      select(N, Ki, region, Date_peak, outcome, isolation_success, detection_success, time_to_detection, scen_num, sample_num, run_num)
+    
+    ## Add peak date to plotdat
+    plotdat <- plotdat %>%
+      left_join(peakTimes, by = c("N", "Ki", "region", "outcome", "scen_num", "sample_num", "run_num", "isolation_success", "detection_success", "time_to_detection"))
+    
+    ## Filter dataset to get threshold values
+    threshold_param <- plotdat %>%
+      filter(Date == Date_peak) %>%
+      mutate(capacity = capacityline) %>%
+      filter(outcome == selected_outcome) %>%
+      filter(value <= capacity) %>%
+      group_by(region, detection_success, time_to_detection, scen_num, sample_num, run_num) %>%
+      filter(isolation_success == min(isolation_success)) %>%
+      dplyr::select(region, N, Ki, Date_peak, scen_num, sample_num, run_num, detection_success, isolation_success, time_to_detection, outcome, value, capacity)
+    
 
     thresholdDat[[selected_outcome]] <- threshold_param
 
@@ -681,22 +676,6 @@ if (thresholdplot) {
 ## across EMS, maybe better to let colorscale change, OR do it all per 100,000 population and standardize the scale.
 
 
-customThemeNoFacet <- theme(
-  strip.text.x = element_text(size = 12, face = "bold"),
-  strip.text.y = element_text(size = 12, face = "bold"),
-  strip.background = element_blank(),
-  plot.title = element_text(size = 16, vjust = -1, hjust = 0),
-  plot.subtitle = element_text(size = 12),
-  plot.caption = element_text(size = 8),
-  legend.title = element_text(size = 16),
-  legend.text = element_text(size = 12),
-  axis.title.x = element_text(size = 16),
-  axis.text.x = element_text(size = 12),
-  axis.title.y = element_text(size = 16),
-  axis.text.y = element_text(size = 12)
-)
-
-
 allEMSatOnce <- FALSE
 if (allEMSatOnce) {
   # read.csv(tempdat, file.path(ems_dir, paste0(geography, "_", ems, "_dat.csv")))
@@ -773,35 +752,54 @@ if (allEMSatOnce) {
       z = value
     ) %>%
     group_by(region, time_to_detection, outcome, capacity) %>%
-    do(fitlm = lm(z ~ y + x, data = .))
-
-  (dfLMCoef <- tidy(dfLM, fitlm))
-  # augment(dfLM, fitlm)
-  glance(dfLM, fitlm)
-
-  ## Parameter combinations that did run
-  sink(file.path(exp_dir, paste0("perEMS_", selected_outcome, "_linear_models.txt")))
-  cat("\ntidy(dfLM, fitlm)")
-  print(tidy(dfLM, fitlm))
-  cat("\naugment(dfLM, fitlm)")
-  print(augment(dfLM, fitlm))
-  cat("\nglance(dfLM, fitlm)")
-  print((d <- glance(dfLM, fitlm)))
-  print(summary(d$r.squared))
-  print(tapply(d$r.squared, d$region, summary))
-  sink()
+    #do(fitlm = lm(z ~ y + x, data = .))
+    #do(fitlm = loess(z ~ y + x, data = ., , degree = 2, span = 0.4))
+     do(fitlm = lm(z ~ poly(y + x,3), data = .))
+  
+  
+  dfLM2 <- threshold_param2 %>%
+    filter(!is.na(detection_success_fct)) %>%
+    rename(
+      x = detection_success_fct,
+      y = isolation_success,
+    ) %>%
+    group_by(region, time_to_detection) %>%
+    #do(fitlm = lm( y ~ x, data = .))
+    # do(fitlm = loess(y ~  x, data = ., , degree = 2, span = 0.4))
+   do(fitlm = lm(y ~ poly(x,3), data = .))
+  
+  
+  
+  elevation.loess = subset(dfLM, region=="7")$fitlm[[1]]
+  
+  data.fit <- expand.grid(list(x = seq(0, 1, 0.01), y = seq(0, 1, 0.01)))
+  z <- predict(elevation.loess, newdata = data.fit)
+  data.fit$value <- as.numeric(z)
+  
+  elevation.loess = subset(dfLM2, region=="7")$fitlm[[1]]
+  
+  data.fit2 <- expand.grid(list(x = seq(0, 1, 0.01), y = seq(0, 1, 0.01)))
+  z <- predict(elevation.loess, newdata = data.fit2)
+  data.fit2$value <- as.numeric(z)
+  
+  ggplot(data.fit, aes(x, y)) +
+    geom_tile(aes(fill=value)) +
+    geom_line(data=data.fit2, aes(x, value)) 
+  
 
   ### Generate prediction dataset
   xnew <- seq(0, 1, 0.01)
   ynew <- seq(0, 1, 0.01)
-
+#unique(dfLM$region)
   matdat_list <- list()
-  for (region_i in unique(dfLM$region)) {
+  for (region_i in c(1:7)) {
     for (testDelay in unique(dfLM$time_to_detection)) {
       lmmodel <- dfLM %>% filter(time_to_detection == testDelay & region == region_i)
 
       t_matdat <- expand.grid(x = xnew, y = ynew)
-      t_matdat <- as.data.frame(cbind(t_matdat, predict(lmmodel$fitlm[[1]], newdata = t_matdat, interval = "confidence")))
+      t_matdat$value <- as.numeric(predict(lmmodel$fitlm[[1]], newdata = t_matdat))
+      ## t_matdat <-  as.data.frame(cbind(t_matdat, predict(lmmodel$fitlm[[1]], newdata = t_matdat, interval = "confidence")))
+      t_matdat = as.data.frame(t_matdat)
       t_matdat$time_to_detection <- testDelay
       t_matdat$region <- region_i
       t_matdat$capacity <- lmmodel$capacity
@@ -831,14 +829,6 @@ if (allEMSatOnce) {
   tdat_wide <- tdat %>% pivot_wider(names_from = "statistic", values_from = "ythreshold")
   
   table(tdat$region)
-
-  tdat_wide %>%
-    dplyr::filter(!is.na(fit)) %>%
-    group_by(region, time_to_detection, BelowCapacity, x) %>%
-    summarize(
-      xmin = min(x), xmax = max(x),
-      lwrmin = min(lwr), lwrmax = max(lwr)
-    )
 
 
   xpol <- c(tdat_wide$x, rev(tdat_wide$x))
@@ -901,10 +891,10 @@ if (allEMSatOnce) {
   matdatp2 <- ggplot(data=tdat_wide) +
     theme_cowplot() +
     #geom_ribbon(data= subset(tdat_wide, BelowCapacity=='yes'), aes(x = x, y = fit,  ymin = lwr, ymax = upr, fill = as.factor(time_to_detection), group = time_to_detection)) +
-    geom_polygon(data = subset(datpol,BelowCapacity=='yes'), aes(x = xpol, y = ypol, fill = as.factor(time_to_detection)), alpha = 0.5) +
+    #geom_polygon(data = subset(datpol,BelowCapacity=='yes'), aes(x = xpol, y = ypol, fill = as.factor(time_to_detection)), alpha = 0.5) +
     geom_smooth(
       data = subset(tdat_wide, BelowCapacity=='yes'),
-      aes(x = x, y = fit, col = as.factor(time_to_detection), group = time_to_detection),
+      aes(x = x, y = value, col = as.factor(time_to_detection), group = time_to_detection),
       method = "lm", size = 1.3, show.legend = FALSE
     ) +
     scale_fill_viridis(option = "C", discrete = TRUE, direction = -1) +
@@ -976,3 +966,224 @@ if (allEMSatOnce) {
     plot = l_plot2, path = file.path(exp_dir), width = 12, height = 7, dpi = 300, device = "png"
   )
 }
+
+
+
+allEMSatOnce2 <- FALSE
+if (allEMSatOnce2) {
+  # read.csv(tempdat, file.path(ems_dir, paste0(geography, "_", ems, "_dat.csv")))
+  
+  selected_ems <- c(1:11)
+  emsvars_temp <- c(
+    "susceptible_EMS.", "exposed_EMS.", "asymptomatic_EMS.", "symptomatic_mild_EMS.", "symptomatic_severe_EMS.",
+    "hospitalized_EMS.", "critical_EMS.", "deaths_EMS.", "recovered_EMS.", "asymp_cumul_EMS.",
+    "asymp_det_cumul_EMS.", "symp_mild_cumul_EMS.", "symp_severe_cumul_EMS.", "hosp_cumul_EMS.", "hosp_det_cumul_EMS.",
+    "crit_cumul_EMS.", "crit_det_cumul_EMS.", "crit_det_EMS.", "death_det_cumul_EMS.", "infected_EMS.",
+    "infected_cumul_EMS.", "symp_mild_det_cumul_EMS.", "symp_severe_det_cumul_EMS.", "detected_EMS.", "detected_cumul_EMS.",
+    "presymptomatic_EMS."
+  )
+  
+  emsvars <- NULL
+  for (ems in selected_ems) {
+    emsvars <- c(emsvars, paste0(emsvars_temp, ems))
+  }
+  
+  groupvars <- c("time", "startdate", "scen_num", "sample_num", "run_num", "time_to_detection", "detection_success", "isolation_success")
+  (keepvars <- c(groupvars, emsvars))
+  
+  subdat <- trajectoriesDat %>% dplyr::select(keepvars)
+  
+  #  subdat <- filter(subdat, time_to_detection > 1)
+  # rm(trajectoriesDat)
+  
+  subdat <- subdat %>%
+    pivot_longer(cols = -c(groupvars)) %>%
+    mutate(
+      startdate = as.Date(startdate),
+      Date = as.Date(time + startdate),
+      name = gsub("All", "EMS.IL", name)
+    ) %>%
+    separate(name, into = c("outcome", "region"), sep = "_EMS[.]") %>%
+    dplyr::filter(Date >= evaluation_window[1]) %>%
+    select(-c(time))
+  
+  selected_outcome <- "critical"
+  capacity <- load_capacity("all")
+  capacity$region <- as.character(rownames(capacity))
+  capacity <- capacity %>%
+    rename(capacity = selected_outcome) %>%
+    select(region, capacity)
+  
+  
+  plotdat <- subdat %>%
+    left_join(capacity, by = "region") %>%
+    filter(outcome == selected_outcome) %>%
+    as.data.frame()
+  
+  peakTimes <- plotdat %>%
+    group_by(region, capacity, isolation_success, detection_success, time_to_detection, scen_num, sample_num, run_num) %>%
+    filter(value == max(value)) %>%
+    rename(Date_peak = Date) %>%
+    select(region, capacity, Date_peak, outcome, isolation_success, detection_success, time_to_detection, scen_num, sample_num, run_num)
+  
+  
+  
+  ## Add peak date to plotdat
+  plotdat <- plotdat %>%
+    left_join(peakTimes, by = c("region", "capacity", "outcome", "scen_num", "sample_num", "run_num", "isolation_success", "detection_success", "time_to_detection"))
+  
+  # rm(peakTimes)
+  
+  
+  df <- subset(plotdat, Date == plotdat$Date_peak)
+  # rm(plotdat)
+  
+  
+  ## Filter dataset to get threshold values
+  threshold_param <- df %>%
+    group_by(region,outcome, detection_success,isolation_success, time_to_detection,  capacity) %>%
+    summarize(value=mean(value))%>%
+    filter(value <= capacity) %>%
+    group_by(region,outcome, detection_success, time_to_detection,  capacity) %>%
+    filter(isolation_success == min(isolation_success)) 
+  
+  
+  threshold_param2 <- df %>%
+    group_by(region,outcome, time_to_detection, detection_success,isolation_success, capacity) %>%
+    summarize(value=mean(value))%>%
+    filter(value <= capacity) %>%
+    group_by(region,outcome,time_to_detection, detection_success) %>%
+    filter(isolation_success == min(isolation_success)) 
+  
+
+  threshold_param2$detection_success_fct <- NA
+  threshold_param2$detection_success_fct[threshold_param2$detection_success < 0.9] <-  0.9
+  threshold_param2$detection_success_fct[threshold_param2$detection_success < 0.8] <-  0.8
+  threshold_param2$detection_success_fct[threshold_param2$detection_success < 0.7] <-  0.7
+  threshold_param2$detection_success_fct[threshold_param2$detection_success < 0.6] <-  0.6
+  threshold_param2$detection_success_fct[threshold_param2$detection_success < 0.5] <-  0.5
+  threshold_param2$detection_success_fct[threshold_param2$detection_success < 0.4] <-  0.4
+  threshold_param2$detection_success_fct[threshold_param2$detection_success < 0.4] <-  0.4
+  threshold_param2$detection_success_fct[threshold_param2$detection_success < 0.3] <-  0.3
+  threshold_param2$detection_success_fct[threshold_param2$detection_success < 0.2] <-  0.2
+  threshold_param2$detection_success_fct[threshold_param2$detection_success < 0.1] <-  0.1
+  
+  threshold_param2 <- threshold_param2 %>%
+    group_by(region,outcome,time_to_detection, detection_success_fct) %>%
+    dplyr::summarize(isolation_success = min(isolation_success)) %>%
+    #dplyr::select(!is.na(detection_success_fct)) %>%
+    dplyr::arrange(region,time_to_detection,  detection_success_fct)
+  
+  # 
+  # for(reg in unique(threshold_param2$region))
+  # for(i in temp$isolation_success)
+
+
+  ggplot(data=threshold_param2) + 
+    geom_line(aes(x= detection_success_fct, y= isolation_success2)) +
+    geom_line(aes(x= detection_success_fct, y= isolation_success),col="blue") +
+    facet_grid(time_to_detection~region)
+  
+    geom_smooth(aes(x= detection_success_fct, y= isolation_success2),size=1.7,col="black",se=FALSE,method="lm", formula=y ~ poly(x, 2, raw=TRUE)) +
+    geom_smooth(aes(x= detection_success_fct, y= isolation_success2),size=1.7,col="blue",se=FALSE) +
+    facet_grid(time_to_detection~region)
+  
+  
+  threshold_param3 <- df %>%
+    group_by(region,outcome,  detection_success,isolation_success, capacity) %>%
+    summarize(value=mean(value))%>%
+    filter(value <= capacity) %>%
+    group_by(region,outcome, detection_success) %>%
+    filter(isolation_success == min(isolation_success)) 
+  
+  threshold_param3$detection_success_fct <- NA
+  threshold_param3$detection_success_fct[threshold_param3$detection_success < 0.9] <-  0.9
+  threshold_param3$detection_success_fct[threshold_param3$detection_success < 0.8] <-  0.8
+  threshold_param3$detection_success_fct[threshold_param3$detection_success < 0.7] <-  0.7
+  threshold_param3$detection_success_fct[threshold_param3$detection_success < 0.6] <-  0.6
+  threshold_param3$detection_success_fct[threshold_param3$detection_success < 0.5] <-  0.5
+  threshold_param3$detection_success_fct[threshold_param3$detection_success < 0.4] <-  0.4
+  threshold_param3$detection_success_fct[threshold_param3$detection_success < 0.4] <-  0.4
+  threshold_param3$detection_success_fct[threshold_param3$detection_success < 0.3] <-  0.3
+  threshold_param3$detection_success_fct[threshold_param3$detection_success < 0.2] <-  0.2
+  threshold_param3$detection_success_fct[threshold_param3$detection_success < 0.1] <-  0.1
+  
+  threshold_param3 <- threshold_param3 %>%
+    dplyr::group_by(region,outcome, detection_success_fct) %>%
+    dplyr::summarize(isolation_success = min(isolation_success)) %>%
+    #dplyr::select(!is.na(detection_success_fct)) %>%
+    dplyr::arrange(region, detection_success_fct) %>%
+    mutate(isolation_success2 = ifelse(isolation_success < lag(isolation_success), isolation_success, lag(isolation_success)))
+  
+    ggplot(data=threshold_param3) + 
+    geom_line(aes(x= detection_success_fct, y= isolation_success2)) +
+    geom_smooth(aes(x= detection_success_fct, y= isolation_success2),size=1.7,col="black",se=FALSE,method="lm", formula=y ~ poly(x, 2, raw=TRUE)) +
+    facet_wrap(~region)
+  
+# formula=lm(y ~ poly(x, 3, raw=TRUE)
+  
+ testplot1 <- ggplot(data=df) + theme_classic() +
+    geom_point(data=subset(df, value!=capacity),aes(x= detection_success, y= isolation_success, group=time_to_detection),shape=21,fill="black") +
+    geom_point(data=subset(df, value<=capacity),aes(x= detection_success, y= isolation_success, group=time_to_detection),shape=21,fill="white") + 
+    geom_smooth(data=threshold_param2 ,aes(x= detection_success_fct, y= isolation_success, col=as.factor(time_to_detection),
+                                          fill=as.factor(time_to_detection)), method="lm", formula=y ~ poly(x, 2, raw=TRUE)) +
+   # geom_smooth(data=threshold_param2 ,aes(x= detection_success_fct, y= isolation_success),size=1.7,col="blue",se=FALSE) +
+   # geom_smooth(data=threshold_param3, aes(x= detection_success_fct, y= isolation_success),size=1.3,col="black",se=FALSE, method="lm", formula=y ~ poly(x, 2, raw=TRUE)) +
+    scale_fill_viridis(option = "C", discrete = TRUE, direction = -1) +
+    scale_color_viridis(option = "C", discrete = TRUE, direction = -1) +
+    customThemeNoFacet +
+    scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
+    scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
+    theme(panel.spacing = unit(2, "lines")) +
+    labs(
+      color = "time to detection",
+      subtitle = "",
+      fill = "time to detection",
+      x = "detections (P, As) (%)",
+      y = "isolation success (%)"
+    ) +
+    geom_vline(xintercept = c(-Inf, Inf)) +
+    geom_hline(yintercept =c(-Inf, Inf)) +
+    theme(legend.position = "right")+
+    facet_wrap(~ region)
+  
+  ggsave(paste0(selected_outcome, "_testplot1.png"),
+         plot = testplot1, path = file.path(exp_dir), width = 12, height = 7, dpi = 300, device = "png"
+  )  
+  
+  
+  
+  
+  testplot2 <- ggplot(data=df) + theme_classic() +
+    geom_point(data=subset(df, value!=capacity),aes(x= detection_success, y= isolation_success, group=time_to_detection),shape=21,fill="black") +
+    geom_point(data=subset(df, value<=capacity),aes(x= detection_success, y= isolation_success, group=time_to_detection),shape=21,fill="white") + 
+    #  geom_smooth(data=threshold_param2 ,aes(x= detection_success_fct, y= isolation_success, col=as.factor(time_to_detection),
+    #                                       fill=as.factor(time_to_detection)), method="lm", formula=y ~ poly(x, 2, raw=TRUE)) +
+    # geom_smooth(data=threshold_param2 ,aes(x= detection_success_fct, y= isolation_success),size=1.7,col="blue",se=FALSE) +
+    geom_smooth(data=threshold_param3, aes(x= detection_success_fct, y= isolation_success),size=1.3,col="black",se=FALSE, method="lm", formula=y ~ poly(x, 2, raw=TRUE)) +
+    scale_fill_viridis(option = "C", discrete = TRUE, direction = -1) +
+    scale_color_viridis(option = "C", discrete = TRUE, direction = -1) +
+    customThemeNoFacet +
+    scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
+    scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
+    theme(panel.spacing = unit(2, "lines")) +
+    labs(
+      color = "time to detection",
+      subtitle = "",
+      fill = "time to detection",
+      x = "detections (P, As) (%)",
+      y = "isolation success (%)"
+    ) +
+    geom_vline(xintercept = c(-Inf, Inf)) +
+    geom_hline(yintercept =c(-Inf, Inf)) +
+    theme(legend.position = "right")+
+    facet_wrap(~ region)
+  
+  ggsave(paste0(selected_outcome, "_testplot2.png"),
+         plot = testplot2, path = file.path(exp_dir), width = 12, height = 7, dpi = 300, device = "png"
+  )  
+  
+  
+}
+
+
