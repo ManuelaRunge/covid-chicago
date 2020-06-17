@@ -13,32 +13,63 @@ source("load_paths.R")
 source("processing_helpers.R")
 outdir <- file.path("estimate_Rt/from_simulations")
 
-simdate = "20200611_AsPSym"
+simdate = "20200615"
+expname = "20200615_IL_test_TD_AsP0"
+exp_dir <- file.path(simulation_output, "contact_tracing",simdate,expname)
+
+
+reopeningdate <- as.Date("2020-06-01")
+evaluation_window <- c(reopeningdate, reopeningdate + 60)
+
+detectionVar <- "d_Sym_ct1"  # "d_As_ct1"
+isolationVar <- "reduced_inf_of_det_cases_ct1"
+
 ### Load simulation outputs
-dat <- read.csv(file.path(simulation_output, "contact_tracing",simdate,paste0("20200611_IL_EMS_AsPSym_rS6_heatmap/trajectoriesDat.csv")))
-#dat <- read.csv(file.path(project_path, "NU_civis_outputs",simdate,paste0("csv/nu_il_baseline_",simdate,".csv")))
+dat <- read.csv(file.path(exp_dir, "trajectoriesDat.csv"))
+dat <- subset(dat, time >= as.Date(reopeningdate) - as.Date(max(dat$startdate)))
+
+dat$detection_success <- dat[, colnames(dat)==detectionVar]
+dat$isolation_success <- 1-(dat[, colnames(dat)==isolationVar])
+
+dat <- dat %>% mutate(
+  startdate = as.Date(startdate),
+  Date = as.Date(time + startdate)
+)
+
 summary(as.Date(dat$Date))
 
-dat <- dat %>% pivot_wider(names_from = outcome, values_from = value) %>%
-          group_by(region, scen_num) %>%
-          arrange(region, scen_num, Date) %>%
-          mutate(new_infections =infected_cumul - lag(infected_cumul) )
+
 
 method <- "uncertain_si"
 Rt_list <- list()
 si_list <- list()
 
-count=0
-for (reg in unique(dat$region)) {
+for(ems in c(1:11)){
+  #ems=1
+  print(ems)
+  count=0
+  tempdat = dat 
+  colnames(tempdat)[colnames(tempdat)== paste0( "infected_cumul_EMS.",ems)]  = "infected_cumul"
   
-  for (scen in unique(dat$scen_num)) {
+  tempdat <- tempdat %>% 
+    mutate(
+      startdate = as.Date(startdate),
+      Date = as.Date(time + startdate),
+    ) %>%
+    group_by( scen_num) %>%
+    arrange( scen_num, Date) %>%
+    mutate(region = ems, new_infections = infected_cumul - lag(infected_cumul) )
+  
+
+  
+  for (scen in unique(tempdat$scen_num)) {
     count = count + 1
     # scen = unique(dat$scen_num)[1]
-    # reg = unique(dat$region)[1]
-  disease_incidence_data <- dat %>%
-    filter(region == reg ,   scen_num == scen) %>%
+  disease_incidence_data <- tempdat %>%
+    filter(region == ems ,   scen_num == scen) %>%
     rename(I = new_infections) %>%
-    select(Date, I , infected, infected_cumul) %>%
+    mutate(I = ifelse(I <0,0,I)) %>%
+    select(Date, I ,  infected_cumul) %>%
     filter(!is.na(I))
 
   ## check what si_distr to assume, or calculate from predictions, here using an example from the package
@@ -83,23 +114,28 @@ for (reg in unique(dat$region)) {
  #   plot = pplot, path = file.path(outdir), width = 6, height = 10, dpi = 300, device = "pdf"
  # )
 
-  Rt_tempdat  <- res$R %>% mutate(region = region)
+  Rt_tempdat  <- res$R %>% mutate(region = ems)
   Rt_tempdat$scen_num = scen
-  Rt_tempdat$region = reg
+
   if(count==1)Rt_tempdat_All  <- Rt_tempdat
   if(count!=1)Rt_tempdat_All  <- rbind(Rt_tempdat_All,Rt_tempdat)
   
-  SI_tempdat  <- res$SI.Moments %>% mutate(region = region)
+  SI_tempdat  <- res$SI.Moments %>% mutate(region = ems)
   SI_tempdat$scen_num = scen
-  SI_tempdat$region = reg
+
   if(count==1)SI_tempdat_All  <- SI_tempdat
   if(count!=1)SI_tempdat_All  <- rbind(SI_tempdat_All,SI_tempdat) 
+  
+  rm(Rt_tempdat, SI_tempdat)
 }
 
-  Rt_list[[reg]] <- Rt_tempdat_All
-  si_list[[reg]] <- SI_tempdat_All
+  save(Rt_tempdat_All, file=file.path(exp_dir, paste0(ems,"_temp_Rt_tempdat_All.Rdata")))
+  Rt_list[[ems]] <- Rt_tempdat_All
+  si_list[[ems]] <- SI_tempdat_All
   
+  rm(Rt_tempdat_All, SI_tempdat_All)
 }
+
 
 ### Combine list to dataframe 
 Rt_dat <- Rt_list %>% bind_rows()
@@ -109,95 +145,78 @@ table(Rt_dat$scen_num, Rt_dat$t_start)
 #Rt_dat2 <- Rt_dat %>% group_by(t_start, scen_num) %>% mutate(reg = unique(dat$region) )
 
 dat <- dat %>%
-  rename(geography_modeled = region)
-table(dat$geography_modeled)
-
-dat$EMS <- factor(dat$geography_modeled,  levels = c(1:11), labels = paste0("EMS_", c(1:11)))
-table(dat$EMS)
-
-dat <- dat %>%
-  arrange(EMS, Date) %>%
-  group_by(EMS, scen_num) %>%
+  arrange( Date) %>%
+  group_by( scen_num) %>%
   mutate(date = as.Date(Date), time = c(1:n_distinct(date)))
 
 
-### Write csv file with Rt 
-Rt_dat %>%
-  merge(unique(dat[, c("time", "Date")]), by.x = "t_start", by.y = "time") %>%
-  rename(geography_modeled = reg,
-    Median.of.covid.19.Rt = `Median(R)`,
-    Lower.error.bound.of.covid.19.Rt = `Quantile.0.025(R)`,
-    Upper.error.bound.of.covid.19.Rt = `Quantile.0.975(R)`
-  ) %>%
-  arrange(Date, geography_modeled, scen_num) %>%
-  filter(
-    Date <= "2020-08-01") %>%
-  select(Date, geography_modeled,scen_num,  Median.of.covid.19.Rt, Lower.error.bound.of.covid.19.Rt, Upper.error.bound.of.covid.19.Rt) %>%
-  write.csv(paste0("estimated_Rt.csv"), row.names = FALSE)
+### Edit dataframe
+Rt_dat2 <- Rt_dat %>%
+  merge(unique(dat[, c("time", "Date","scen_num","time_to_detection","reduced_inf_of_det_cases_ct1","d_Sym_ct1", "fraction_symptomatic","fraction_severe")]),
+        by.x = c("t_start", "scen_num"), by.y = c("time", "scen_num")) %>%
+  mutate(EMS = factor(region, levels = c(1:11), labels = paste0("EMS_", c(1:11))),
+         isolation_success  = 1-reduced_inf_of_det_cases_ct1,
+         detection_success = d_Sym_ct1)
 
 
+colnames(Rt_dat2) <- gsub("[(R]","",colnames(Rt_dat2))
+colnames(Rt_dat2) <- gsub("[)]","",colnames(Rt_dat2))
 
-#### Edit dataframe
-Rt_dat <- Rt_dat %>% 
-  mutate(EMS = factor(region, levels = c(1:11), labels = paste0("EMS_", c(1:11))))
+Rt_dat2 <- Rt_dat2 %>% mutate(meanRtLE1 = ifelse(Median <1 , 1, 0))
 
+summary(Rt_dat2$fraction_severe)
+Rt_dat2$fraction_severe_fct = NA
+Rt_dat2$fraction_severe_fct[Rt_dat2$fraction_severe > 0.08] =  ">0.8"
+Rt_dat2$fraction_severe_fct[Rt_dat2$fraction_severe <= 0.08] = ">0.7"
+Rt_dat2$fraction_severe_fct[Rt_dat2$fraction_severe <= 0.07] = ">0.6"
+Rt_dat2$fraction_severe_fct[Rt_dat2$fraction_severe <= 0.06] = "<0.6"
+table(Rt_dat2$fraction_severe_fct)
 
+summary(Rt_dat2$fraction_symptomatic)
+Rt_dat2$fraction_symptomatic_fct = NA
+Rt_dat2$fraction_symptomatic_fct[Rt_dat2$fraction_symptomatic <= 0.7] = ">0.65"
+Rt_dat2$fraction_symptomatic_fct[Rt_dat2$fraction_symptomatic <= 0.65] = ">0.6"
+Rt_dat2$fraction_symptomatic_fct[Rt_dat2$fraction_symptomatic <= 0.6] = ">0.55"
+Rt_dat2$fraction_symptomatic_fct[Rt_dat2$fraction_symptomatic <= 0.55] = ">0.5"
+Rt_dat2$fraction_symptomatic_fct[Rt_dat2$fraction_symptomatic <= 0.5] = "<0.5"
+table(Rt_dat2$fraction_symptomatic_fct)
 
-ggplot(data = dat) +
-  geom_point(aes(x = Date, y = new_infections, group=scen_num), stat = "identity") +
-  facet_wrap(~EMS, scales = "free")
-
-
-
-## Used for secondary axis in plot showing both cases and Rt
-scl <- mean(dat$new_infections) / mean(Rt_dat$`Median(R)`)
-
-
+write.csv(Rt_dat2, file=file.path(exp_dir, paste0("estimated_Rt.csv")), row.names = FALSE)
 
 ### Generate plots 
-pall <- ggplot(data = subset(Rt_dat, t_start <= 160)) +
+
+p1 <- ggplot(data = subset(Rt_dat2, t_start <= 160)) +
   theme_bw() +
-  geom_line(aes(x = t_start, y = `Median(R)`), col = "deepskyblue3", size = 1.3) +
-  geom_ribbon(aes(x = t_start, ymin = `Quantile.0.025(R)`, ymax = `Quantile.0.975(R)`), fill = "deepskyblue3", alpha = 0.5) +
-  facet_wrap(~EMS, scales = "free_y") +
+  geom_line(aes(x = t_start, y = Median,  group=scen_num), col = "deepskyblue3", size = 1.3) +
+  geom_ribbon(aes(x = t_start, ymin = Quantile.0.025, ymax = Quantile.0.975, group=scen_num), fill = "deepskyblue3", alpha = 0.3) +
+  facet_grid(time_to_detection~EMS) +
   geom_hline(yintercept = 1, linetype = "dashed") +
   customThemeNoFacet
 
 
-pcut <- ggplot(data = subset(Rt_dat, t_start <= 160)) +
+p2 <- ggplot(data = subset(Rt_dat2,  t_start == 160 )) +
   theme_bw() +
-  geom_line(aes(x = t_start, y = `Median(R)`), col = "deepskyblue3", size = 1.3) +
-  geom_ribbon(aes(x = t_start, ymin = `Quantile.0.025(R)`, ymax = `Quantile.0.975(R)`), fill = "deepskyblue3", alpha = 0.5) +
-  facet_wrap(~EMS, scales = "free_y") +
-  geom_hline(yintercept = 1, linetype = "dashed") +
+  geom_point(aes(x = isolation_success, y=detection_success , col = as.factor(meanRtLE1), group= Median), size = 2) +
+  facet_grid(time_to_detection ~ EMS) +
+  theme(legend.position = "right") +
+  scale_color_manual(values=c("deepskyblue3","darkorange")) +
+  labs(color="Rt < 1")+
   customThemeNoFacet
 
+# p3 <- ggplot(data = subset(Rt_dat2,  t_start == 160 & region==1)) +
+#   theme_bw() +
+#   geom_point(aes(x = isolation_success, y=detection_success , col = as.factor(meanRtLE1), group= Median), size = 2) +
+#   facet_grid(fraction_severe_fct~time_to_detection) +
+#   theme(legend.position = "right") +
+#   scale_color_manual(values=c("deepskyblue3","darkorange")) +
+#   labs(color="Rt < 1")+
+#   customThemeNoFacet
 
-pplot <- ggplot(data = subset(Rt_dat, t_start <= 160)) +
-  theme_bw() +
-  geom_bar(data = subset(dat, time <= 210), aes(x = time, y = Number.of.Covid.19.new.infections / scl), fill = "grey", stat = "identity", alpha = 0.9) +
-  geom_line(aes(x = t_start, y = `Median(R)`), col = "deepskyblue4", size = 1.3) +
-  geom_ribbon(aes(x = t_start, ymin = `Quantile.0.025(R)`, ymax = `Quantile.0.975(R)`), fill = "deepskyblue4", alpha = 0.5) +
-  facet_wrap(~EMS, scales = "free_y") +
-  geom_hline(yintercept = 1, linetype = "dashed") +
-  scale_y_continuous("R0", sec.axis = sec_axis(~ . * scl, name = "Cases")) +
-  labs(caption = "Using 'uncertain_si' distribution") +
-  customThemeNoFacet
-
-
-ggsave(paste0("Rt_simulation_uncertain_si_v3.pdf"),
-  plot = pplot, path = file.path(outdir), width = 14, height = 8, dpi = 300, device = "pdf"
-)
-ggsave(paste0("Rt_simulation_uncertain_si_v3.png"),
-  plot = pplot, path = file.path(outdir), width = 14, height = 8, dpi = 300, device = "png"
-)
-ggsave(paste0("Rt_simulation_uncertain_si_v2.pdf"),
-  plot = pcut, path = file.path(outdir), width = 14, height = 8, dpi = 300, device = "pdf"
-)
-ggsave(paste0("Rt_simulation_uncertain_si_v2.png"),
-  plot = pcut, path = file.path(outdir), width = 14, height = 8, dpi = 300, device = "png"
+ggsave(paste0("Rt_plot1.pdf"),
+       plot = p1, path = file.path(exp_dir), width = 24, height = 12, dpi = 300, device = "pdf"
 )
 
-ggsave(paste0("Rt_simulation_uncertain_si_v1.png"),
-  plot = pall, path = file.path(outdir), width = 14, height = 8, dpi = 300, device = "png"
+ggsave(paste0("Rt_plot2.pdf"),
+  plot = p2, path = file.path(exp_dir), width = 24, height = 12, dpi = 300, device = "pdf"
 )
+
