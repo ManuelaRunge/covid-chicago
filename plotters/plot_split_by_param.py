@@ -42,8 +42,9 @@ def plot_on_fig(df, channels, axes, color, label) :
 
 if __name__ == '__main__' :
 
-    exp_names = ['20200430_EMS_11_RR_crit1to3',
-                 '20200430_EMS_11_RR_crit4to6']
+    exp_names = ['20200623_IL_EMS_testModel_reopen0',
+                 '20200623_IL_EMS_testModel_reopen10_dAs0',
+                 '20200623_IL_EMS_testModel_dAs80']
     capacity = {
         'hospitalized' : 0,
         'critical' : 0
