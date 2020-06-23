@@ -183,25 +183,3 @@ f_weighted.aggrDat <- function(dataframe, groupVars, valueVar, weightVar, WideTo
   return(datAggr)
 }
 
-
-### Select consecutive minimum values across all samples
-minval <- function(x) {
-  newval <- c()
-  for (i in c(1:length(x))) {
-    if (i == 1) temp <- x[i]
-    
-    if (i > 1) {
-      if (x[i] <= temp) {
-        temp <- x[i]
-      }
-      if (x[i] > temp) {
-        temp <- temp
-      }
-    }
-    
-    newval[i] <- temp
-  }
-  
-  return(newval)
-}
-
