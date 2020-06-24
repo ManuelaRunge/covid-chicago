@@ -1,5 +1,5 @@
 experiment_setup_parameters:
-  'number_of_samples': 10
+  'number_of_samples': 50
   'number_of_runs': 1
   'duration': 370
   'monitoring_samples': 370 # needs to be smaller than duration
@@ -47,6 +47,19 @@ sampled_parameters:
   'time_to_symptoms':
     np.random: uniform
     function_kwargs: {'low': 2.4, 'high': 3.5}
+  'time_to_detection':
+    np.random: uniform
+    function_kwargs: {'low':2.0, 'high':2.0}
+  ### Optionally use separate time to detection (use matching emodl))
+  'time_to_detection_AsP':
+    np.random: uniform
+    function_kwargs: {'low':1.0, 'high':5.0}
+  'time_to_detection_Sym':
+    np.random: uniform
+    function_kwargs: {'low':7.0, 'high':7.0}
+  'time_to_detection_Sys':
+    np.random: uniform
+    function_kwargs: {'low':2.0, 'high':2.0}
   'time_to_hospitalization':
     np.random: uniform
     function_kwargs: {'low':3, 'high':6}
@@ -56,30 +69,12 @@ sampled_parameters:
   'time_to_death':
     np.random: uniform
     function_kwargs: {'low':4, 'high':6}
-  ### DELAY BETWEEN ONSET OF SYMPTOMS AND BEING TESTED 
-  ### Parameter values are substracted from the time values above and need to be >=1
-  'time_to_detection':
-    np.random: uniform
-    function_kwargs: {'low':2.0, 'high':2.0}
-  ### Optionally use separate time to detection (use matching emodl))
-  'time_to_detection_As':
-    np.random: uniform
-    function_kwargs: {'low':1.0, 'high':6.0}
-  'time_to_detection_Sym':
-    np.random: uniform
-    function_kwargs: {'low':7.0, 'high':7.0}
-    #function_kwargs: {'low':2.0, 'high':5.0}
-  'time_to_detection_Sys':
-    np.random: uniform
-    function_kwargs: {'low':2.0, 'high':2.0}
-  ### RECOVERY TIMES 
   'recovery_time_asymp':
     np.random: uniform
     function_kwargs: {'low':7, 'high':10}
   'recovery_time_mild':
     np.random: uniform
     function_kwargs: {'low':9, 'high':9}
-    #function_kwargs: {'low':7, 'high':10}
   'recovery_time_hosp':
     np.random: uniform
     function_kwargs: {'low':4, 'high':6}
@@ -101,7 +96,6 @@ sampled_parameters:
   'reduced_inf_of_det_cases':
     np.random: uniform
     function_kwargs: {'low':0, 'high':0.3}
-  ## DETECTION RATES 
   'd_Sym':
     np.random: uniform
     function_kwargs: {'low':0.01, 'high':0.05}
@@ -114,7 +108,7 @@ sampled_parameters:
   'd_P':
     np.random: uniform
     function_kwargs: {'low':0, 'high':0}  
-  ## TIME EVENT EFFECT SIZE PARAMETER  
+  ## Time event effect size parameter that are sampled 
   ### Reduce Ki due to stay-at-home policy
   'social_multiplier_1':
     np.random: uniform
@@ -124,7 +118,7 @@ sampled_parameters:
     function_kwargs: {'low':0.2, 'high':0.5}
   'social_multiplier_3':
     np.random: uniform
-    function_kwargs: {'low':0.08, 'high':0.08}        
+    function_kwargs: {'low':0.08, 'high':0.08}    
   ### Increased testing - increased detectioon of severe symptomatic infections
   ### (only used if corresponding emodl is defined)    
   'd_Sys_incr1':
@@ -142,28 +136,21 @@ sampled_parameters:
   'd_Sys_incr5':
     np.random: uniform
     function_kwargs: {'low':0.682, 'high':0.835}
-  'd_Sys_incr6':
-    np.random: uniform
-    function_kwargs: {'low':0.95, 'high':1}
-  ### d_Sym
   'd_Sym_incr1':
     np.random: uniform
-    function_kwargs: {'low':0.020, 'high':0.067}
+    function_kwargs: {'low':0.062, 'high':0.102}
   'd_Sym_incr2':
     np.random: uniform
-    function_kwargs: {'low':0.056, 'high':0.099}
+    function_kwargs: {'low':0.205, 'high':0.245}
   'd_Sym_incr3':
     np.random: uniform
-    function_kwargs: {'low':0.081, 'high':0.143}
+    function_kwargs: {'low':0.350, 'high':0.390}
   'd_Sym_incr4':
     np.random: uniform
-    function_kwargs: {'low':0.087, 'high':0.150}
+    function_kwargs: {'low':0.378, 'high':0.418}
   'd_Sym_incr5':
     np.random: uniform
-    function_kwargs: {'low':0.103, 'high':0.150}
-  'd_Sym_incr6':
-    np.random: uniform
-    function_kwargs: {'low':0.140, 'high':0.170}
+    function_kwargs: {'low':0.410, 'high':0.450}
 intervention_parameters:
   ### TIME-VARYING PARAMETER - EFFECT SIZE
   ### Reset Ki to defined proporions of it's initial value  
@@ -185,24 +172,26 @@ intervention_parameters:
   'reopening_multiplier_4':
     np.random: uniform
     function_kwargs: {'low':0.9, 'high':0.9}
-  ### INCREASE DETECTION RATES of asymptomatic, presymptomatic and mild infections
+  ### Contact tracing - increase detectioon of asymptomatic, presymptomatic and mild infections
+  ### Note detection of asymptomatic and presymptomatic assumed to be the same
+  ### (only used if corresponding emodl is defined)   
+  ## d_SQ proportion of susceptibles that get temporarily quarantined (disabled)
+  ## d_SQ if used, it should be proportional to cases rather than fixed fraction
   'd_AsP_ct1':
     np.random: uniform
-    function_kwargs: {'low':0, 'high':0}
+    function_kwargs: {'low':0.30, 'high':0.30}
   'd_Sym_ct1':
     np.random: uniform
-    function_kwargs: {'low':0, 'high':0}
+    function_kwargs: {'low':0.30, 'high':0.30}
   'change_testDelay_As_1':
     np: linspace
     function_kwargs: {'start':2, 'stop':7, 'num' : 1}
+  'change_testDelay_P_1':
+    np: linspace
+    function_kwargs: {'start':2, 'stop':2, 'num' : 1}
   'change_testDelay_Sym_1':
     np: linspace
-    function_kwargs: {'start':2, 'stop':7, 'num' : 1}
-    #function_kwargs: {'start':2, 'stop':7, 'num' : 11}
-  #### Change 'isolation success' in contact tracing simulations
-  'reduced_inf_of_det_cases_ct1':
-    np.random: uniform
-    function_kwargs: {'low':0, 'high':1}
+    function_kwargs: {'start':2, 'stop':7, 'num' : 11}
 time_parameters:
   ### TIME-VARYING PARAMETER  - DATES
   ### Reduce Ki due to stay-at-home policy 
@@ -256,9 +245,6 @@ time_parameters:
   'detection_time_5':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-04-18} 
-  'detection_time_6':
-    custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-05-01} 
   ### Contact tracing - increase detectioon of asymptomatic, presymptomatic and mild infections
   ### Note detection of asymptomatic and presymptomatic assumed to be the same
   ### (only used if corresponding emodl is defined)
@@ -271,8 +257,7 @@ time_parameters:
     function_kwargs: {'dates': 2022-05-30}
   'change_testDelay_time1':
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-04-15}
-    #function_kwargs: {'dates': [2020-04-15, 2020-05-15, 2020-06-15, 2020-07-15, 2020-08-15, 2020-09-15]}
+    function_kwargs: {'dates': [2020-04-15, 2020-05-15, 2020-06-15, 2020-07-15, 2020-08-15, 2020-09-15]}
 fitted_parameters:
   Kis:
     'NMH_catchment':

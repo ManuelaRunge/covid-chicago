@@ -1449,7 +1449,12 @@
 (time-event contact_tracing_start @contact_tracing_start_1@ ((reduced_inf_of_det_cases @reduced_inf_of_det_cases_ct1@ ) (d_As @d_AsP_ct1@) (d_P @d_AsP_ct1@) (d_Sym @d_Sym_ct1@)))
 ;(time-event contact_tracing_end @contact_tracing_stop1@ ((reduced_inf_of_det_cases @reduced_inf_of_det_cases@ ) (d_As @d_As@) (d_P @d_P@) (d_Sym @d_Sym@)))
     
-;[ADDITIONAL_TIMEEVENTS]
+
+(time-event change_testDelay1 @change_testDelay_time1@ ( (time_D_As @change_testDelay_As_1@) (Kl_D (/ 1 time_D_As)) (Kr_a_D (/ 1 (- recovery_time_asymp time_D_As ))) ))
+    
+
+(time-event change_testDelay1 @change_testDelay_time1@ ( (time_D_Sys @change_testDelay_Sys_1@) (Ksys_D (/ 1 time_D_Sys)) (Kh1_D (/ fraction_hospitalized (- time_to_hospitalization time_D_Sys))) (Kh2_D (/ fraction_critical (- time_to_hospitalization time_D_Sys) )) (Kh3_D (/ fraction_dead (- time_to_hospitalization time_D_Sys))) ))
+    
 
 
 (reaction exposure_EMS_1  (S::EMS_1) (E::EMS_1) (* Ki_EMS_1 S::EMS_1 (/ (+ infectious_undet_EMS_1 (* infectious_det_EMS_1 reduced_inf_of_det_cases)) N_EMS_1 )))
