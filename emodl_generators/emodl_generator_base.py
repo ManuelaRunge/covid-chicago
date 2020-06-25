@@ -91,9 +91,9 @@ def write_observe(expandModel=None):
 (observe asymp_cumul asymp_cumul )
 (observe asymp_det_cumul asymp_det_cumul)
 (observe symp_mild_cumul symp_mild_cumul)
-                                                                           
+
 (observe symp_severe_cumul symp_severe_cumul)
-                                                                                                                                                                                      
+
 (observe hosp_cumul hosp_cumul)
 (observe hosp_det_cumul hosp_det_cumul )
 (observe crit_cumul crit_cumul)
@@ -221,7 +221,7 @@ def write_params(expandModel=None):
 (time-event detection3 @detection_time_3@ ((d_Sys @d_Sys_incr3@) (d_Sym @d_Sym_incr3@) )) 
 (time-event detection4 @detection_time_4@ ((d_Sys @d_Sys_incr4@) (d_Sym @d_Sym_incr4@) )) 
 (time-event detection5 @detection_time_5@ ((d_Sys @d_Sys_incr5@) (d_Sym @d_Sym_incr5@) )) 
-
+(time-event detection6 @detection_time_6@ ((d_Sys @d_Sys_incr6@) (d_Sym @d_Sym_incr6@) )) 
 """
 
     expand_base_str = """
@@ -295,12 +295,20 @@ def write_params(expandModel=None):
 
     return (params_str)
 
-
+### Monitor time varying parameters
+def write_observed_param(grpList):
+    observed_param_str = """  
+(observe Ki_t Ki)
+(observe d_As_t d_As)
+(observe d_P_t d_P)
+(observe d_Sym_t d_Sym)
+(observe d_Sys_t d_Sys)
+"""
+   
+    return observed_param_str
 
 def write_N_population():
     string1 = """\n(param N (+ @speciesS@ @initialAs@) )"""
-								   
-																														
     return (string1)
 
 
@@ -476,15 +484,15 @@ def write_interventions( total_string, scenarioName, expandModel, change_testDel
         """
 
     interventionSTOP_adj_str =  """
-(param Ki_back (+ Ki_red3 (* @backtonormal_multiplier@ (- Ki Ki_red3))))
+(param Ki_back (+ Ki_red4 (* @backtonormal_multiplier@ (- Ki Ki_red4))))
 (time-event stopInterventions @socialDistanceSTOP_time@ ((Ki Ki_back)))
         """
 
     gradual_reopening_str =  """
-(param Ki_back1 (+ Ki_red3 (* @reopening_multiplier_1@ (- Ki Ki_red3))))
-(param Ki_back2 (+ Ki_red3 (* @reopening_multiplier_2@ (- Ki Ki_red3))))
-(param Ki_back3 (+ Ki_red3 (* @reopening_multiplier_3@ (- Ki Ki_red3))))
-(param Ki_back4 (+ Ki_red3 (* @reopening_multiplier_4@ (- Ki Ki_red3))))
+(param Ki_back1 (+ Ki_red4 (* @reopening_multiplier_1@ (- Ki Ki_red4))))
+(param Ki_back2 (+ Ki_red4 (* @reopening_multiplier_2@ (- Ki Ki_red4))))
+(param Ki_back3 (+ Ki_red4 (* @reopening_multiplier_3@ (- Ki Ki_red4))))
+(param Ki_back4 (+ Ki_red4 (* @reopening_multiplier_4@ (- Ki Ki_red4))))
 (time-event gradual_reopening1 @gradual_reopening_time1@ ((Ki Ki_back1)))
 (time-event gradual_reopening2 @gradual_reopening_time2@ ((Ki Ki_back2)))
 (time-event gradual_reopening3 @gradual_reopening_time3@ ((Ki Ki_back3)))
@@ -536,8 +544,7 @@ def write_interventions( total_string, scenarioName, expandModel, change_testDel
     if scenarioName == "continuedSIP" :
         total_string = total_string.replace(';[INTERVENTIONS]', continuedSIP_str)
     if scenarioName == "contactTracing" :
-        #total_string = total_string.replace(';[INTERVENTIONS]', continuedSIP_str + gradual_reopening_str + contactTracing_str)
-        total_string = total_string.replace(';[INTERVENTIONS]', continuedSIP_str + interventiopnSTOP_str + contactTracing_str)
+        total_string = total_string.replace(';[INTERVENTIONS]', continuedSIP_str + interventionSTOP_adj_str + contactTracing_str)
 
     if change_testDelay != None :
         if change_testDelay == "uniform" :
@@ -590,7 +597,7 @@ def generate_emodl( file_output, expandModel, add_interventions, add_migration=T
     reaction_string = reaction_string + write_reactions(expandModel)
     functions_string = functions_string + functions
 
-    param_string =  write_params(expandModel) + param_string + write_N_population()
+    param_string =  write_params(expandModel) + param_string + write_observed_param() +  write_N_population()
     functions_string = functions_string 
     intervention_string = ";[INTERVENTIONS]\n;[ADDITIONAL_TIMEEVENTS]"
 
