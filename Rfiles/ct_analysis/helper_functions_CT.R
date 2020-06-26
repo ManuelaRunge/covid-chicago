@@ -31,7 +31,7 @@ getdata <- function(dat, selected_ems) {
     emsvars <- c(emsvars, paste0(emsvars_temp, ems))
   }
 
-  groupvars <- c("startdate","Date","time", "backtonormal_multiplier", "scen_num", "sample_num", "run_num", "backtonormal_multiplier", "detection_success", "isolation_success", "time_to_detection"  )
+  groupvars <- c("startdate","Date","time", "backtonormal_multiplier", "scen_num", "sample_num", "run_num", "backtonormal_multiplier", "detection_success", "isolation_success", "grpvar"  )
   (keepvars <- c(groupvars, emsvars))
 
   subdat <- dat %>% dplyr::select(keepvars)
@@ -53,7 +53,7 @@ getdata <- function(dat, selected_ems) {
   
   subdat <- subdat %>%
     filter(!(outcome %in% c("N", "Ki"))) %>%
-    left_join(subdat1, by = c("startdate","Date","scen_num", "sample_num", "run_num" , "backtonormal_multiplier",  "detection_success", "isolation_success", "time_to_detection" ))
+    left_join(subdat1, by = c("startdate","Date","scen_num", "sample_num", "run_num" , "backtonormal_multiplier",  "detection_success", "isolation_success", "grpvar" ))
 
   if (length(selected_ems) > 1) {
     groupvars <- c(groupvars[groupvars != "time"], "outcome", "Date", "scen_num")
@@ -72,7 +72,7 @@ getdata <- function(dat, selected_ems) {
 }
 
 # f_heatmap
-f_heatmap <- function(df, selected_outcome, scalePop = F) {
+f_heatmap <- function(df, selected_outcome, groupVar, scalePop = F) {
   #'  f_heatmap  performs a linear regression between contact tracing parameter and draws a heatmap using the model predicted values
   #' The function returns a list of the heatmap plot, and the thresholds used to draw the lines, as well as the filtered lm prediction dataset
   #' @param df  dataset
@@ -86,7 +86,7 @@ f_heatmap <- function(df, selected_outcome, scalePop = F) {
       y = isolation_success,
       z = value
     ) %>%
-    group_by(N, region, time_to_detection, outcome) %>%
+    group_by(N, region, grpvar, outcome) %>%
     do(fitlm = lm(z ~ poly(y + x, 3), data = .))
   # do(fitlm = lm(z ~ y + x, data = .))
 
@@ -109,19 +109,19 @@ f_heatmap <- function(df, selected_outcome, scalePop = F) {
   ynew <- seq(0, 1, 0.01)
 
   matdat_list <- list()
-  for (testDelay in unique(dfLM$time_to_detection)) {
-    lmmodel <- dfLM %>% filter(time_to_detection == testDelay)
+  for (grp_i in unique(dfLM$grpvar)) {
+    lmmodel <- dfLM %>% filter(grpvar == grp_i)
 
     t_matdat <- expand.grid(x = xnew, y = ynew)
     t_matdat <- as.data.frame(cbind(t_matdat, predict(lmmodel$fitlm[[1]], newdata = t_matdat, interval = "confidence")))
-    t_matdat$time_to_detection <- testDelay
+    t_matdat$grpvar <- grp_i
     t_matdat$N <- unique(dfLM$N)
 
     matdat_list[[length(matdat_list) + 1]] <- t_matdat
   }
 
   matdat <- matdat_list %>% bind_rows()
-  # table(matdat$time_to_detection)
+  # table(matdat$grpvar)
 
   ### Load capacityDat
   ems <- unique(df$region)
@@ -133,17 +133,17 @@ f_heatmap <- function(df, selected_outcome, scalePop = F) {
 
 
   tdat <- matdat %>%
-    pivot_longer(cols = -c(x, y, time_to_detection), names_to = "statistic") %>%
+    pivot_longer(cols = -c(x, y, grpvar), names_to = "statistic") %>%
     filter(value <= threshold) %>%
-    dplyr::group_by(time_to_detection, x, statistic) %>%
+    dplyr::group_by(grpvar, x, statistic) %>%
     dplyr::summarize(ythreshold = min(y))
 
-  matdat <- left_join(matdat, tdat, by = c("time_to_detection", "x"))
+  matdat <- left_join(matdat, tdat, by = c("grpvar", "x"))
 
   flabel <- paste0("Predicted ", selected_outcome)
 
-  matdat$time_to_detection <- round(matdat$time_to_detection, 0)
-  df$time_to_detection <- round(df$time_to_detection, 0)
+  matdat$grpvar <- round(matdat$grpvar, 0)
+  df$grpvar <- round(df$grpvar, 0)
 
   if (scalePop) {
     matdat$fit <- matdat$fit / matdat$N * 100000
@@ -180,7 +180,7 @@ f_heatmap <- function(df, selected_outcome, scalePop = F) {
     customThemeNoFacet +
     scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
     scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
-    facet_wrap(~time_to_detection, labeller = labeller(time_to_detection = label_both)) +
+    facet_wrap(~grpvar, labeller = labeller(grpvar = label_both)) +
     theme(panel.spacing = unit(2, "lines"))
 
 
@@ -190,7 +190,7 @@ f_heatmap <- function(df, selected_outcome, scalePop = F) {
   
   tdat_wide %>%
     dplyr::filter(!is.na(fit)) %>%
-    group_by(time_to_detection, x) %>%
+    group_by(grpvar, x) %>%
     summarize(
       xmin = min(x), xmax = max(x),
       lwrmin = min(lwr), lwrmax = max(lwr)
@@ -199,22 +199,22 @@ f_heatmap <- function(df, selected_outcome, scalePop = F) {
 
   xpol <- c(tdat_wide$x, rev(tdat_wide$x))
   ypol <- c(tdat_wide$lwr, rev(tdat_wide$upr))
-  time_to_detection <- c(tdat_wide$time_to_detection, rev(tdat_wide$time_to_detection))
+  grpvar <- c(tdat_wide$grpvar, rev(tdat_wide$grpvar))
 
 
-  datpol <- as.data.frame(cbind(xpol, ypol, time_to_detection))
+  datpol <- as.data.frame(cbind(xpol, ypol, grpvar))
 
   matdatp2 <- ggplot(data = tdat_wide, aes(x = x, y = y)) +
     # geom_smooth(data=subset(matdat, statistic!="fit"),
-    #            aes(x = x, y = ythreshold,col=as.factor(time_to_detection), group=interaction(time_to_detection, statistic)),
+    #            aes(x = x, y = ythreshold,col=as.factor(grpvar), group=interaction(grpvar, statistic)),
     #            method="lm", size=0.75, linetype="dashed", show.legend = FALSE) +
     theme_cowplot() +
-    # geom_ribbon(data=subset(tdat_wide),   aes(x = x, y = fit, ymin = lwr, ymax = upr, fill= as.factor(time_to_detection),
-    #                                           group=time_to_detection),alpha=0.5) +
-    geom_polygon(data = datpol, aes(x = xpol, y = ypol, fill = as.factor(time_to_detection)), alpha = 0.5) +
+    # geom_ribbon(data=subset(tdat_wide),   aes(x = x, y = fit, ymin = lwr, ymax = upr, fill= as.factor(grpvar),
+    #                                           group=grpvar),alpha=0.5) +
+    geom_polygon(data = datpol, aes(x = xpol, y = ypol, fill = as.factor(grpvar)), alpha = 0.5) +
     geom_smooth(
       data = subset(tdat_wide),
-      aes(x = x, y = fit, col = as.factor(time_to_detection), group = time_to_detection),
+      aes(x = x, y = fit, col = as.factor(grpvar), group = grpvar),
       method = "lm", formula = y ~ poly(x, 2, raw = TRUE), size = 1.3, show.legend = FALSE
     ) +
     # geom_jitter(data=df, aes(x=detection_success , y = isolation_success,fill=value),shape=21, size = 2.5) +
@@ -225,7 +225,7 @@ f_heatmap <- function(df, selected_outcome, scalePop = F) {
       title = paste0(geography, " ", ems, "\n"),
       x = "detections (P, As, Sym) (%)",
       y = "isolation success (%)",
-      fill = "Test delay",
+      fill = groupVar,
       col = "",
       shape = "",
       linetype = "",

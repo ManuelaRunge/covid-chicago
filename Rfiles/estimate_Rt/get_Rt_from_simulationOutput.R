@@ -13,9 +13,9 @@ source("load_paths.R")
 source("processing_helpers.R")
 outdir <- file.path("estimate_Rt/from_simulations")
 
-simdate = "20200610"
+simdate = "20200624"
 ### Load simulation outputs
-dat <- read.csv(file.path(project_path, "NU_civis_outputs",simdate,paste0("csv/nu_il_baseline_",simdate,".csv")))
+dat <- read.csv(file.path(project_path, "NU_civis_outputs",simdate,paste0("csv/nu_il_july1partial10_changeTDdetSym60AsP30_",simdate,".csv")))
 summary(as.Date(dat$Date))
 
 
@@ -107,71 +107,5 @@ Rt_dat %>%
   filter(
     Date <= "2020-08-01") %>%
   select(Date, geography_modeled, Median.of.covid.19.Rt, Lower.error.bound.of.covid.19.Rt, Upper.error.bound.of.covid.19.Rt) %>%
-  write.csv(paste0("estimate_Rt","/nu_il_baseline_estimated_Rt_",simdate,".csv"), row.names = FALSE)
+  write.csv(paste0("estimate_Rt","/nu_il_july1partial10_changeTDdetSym60AsP30_estimated_Rt_",simdate,".csv"), row.names = FALSE)
 
-
-
-#### Edit dataframe
-Rt_dat <- Rt_dat %>% filter(region %in% paste0("ems", c(1:11))) %>%
-  mutate(EMS = factor(region, levels = paste0("ems", c(1:11)), labels = paste0("EMS_", c(1:11))))
-
-
-
-ggplot(data = dat) +
-  geom_bar(aes(x = Date, y = Number.of.Covid.19.new.infections), stat = "identity") +
-  facet_wrap(~EMS, scales = "free")
-
-
-
-## Used for secondary axis in plot showing both cases and Rt
-scl <- mean(dat$Number.of.Covid.19.new.infections) / mean(Rt_dat$`Median(R)`)
-
-
-
-### Generate plots 
-pall <- ggplot(data = subset(Rt_dat, t_start <= 160)) +
-  theme_bw() +
-  geom_line(aes(x = t_start, y = `Median(R)`), col = "deepskyblue3", size = 1.3) +
-  geom_ribbon(aes(x = t_start, ymin = `Quantile.0.025(R)`, ymax = `Quantile.0.975(R)`), fill = "deepskyblue3", alpha = 0.5) +
-  facet_wrap(~EMS, scales = "free_y") +
-  geom_hline(yintercept = 1, linetype = "dashed") +
-  customThemeNoFacet
-
-
-pcut <- ggplot(data = subset(Rt_dat, t_start <= 160)) +
-  theme_bw() +
-  geom_line(aes(x = t_start, y = `Median(R)`), col = "deepskyblue3", size = 1.3) +
-  geom_ribbon(aes(x = t_start, ymin = `Quantile.0.025(R)`, ymax = `Quantile.0.975(R)`), fill = "deepskyblue3", alpha = 0.5) +
-  facet_wrap(~EMS, scales = "free_y") +
-  geom_hline(yintercept = 1, linetype = "dashed") +
-  customThemeNoFacet
-
-
-pplot <- ggplot(data = subset(Rt_dat, t_start <= 160)) +
-  theme_bw() +
-  geom_bar(data = subset(dat, time <= 210), aes(x = time, y = Number.of.Covid.19.new.infections / scl), fill = "grey", stat = "identity", alpha = 0.9) +
-  geom_line(aes(x = t_start, y = `Median(R)`), col = "deepskyblue4", size = 1.3) +
-  geom_ribbon(aes(x = t_start, ymin = `Quantile.0.025(R)`, ymax = `Quantile.0.975(R)`), fill = "deepskyblue4", alpha = 0.5) +
-  facet_wrap(~EMS, scales = "free_y") +
-  geom_hline(yintercept = 1, linetype = "dashed") +
-  scale_y_continuous("R0", sec.axis = sec_axis(~ . * scl, name = "Cases")) +
-  labs(caption = "Using 'uncertain_si' distribution") +
-  customThemeNoFacet
-
-
-ggsave(paste0("Rt_simulation_uncertain_si_v3.pdf"),
-  plot = pplot, path = file.path(outdir), width = 14, height = 8, dpi = 300, device = "pdf"
-)
-ggsave(paste0("Rt_simulation_uncertain_si_v3.png"),
-  plot = pplot, path = file.path(outdir), width = 14, height = 8, dpi = 300, device = "png"
-)
-ggsave(paste0("Rt_simulation_uncertain_si_v2.pdf"),
-  plot = pcut, path = file.path(outdir), width = 14, height = 8, dpi = 300, device = "pdf"
-)
-ggsave(paste0("Rt_simulation_uncertain_si_v2.png"),
-  plot = pcut, path = file.path(outdir), width = 14, height = 8, dpi = 300, device = "png"
-)
-
-ggsave(paste0("Rt_simulation_uncertain_si_v1.png"),
-  plot = pall, path = file.path(outdir), width = 14, height = 8, dpi = 300, device = "png"
-)
