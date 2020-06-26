@@ -41,8 +41,8 @@ if(!dir.exists(ems_dir))dir.create(ems_dir)
 trajectoriesDat <- read.csv(file.path(exp_dir, "trajectoriesDat.csv" ))
 
 detectionVar <- "d_AsP_ct1" # "d_Sym_ct1"
-isolationVar <- "d_Sym_ct1"
-groupVar <- "reduced_inf_of_det_cases_ct1" # "time_to_detection" # "change_testDelay_Sym_1"
+isolationVar <- "reduced_inf_of_det_cases_ct1"
+groupVar <- "d_Sym_ct1" # "time_to_detection" # "change_testDelay_Sym_1"
 
 detectionVar_label = detectionVar
 isolationVar_label = isolationVar
