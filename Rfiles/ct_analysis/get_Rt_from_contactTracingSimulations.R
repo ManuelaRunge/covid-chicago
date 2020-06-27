@@ -8,8 +8,17 @@
 
 library(EpiEstim)
 
+trajectoriesDat <- read.csv(file.path(exp_dir, "trajectoriesDat.csv" ))
 
-for (ems in c(2:11)) {
+### Discard time entries before reopening date
+trajectoriesDat <- trajectoriesDat %>%
+  mutate(
+    startdate = as.Date(startdate),
+    Date = as.Date(time + startdate)
+  )
+
+
+for (ems in c(1:11)) {
   print(ems)
 
   tempdat = trajectoriesDat

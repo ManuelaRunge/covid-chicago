@@ -19,22 +19,61 @@ ggsave(paste0("sample_timeline.png"),
 plot_list <- list()
 for (ems in c(1:11)) {
   trajectoriesDat$value <- trajectoriesDat[, colnames(trajectoriesDat) == paste0("critical_EMS.", ems)]
-
+  trajectoriesDatAggr = f_aggrDat(trajectoriesDat, c("Date"), "value")
+  
+  
   l_plot <- ggplot(data = subset(trajectoriesDat)) +
-    theme_bw() +
+    theme_minimal() +
     geom_line(aes(
       x = Date, y = value, col = as.factor(round(detection_success, 1)),
-      group = interaction(detection_success, scen_num)
-    ), size = 2, show.legend = TRUE) +
-    facet_grid(backtonormal_multiplier ~ grpvar, labeller = labeller(.rows = label_both, .cols = label_both)) +
+      group = scen_num
+    ), size = 1, show.legend = TRUE) +
     scale_color_viridis(discrete = TRUE) +
-    labs(color = "detection_success") +
-    customThemeNoFacet
+    labs(title=paste0("EMS ", ems), subtitle="" , color = "detection_success") +
+    customThemeNoFacet +
+    scale_x_date(breaks = "1 month", labels = date_format("%b")) 
 
   ggsave(paste0(ems, "_sample_timeline.png"),
-    plot = l_plot, path = file.path(ems_dir), width = 12, height = 6, device = "png"
+    plot = l_plot, path = file.path(ems_dir), width = 12, height = 7, device = "png"
   )
-
+# 
+  # l_plot <- ggplot(data = subset(trajectoriesDat)) +
+  #   theme_minimal() +
+  #   geom_line(aes(
+  #     x = Date, y = value, col = as.factor(round(detection_success, 1)),
+  #     group = scen_num
+  #   ), size = 1, show.legend = TRUE, col="grey") +
+  #   geom_line(data = subset(trajectoriesDat, scen_num %in% c(1,7,40, 8, 12, 20, 4)), aes(
+  #     x = Date, y = value, col = as.factor(round(detection_success, 1)),
+  #     group = scen_num
+  #   ), size = 1.5, show.legend = TRUE) +
+  #   scale_color_viridis(discrete = TRUE) +
+  #   labs(title=paste0("EMS ", ems), subtitle="" , color = "detection_success") +
+  #   customThemeNoFacet +
+  #   scale_x_date(breaks = "1 month", labels = date_format("%b")) 
+  # 
+  #  ggsave(paste0(ems, "_sample_timeline2.pdf"),
+  #        plot = l_plot, path = file.path(ems_dir), width = 12, height = 7, device = "pdf"
+  # )
+  # 
+  
+  
+  l_plot2 <- ggplot(data = subset(trajectoriesDatAggr)) +
+    theme_minimal() +
+    geom_ribbon(aes(x = Date, ymin = q2.5, ymax =q97.5 ), fill="deepskyblue3", alpha=0.3) +
+    geom_ribbon(aes(x = Date, ymin = q25, ymax =q75 ), fill="deepskyblue3", alpha=0.5) +
+    geom_ribbon(aes(x = Date, ymin = lower.ci.val, ymax =upper.ci.val ), fill="deepskyblue3", alpha=0.7) +
+    geom_line(aes(x = Date, y = mean.val), col="deepskyblue4",size=1.3) +
+    scale_color_viridis(discrete = TRUE) +
+    labs(title=paste0("EMS ", ems), subtitle="" ,y="critical") +
+    customThemeNoFacet +
+    scale_x_date(breaks = "1 month", labels = date_format("%b")) 
+  
+  ggsave(paste0(ems, "_aggregated_timeline.png"),
+         plot = l_plot2, path = file.path(ems_dir), width = 12, height =7, device = "png"
+  )
+  
+  
   #### Descriptive plots
   p_i <- ggplot(data = trajectoriesDat) +
     theme_bw() +

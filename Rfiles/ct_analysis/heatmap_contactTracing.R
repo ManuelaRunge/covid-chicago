@@ -1,8 +1,7 @@
 ## --------------------------------------------
 ## Generate heatmap and supplementary plots per EMS or aggregated region
 ## --------------------------------------------
-geography <- "EMS"
-# geography <- "Region"
+
 if (geography == "EMS") emsregions <- c(1:11)
 if (geography == "Region") emsregions <- names(regions)
 
@@ -15,7 +14,7 @@ for (ems in emsregions) {
     selected_ems <- ems
   }
 
-  capacity <- load_capacity(selected_ems)
+  capacity <- load_capacity( selected_ems)
   capacity$deaths <- 0
 
 
@@ -55,15 +54,33 @@ for (ems in emsregions) {
 
 
     peakTimes <- plotdat %>%
+      filter(Date > min(Date)+10) %>%
       group_by(N, Ki, region, isolation_success, detection_success, grpvar, scen_num, sample_num, run_num) %>%
       filter(value == max(value)) %>%
       rename(Date_peak = Date) %>%
       select(N, Ki, region, Date_peak, outcome, isolation_success, detection_success, grpvar, scen_num, sample_num, run_num)
-
+    summary(peakTimes$Date_peak)
+    
     ## Add peak date to plotdat
     plotdat <- plotdat %>%
       left_join(peakTimes, by = c("N", "Ki", "region", "outcome", "scen_num", "sample_num", "run_num", "isolation_success", "detection_success", "grpvar"))
 
+    showScatter=FALSE
+    if(showScatter){
+    scatterplot <- plotdat %>%
+      filter(Date == Date_peak) %>%
+      mutate(capacity = capacityline,
+            belowCapacity = ifelse(value <= capacity, "yes", "no") )  %>%
+      ggplot() + 
+      theme_minimal() +
+      geom_point(aes(x=detection_success, y=isolation_success,fill=value, group=scen_num),size=3,shape=21) +
+      scale_fill_viridis(option = "C", discrete = FALSE, direction = -1) +
+     customThemeNoFacet 
+     
+     ggsave(paste0(ems, "_method_scatterplot.pdf"),
+            plot = scatterplot, path = file.path(ems_dir), width = 5, height =4, device = "pdf"
+     )
+    }
     ## Filter dataset to get threshold values
     threshold_param <- plotdat %>%
       filter(Date == Date_peak) %>%
@@ -134,20 +151,28 @@ for (ems in emsregions) {
       summarize(value = mean(value), detection_success = round(min(detection_success), 2))
 
 
-    heatmap_out <- f_heatmap(df = subset(plotdat, Date == plotdat$Date_peak), selected_outcome,groupVar=groupVar, scalePop = TRUE)
+    heatmap_out <- f_heatmap(df = subset(plotdat, Date == plotdat$Date_peak), selected_outcome,groupVar=groupVar, scalePop = scalePop)
 
     h_plot <- heatmap_out[[1]]
     h_threshold <- heatmap_out[[2]]
     h_plot_new <- heatmap_out[[3]]
 
-    # ggsave(paste0(geography, "_", ems, "_", selected_outcome, "_heatmap.png"),
-    #   plot = h_plot, path = file.path(ems_dir), width = 16, height = 6, dpi = 300, device = "png"
-    # )
-    ggsave(paste0(geography, "_", ems, "_", selected_outcome, "_heatmap_scl.pdf"),
+    plotname1 = paste0(geography, "_", ems, "_", selected_outcome, "_heatmap")
+    plotname2 = paste0(geography, "_", ems, "_", selected_outcome, "_heatmap.v2")
+    if(scalePop==TRUE) plotname1 = paste0(plotname1, "_scl")
+    if(scalePop==TRUE) plotname2 = paste0(plotname2, "_scl")
+    
+    ggsave(paste0(plotname1, ".pdf"),
       plot = h_plot, path = file.path(ems_dir), width = 16, height = 6, dpi = 300, device = "pdf"
     )
-    ggsave(paste0(geography, "_", ems, "_", selected_outcome, "_heatmap_scl_v2.pdf"),
+    ggsave(paste0(plotname2, ".pdf"),
       plot = h_plot_new, path = file.path(ems_dir), width = 6, height = 6, dpi = 300, device = "pdf"
+    )
+    ggsave(paste0(plotname1, ".png"),
+           plot = h_plot, path = file.path(ems_dir), width = 16, height = 6, dpi = 300, device = "png"
+    )
+    ggsave(paste0(plotname2, ".png"),
+           plot = h_plot_new, path = file.path(ems_dir), width = 6, height = 6, dpi = 300, device = "png"
     )
     rm(h_plot)
     if (dim(h_threshold)[1] != 0) {

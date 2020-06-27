@@ -95,7 +95,7 @@ f_heatmap <- function(df, selected_outcome, groupVar, scalePop = F) {
   # glance(dfLM, fitlm)
 
   ## Parameter combinations that did run
-  sink(file.path(exp_dir, paste0(geography, "_", ems, "_", selected_outcome, "_linear_models.txt")))
+  sink(file.path(ems_dir, paste0(geography, "_", ems, "_", selected_outcome, "_linear_models.txt")))
   cat("\ntidy(dfLM, fitlm)")
   print(tidy(dfLM, fitlm))
   # cat("\naugment(dfLM, fitlm)")
@@ -142,8 +142,8 @@ f_heatmap <- function(df, selected_outcome, groupVar, scalePop = F) {
 
   flabel <- paste0("Predicted ", selected_outcome)
 
-  matdat$grpvar <- round(matdat$grpvar, 0)
-  df$grpvar <- round(df$grpvar, 0)
+  matdat$grpvar <- round(matdat$grpvar, 2)
+  df$grpvar <- round(df$grpvar, 2)
 
   if (scalePop) {
     matdat$fit <- matdat$fit / matdat$N * 100000

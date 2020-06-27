@@ -102,7 +102,7 @@ dfLM <- df %>%
 glance(dfLM, fitlm)
 
 ## Parameter combinations that did run
-sink(file.path(exp_dir, paste0("perEMS_", selected_outcome, "_linear_models.txt")))
+sink(file.path(ems_dir, paste0("perEMS_", selected_outcome, "_linear_models.txt")))
 cat("\ntidy(dfLM, fitlm)")
 print(tidy(dfLM, fitlm))
 cat("\naugment(dfLM, fitlm)")
@@ -160,12 +160,11 @@ tdat_wide %>%
     lwrmin = min(lwr), lwrmax = max(lwr)
   )
 
-
+#### Assemble polygon to fill boundary lines
 xpol <- c(tdat_wide$x, rev(tdat_wide$x))
 ypol <- c(tdat_wide$lwr, rev(tdat_wide$upr))
 grpvar <- c(tdat_wide$grpvar, rev(tdat_wide$grpvar))
 region <- c(tdat_wide$region, rev(tdat_wide$region))
-
 
 datpol <- as.data.frame(cbind(xpol, ypol, grpvar, region))
 
@@ -183,23 +182,16 @@ tdat_wide$region_label <- factor(tdat_wide$region, levels = c(1:11), labels = pa
 datpol$grpvar <- round(datpol$grpvar, 2)
 tdat_wide$grpvar <- round(tdat_wide$grpvar, 2)
 
-
 regLabel <- df %>%
   select(region, capacity) %>%
   unique() %>%
   mutate(regLabel = paste0("EMS_", region, "\n limit: ", capacity))
 
-
-labs <- c(
-  "EMS_1\n limit: 148", "EMS_2\n limit: 181", "EMS_3\n limit: 103", "EMS_4\n limit: 98", "EMS_5\n limit: 88", "EMS_6\n limit: 109",
-  "EMS_7\n limit: 404", "EMS_8\n limit: 255", "EMS_9\n limit: 265", "EMS_10\n limit: 150", "EMS_11\n limit: 785"
-)
-
 datpol$region_label2 <- factor(datpol$region, levels = c(1:11), labels = labs)
 tdat_wide$region_label2 <- factor(tdat_wide$region, levels = c(1:11), labels = labs)
 
 
-matdatp2 <- ggplot(data = tdat_wide, aes(x = x, y = y)) +
+matdatp2 <- ggplot(data = tdat_wide) +
   theme_cowplot() +
   geom_polygon(data = datpol, aes(x = xpol, y = ypol, fill = as.factor(grpvar)), alpha = 0.5) +
   geom_smooth(
@@ -232,9 +224,28 @@ ggsave(paste0("all_capacity_thresholds_2.pdf"),
 )
 
 
+tdat_wide <- tdat_wide %>% group_by(region,grpvar ) %>% mutate(fitmax = max(fit, na.rm=TRUE))
+tdat_wide$region <- factor(tdat_wide$region, levels = c(1:11), labels = c(1:11))
 
+tempdat = subset(tdat_wide,fit==fitmax )
+summary(tempdat$x)
+tapply(tempdat$x, tempdat$grpvar, summary)
+table(tempdat$grpvar, tempdat$region)
+
+ggplot(data = tempdat) + 
+  theme_minimal() +
+  geom_point(aes(x = reorder(region, x), y =x*100 , col=as.factor(grpvar)), size= 3) +
+  labs(title ="Detection of a- and presymptomatics given perfect isolation success",
+       subtitle="",
+       x = "EMS region", y ="Detection (%)", 
+     col="Detection level mild infections")+
+  customThemeNoFacet+
+  scale_y_continuous(breaks = seq(30,100,10), labels=seq(30,100,10))
+  
+
+
+############ Time of second weak plot 
 plotdat$region <- factor(plotdat$region, levels = c(1:11), labels = c(1:11))
-
 plotdatAggr1 <- plotdat %>%
   group_by(region, Date, scen_num) %>%
   summarize(value = mean(value))
@@ -242,7 +253,6 @@ plotdatAggr1 <- plotdat %>%
 plotdatAggr <- plotdat %>%
   group_by(region, Date) %>%
   summarize(value = mean(value))
-
 
 l_plot2 <- ggplot() +
   theme_cowplot() +
