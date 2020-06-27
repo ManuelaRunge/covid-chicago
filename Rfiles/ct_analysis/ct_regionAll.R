@@ -160,6 +160,10 @@ tdat_wide %>%
     lwrmin = min(lwr), lwrmax = max(lwr)
   )
 
+
+write.csv(tdat_wide,file.path(exp_dir,  "tdat_wide.csv"), row.names = FALSE)
+
+
 #### Assemble polygon to fill boundary lines
 xpol <- c(tdat_wide$x, rev(tdat_wide$x))
 ypol <- c(tdat_wide$lwr, rev(tdat_wide$upr))
@@ -223,25 +227,6 @@ ggsave(paste0("all_capacity_thresholds_2.pdf"),
   plot = matdatp2, path = file.path(exp_dir), width = 15, height = 10, dpi = 300, device = "pdf"
 )
 
-
-tdat_wide <- tdat_wide %>% group_by(region,grpvar ) %>% mutate(fitmax = max(fit, na.rm=TRUE))
-tdat_wide$region <- factor(tdat_wide$region, levels = c(1:11), labels = c(1:11))
-
-tempdat = subset(tdat_wide,fit==fitmax )
-summary(tempdat$x)
-tapply(tempdat$x, tempdat$grpvar, summary)
-table(tempdat$grpvar, tempdat$region)
-
-ggplot(data = tempdat) + 
-  theme_minimal() +
-  geom_point(aes(x = reorder(region, x), y =x*100 , col=as.factor(grpvar)), size= 3) +
-  labs(title ="Detection of a- and presymptomatics given perfect isolation success",
-       subtitle="",
-       x = "EMS region", y ="Detection (%)", 
-     col="Detection level mild infections")+
-  customThemeNoFacet+
-  scale_y_continuous(breaks = seq(30,100,10), labels=seq(30,100,10))
-  
 
 
 ############ Time of second weak plot 
