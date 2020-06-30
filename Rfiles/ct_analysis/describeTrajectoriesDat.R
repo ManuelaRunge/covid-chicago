@@ -1,5 +1,53 @@
+## ==================================================
+# R script that analysis trajectoriesDat
+## ==================================================
 
 
+pplot <- ggplot(data = subset(trajectoriesDat, Date == max(Date))) +
+  theme_minimal() +
+  geom_boxplot(aes(x=grpvar, y =crit_cumul_All, group=grpvar ), fill="deepskyblue3")
+
+ggsave(paste0("_boxplot_by_grp.png"),
+       plot = pplot, path = file.path(exp_dir), width = 14, height = 6, device = "png"
+)
+
+
+#####  visualize detection variables
+p1 <- ggplot(data =trajectoriesDat) +
+  theme_bw() +
+  geom_line(data=subset(trajectoriesDat,Date>="2020-06-14"),aes(
+    x = Date, y = d_As_t, col =(round(detection_success, 1)),
+    group = interaction(detection_success, scen_num)
+  ), size = 1.3, show.legend = FALSE) +
+  geom_line(data=subset(trajectoriesDat,Date<="2020-06-15"),aes(
+    x = Date, y = d_As_t,
+    group = interaction(detection_success, scen_num)
+  ), size = 1,col="grey", show.legend = FALSE) +
+  scale_color_viridis(discrete = FALSE) +
+  labs(title=detectionVar_label, subtitle="") +
+  customThemeNoFacet
+
+p2 <-  ggplot(data = trajectoriesDat) +
+     theme_bw() +
+   geom_line(data=subset(trajectoriesDat,Date>="2020-06-14"),aes(
+     x = Date, y = d_Sym_t, col = as.factor(round(grpvar, 1)),
+     group = interaction(grpvar, detection_success,scen_num)
+   ), size = 1.3, show.legend = FALSE) +
+   geom_line(data=subset(trajectoriesDat,Date<="2020-06-15"), aes(
+         x = Date, y = d_Sym_t,
+         group = interaction(grpvar, detection_success,scen_num)
+       ), size = 0.7,col="grey", show.legend = FALSE) +
+     scale_color_viridis(discrete = TRUE) +
+     labs(title=groupVar_label, subtitle="") +
+     customThemeNoFacet
+
+pplot <- plot_grid(p1, p2, nrow=1)
+
+ggsave(paste0("detection_timeline.png"),
+       plot = pplot, path = file.path(exp_dir), width = 14, height = 6, device = "png"
+)
+
+##### timeline of outcomes
 pplot <- ggplot(data = subset(trajectoriesDat, isolation_success > 0.9)) +
   theme_bw() +
   geom_line(aes(

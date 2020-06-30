@@ -190,9 +190,10 @@ for (ems in emsregions) {
     }
   }
 
-  # thresholdDat <- do.call(rbind.data.frame, thresholdDat)
-  # write.csv(thresholdDat, file.path(ems_dir, paste0(geography, "_", ems, "_thresholds.csv")))
-  # h_thresholdDat <- do.call(rbind.data.frame, h_thresholdDat)
-  # write.csv(h_thresholdDat, file.path(ems_dir, paste0(geography, "_", ems, "_lm_thresholds.csv")))
+  thresholdDat <- do.call(rbind.data.frame, thresholdDat)
+  write.csv(thresholdDat, file.path(ems_dir, paste0(geography, "_", ems, "_thresholds.csv")))
+  
+  h_thresholdDat <- do.call(rbind.data.frame, h_thresholdDat)
+  write.csv(h_thresholdDat, file.path(ems_dir, paste0(geography, "_", ems, "_lm_thresholds.csv")))
   #
 }

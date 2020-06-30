@@ -19,7 +19,7 @@ source("ct_analysis/helper_functions_CT.R")
 
 # Define experiment iteration and simdate
 ct_dir <- file.path(simulation_output, "contact_tracing")
-simdate <- "20200625"
+simdate <- "20200627"
 
 ### Limit for ICU beds
 labs <- c(
@@ -29,75 +29,91 @@ labs <- c(
 
 ### Load simulation data
 exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
-exp_name <- exp_names[3]
-print(exp_name)
-exp_dir <- file.path(ct_dir, simdate, exp_name)
-ems_dir <- file.path(ct_dir, simdate, exp_name,"per_ems")
-if(!dir.exists(ems_dir))dir.create(ems_dir)
+exp_names <- exp_names[!grepl("20200627_IL_EMS_stopSIP10_isolationvsdetAsP_bydetSym_witsamples", exp_names)]
+exp_names <- exp_names[!grepl("20200628_IL_EMS_stopSIP10_isolationvsdetAsP_bydetSym_lowerTDSym_varyCTtime", exp_names)]
+exp_names <- exp_names[!grepl("20200628_IL_EMS_isolationvsdetAsP_bydetSym_stopSIP20", exp_names)]
 
-Rt_dir <- file.path(ct_dir, simdate, exp_name,"estimatedRt")
-if(!dir.exists(Rt_dir))dir.create(Rt_dir)
-#nexpsfiles <- list.files(file.path(ct_dir, simdate), pattern = "trajectoriesDat.csv", recursive = TRUE, full.names = TRUE)
-#trajectoriesDat <- sapply(nexpsfiles, read.csv, simplify = FALSE) %>%  bind_rows(.id = "id")
+#exp_names <- exp_names[grep("_lowerTDSym", exp_names)]
 
 
-trajectoriesDat <- read.csv(file.path(exp_dir, "trajectoriesDat.csv" ))
+for (exp_name in exp_names) {
+  # exp_name <- exp_names[1]
+  print(exp_name)
+  exp_dir <- file.path(ct_dir, simdate, exp_name)
+  ems_dir <- file.path(ct_dir, simdate, exp_name, "per_ems")
+  if (!dir.exists(ems_dir)) dir.create(ems_dir)
 
-detectionVar <- "d_AsP_ct1" # "d_Sym_ct1"
-isolationVar <- "reduced_inf_of_det_cases_ct1"
-groupVar <- "d_Sym_ct1" # "time_to_detection" # "change_testDelay_Sym_1"
-
-detectionVar_label = detectionVar
-isolationVar_label = isolationVar
-groupVar_label = groupVar
-
-if (detectionVar == "d_AsP_ct1") detectionVar_label <- "detection of As and P (%)"
-if (detectionVar == "d_Sym_ct1") detectionVar_label <- "increased detection of Sym (%)"
-if (detectionVar == "d_AsPSym_ct1") detectionVar_label <- "detection of As, P, Sym (%)"
-if (groupVar == "d_Sym_ct1") groupVar_label <- "increased detection of Sym (%)"
-if (groupVar == "change_testDelay_Sym_1") groupVar_label <- "reduced detection delay of Sym (days)"
-if (isolationVar == "reduced_inf_of_det_cases_ct1") isolationVar_label <- "isolation success As, P (%)"
+  Rt_dir <- file.path(ct_dir, simdate, exp_name, "estimatedRt")
+  if (!dir.exists(Rt_dir)) dir.create(Rt_dir)
+  # nexpsfiles <- list.files(file.path(ct_dir, simdate), pattern = "trajectoriesDat.csv", recursive = TRUE, full.names = TRUE)
+  # trajectoriesDat <- sapply(nexpsfiles, read.csv, simplify = FALSE) %>%  bind_rows(.id = "id")
 
 
-reopeningdate <- unique(as.Date(trajectoriesDat$socialDistanceSTOP_time, origin = trajectoriesDat$startdate))
-interventionstart <- unique(as.Date(trajectoriesDat$contact_tracing_start_1, origin = trajectoriesDat$startdate))
-interventionstop <- unique(as.Date(trajectoriesDat$contact_tracing_stop1, origin = trajectoriesDat$startdate))
+  trajectoriesDat <- read.csv(file.path(exp_dir, "trajectoriesDat.csv"))
 
-### Discard time entries before reopening date
-trajectoriesDat <- trajectoriesDat %>%
- filter(time >= as.Date(reopeningdate) - as.Date(max(startdate)) -30) %>%
-  mutate(
-    startdate = as.Date(startdate),
-    Date = as.Date(time + startdate)
-  )
+  detectionVar <- "d_AsP_ct1" # "d_Sym_ct1"
+  isolationVar <- "reduced_inf_of_det_cases_ct1"
+  groupVar <- "d_Sym_ct1" # "time_to_detection" # "change_testDelay_Sym_1"
+
+  detectionVar_label <- detectionVar
+  isolationVar_label <- isolationVar
+  groupVar_label <- groupVar
+
+  if (detectionVar == "d_AsP_ct1") detectionVar_label <- "detection of As and P (%)"
+  if (detectionVar == "d_Sym_ct1") detectionVar_label <- "increased detection of Sym (%)"
+  if (detectionVar == "d_AsPSym_ct1") detectionVar_label <- "detection of As, P, Sym (%)"
+  if (groupVar == "d_Sym_ct1") groupVar_label <- "increased detection of Sym (%)"
+  if (groupVar == "change_testDelay_Sym_1") groupVar_label <- "reduced detection delay of Sym (days)"
+  if (isolationVar == "reduced_inf_of_det_cases_ct1") isolationVar_label <- "isolation success As, P (%)"
+  if (groupVar == "contact_tracing_start_1") trajectoriesDat <- trajectoriesDat %>% mutate(grpvar = as.Date(contact_tracing_start_1 + startdate))
 
 
-### Define CT variables
-trajectoriesDat$detection_success <- trajectoriesDat[, colnames(trajectoriesDat) == detectionVar]
-trajectoriesDat$isolation_success <- trajectoriesDat[, colnames(trajectoriesDat) == isolationVar]
-trajectoriesDat$grpvar <- trajectoriesDat[, colnames(trajectoriesDat) == groupVar]
-if (isolationVar == "reduced_inf_of_det_cases_ct1")trajectoriesDat$isolation_success <- 1 - (trajectoriesDat$isolation_success)
+  reopeningdate <- unique(as.Date(trajectoriesDat$socialDistanceSTOP_time, origin = trajectoriesDat$startdate))
+  interventionstart <- unique(as.Date(trajectoriesDat$contact_tracing_start_1, origin = trajectoriesDat$startdate))
+  interventionstop <- unique(as.Date(trajectoriesDat$contact_tracing_stop1, origin = trajectoriesDat$startdate))
 
-table(trajectoriesDat$grpvar)
-summary(trajectoriesDat$detection_success )
-summary(trajectoriesDat$isolation_success )
-summary(trajectoriesDat$Date )
-### Run analysis scripts
-describeDat <- FALSE
-heatmapPerEMS <- FALSE
-tresholdsAll <- FALSE
-estimateRt <- FALSE ## run on quest
-summary(trajectoriesDat$Date)
+  ### Discard time entries before reopening date
+  trajectoriesDat <- trajectoriesDat %>%
+    mutate(
+      startdate = as.Date(startdate),
+      Date = as.Date(time + startdate)
+    )
 
-if (describeDat) source(file.path("ct_analysis/describeTrajectoriesDat.R"))
 
-geography <- "EMS"
-# geography <- "Region"
-scalePop =FALSE
-if (heatmapPerEMS) source(file.path("ct_analysis/heatmap_contactTracing.R"))
 
-if (tresholdsAll) source(file.path("ct_analysis/ct_regionAll.R"))
+  ### Define CT variables
+  trajectoriesDat$detection_success <- trajectoriesDat[, colnames(trajectoriesDat) == detectionVar]
+  trajectoriesDat$isolation_success <- trajectoriesDat[, colnames(trajectoriesDat) == isolationVar]
+  trajectoriesDat$grpvar <- trajectoriesDat[, colnames(trajectoriesDat) == groupVar]
+  if (isolationVar == "reduced_inf_of_det_cases_ct1") trajectoriesDat$isolation_success <- 1 - (trajectoriesDat$isolation_success)
 
-if (estimateRt) source(file.path("ct_analysis/get_Rt_from_contactTracingSimulations.R"))
+  table(trajectoriesDat$grpvar)
+  summary(trajectoriesDat$detection_success)
+  summary(trajectoriesDat$isolation_success)
+  summary(trajectoriesDat$Date)
+  ### Run analysis scripts
+  describeDat <- FALSE
+  heatmapPerEMS <- FALSE
+  tresholdsAll <- FALSE
+  tresholdsAll2 <- TRUE
+  estimateRt <- FALSE ## run on quest
+  summary(trajectoriesDat$Date)
 
-if (estimateRt) source(file.path("ct_analysis/ct_estimatedRT.R"))
+  # outcomeList <- c("critical")
+  # for (selected_outcome in outcomeList) {
+  selected_outcome <- "critical"
+
+  if (describeDat) source(file.path("ct_analysis/describeTrajectoriesDat.R"))
+  if (estimateRt) source(file.path("ct_analysis/get_Rt_from_contactTracingSimulations.R"))
+  if (estimateRt) source(file.path("ct_analysis/ct_estimatedRT.R"))
+
+  ### Subset
+  trajectoriesDat <- trajectoriesDat %>% filter(time >= as.Date(reopeningdate) - as.Date(max(startdate)) - 30)
+
+  geography <- "EMS"
+  # geography <- "Region"
+  scalePop <- TRUE
+  if (heatmapPerEMS) source(file.path("ct_analysis/heatmap_contactTracing.R"))
+  if (tresholdsAll) source(file.path("ct_analysis/ct_regionAll.R"))
+  if (tresholdsAll2) source(file.path("ct_analysis/ct_regionAll_v2.R"))
+}

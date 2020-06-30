@@ -3,11 +3,10 @@
 ## ==================================================
 
 
-selected_outcome <- "critical"
 flabel <- paste0("Predicted ", selected_outcome)
 
 selected_ems <- c(1:11)
-emsvars_temp <- c("critical_EMS.", "N_EMS_", "Ki_EMS_")
+emsvars_temp <- c(paste0(selected_outcome,"_EMS."), "N_EMS_", "Ki_EMS_")
 
 emsvars <- NULL
 for (ems in selected_ems) {
@@ -164,26 +163,9 @@ tdat_wide %>%
 write.csv(tdat_wide,file.path(exp_dir,  "tdat_wide.csv"), row.names = FALSE)
 
 
-#### Assemble polygon to fill boundary lines
-xpol <- c(tdat_wide$x, rev(tdat_wide$x))
-ypol <- c(tdat_wide$lwr, rev(tdat_wide$upr))
-grpvar <- c(tdat_wide$grpvar, rev(tdat_wide$grpvar))
-region <- c(tdat_wide$region, rev(tdat_wide$region))
 
-datpol <- as.data.frame(cbind(xpol, ypol, grpvar, region))
-
-datpol$xpol <- as.numeric(datpol$xpol)
-datpol$ypol <- as.numeric(datpol$ypol)
-datpol$grpvar <- as.numeric(datpol$grpvar)
-
-datpol$region_label <- factor(datpol$region, levels = c(1:11), labels = paste0("EMS_", c(1:11), "\n"))
 tdat_wide$region_label <- factor(tdat_wide$region, levels = c(1:11), labels = paste0("EMS_", c(1:11), "\n"))
-
-datpol$region_label <- factor(datpol$region, levels = c(1:11), labels = paste0("EMS_", c(1:11), "\n"))
 tdat_wide$region_label <- factor(tdat_wide$region, levels = c(1:11), labels = paste0("EMS_", c(1:11), "\n"))
-
-
-datpol$grpvar <- round(datpol$grpvar, 2)
 tdat_wide$grpvar <- round(tdat_wide$grpvar, 2)
 
 regLabel <- df %>%
@@ -191,16 +173,14 @@ regLabel <- df %>%
   unique() %>%
   mutate(regLabel = paste0("EMS_", region, "\n limit: ", capacity))
 
-datpol$region_label2 <- factor(datpol$region, levels = c(1:11), labels = labs)
 tdat_wide$region_label2 <- factor(tdat_wide$region, levels = c(1:11), labels = labs)
 
 
 matdatp2 <- ggplot(data = tdat_wide) +
   theme_cowplot() +
-  geom_polygon(data = datpol, aes(x = xpol, y = ypol, fill = as.factor(grpvar)), alpha = 0.5) +
   geom_smooth(
     data = subset(tdat_wide),
-    aes(x = x, y = fit, col = as.factor(grpvar), group = grpvar),
+    aes(x = x, y = fit, col = as.factor(grpvar), fill = as.factor(grpvar), group = grpvar),
     method = "lm", size = 1.3, show.legend = FALSE
   ) +
   scale_fill_viridis(option = "C", discrete = TRUE, direction = -1) +

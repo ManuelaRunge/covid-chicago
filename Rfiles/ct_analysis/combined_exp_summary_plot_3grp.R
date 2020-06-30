@@ -53,10 +53,12 @@ pplot <- ggplot(data = tdat_wideAggr) +
     col = "Detection level mild infections",
     shape = "Detection level mild infections"
   ) +
-  scale_color_manual(values = c("deepskyblue3", "orange", 'pink')) +
+  scale_color_manual(values = c("deepskyblue3", "orange", 'mediumvioletred')) +
   customThemeNoFacet +
   scale_y_continuous(breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10))
 
 ggsave(paste0(selected_outcome, "_stopSIP20_thresholds_summary2.png"),
-  plot = pplot, path = file.path(sim_dir), width = 8, height = 5, dpi = 200, device = "png"
+       plot = pplot, path = file.path(sim_dir), width = 8, height = 5, dpi = 200, device = "png"
 )
+
+
