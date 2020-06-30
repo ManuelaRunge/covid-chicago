@@ -32,9 +32,20 @@ exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names
 exp_names <- exp_names[!grepl("20200627_IL_EMS_stopSIP10_isolationvsdetAsP_bydetSym_witsamples", exp_names)]
 exp_names <- exp_names[!grepl("20200628_IL_EMS_stopSIP10_isolationvsdetAsP_bydetSym_lowerTDSym_varyCTtime", exp_names)]
 exp_names <- exp_names[!grepl("20200628_IL_EMS_isolationvsdetAsP_bydetSym_stopSIP20", exp_names)]
+exp_names <- exp_names[!grepl("20200628_IL_EMS_stopSIP20", exp_names)]
 
-#exp_names <- exp_names[grep("_lowerTDSym", exp_names)]
+exp_names <- exp_names[grep("20200628_IL_EMS_stopSIP20_isolationvsdetAsP_bydetSym_lowerTDSym", exp_names)]
+### Run analysis scripts
+describeDat <- FALSE
+heatmapPerEMS <- TRUE
+tresholdsAll <- FALSE
+tresholdsAll2 <- TRUE
+estimateRt <- FALSE ## run on quest
 
+
+geography <- "EMS"
+#geography <- "Region"
+scalePop <- TRUE
 
 for (exp_name in exp_names) {
   # exp_name <- exp_names[1]
@@ -79,8 +90,6 @@ for (exp_name in exp_names) {
       Date = as.Date(time + startdate)
     )
 
-
-
   ### Define CT variables
   trajectoriesDat$detection_success <- trajectoriesDat[, colnames(trajectoriesDat) == detectionVar]
   trajectoriesDat$isolation_success <- trajectoriesDat[, colnames(trajectoriesDat) == isolationVar]
@@ -91,12 +100,7 @@ for (exp_name in exp_names) {
   summary(trajectoriesDat$detection_success)
   summary(trajectoriesDat$isolation_success)
   summary(trajectoriesDat$Date)
-  ### Run analysis scripts
-  describeDat <- FALSE
-  heatmapPerEMS <- FALSE
-  tresholdsAll <- FALSE
-  tresholdsAll2 <- TRUE
-  estimateRt <- FALSE ## run on quest
+
   summary(trajectoriesDat$Date)
 
   # outcomeList <- c("critical")
@@ -110,9 +114,6 @@ for (exp_name in exp_names) {
   ### Subset
   trajectoriesDat <- trajectoriesDat %>% filter(time >= as.Date(reopeningdate) - as.Date(max(startdate)) - 30)
 
-  geography <- "EMS"
-  # geography <- "Region"
-  scalePop <- TRUE
   if (heatmapPerEMS) source(file.path("ct_analysis/heatmap_contactTracing.R"))
   if (tresholdsAll) source(file.path("ct_analysis/ct_regionAll.R"))
   if (tresholdsAll2) source(file.path("ct_analysis/ct_regionAll_v2.R"))
