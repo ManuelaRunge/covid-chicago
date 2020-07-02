@@ -65,7 +65,7 @@ for (ems in emsregions) {
     plotdat <- plotdat %>%
       left_join(peakTimes, by = c("N", "Ki", "region", "outcome", "scen_num", "sample_num", "run_num", "isolation_success", "detection_success", "grpvar"))
 
-    showScatter=FALSE
+    showScatter=TRUE
     if(showScatter){
     scatterplot <- plotdat %>%
       filter(Date == Date_peak) %>%
@@ -77,10 +77,13 @@ for (ems in emsregions) {
       scale_fill_viridis(option = "C", discrete = FALSE, direction = -1) +
      customThemeNoFacet 
      
-     ggsave(paste0(ems, "_method_scatterplot.pdf"),
+     ggsave(paste0(ems, "_scatterplot.pdf"),
             plot = scatterplot, path = file.path(ems_dir), width = 5, height =4, device = "pdf"
      )
+     
+    # plotdat %>% filter(Date == plotdat$Date_peak) %>% write.csv(file.path(ems_dir,paste0(ems, "_scatterplot_dat.csv")), row.names = FALSE)
     }
+    
     ## Filter dataset to get threshold values
     threshold_param <- plotdat %>%
       filter(Date == Date_peak) %>%

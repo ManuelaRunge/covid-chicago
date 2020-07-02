@@ -12,6 +12,7 @@ require(stringr)
 require(ggrepel)
 require(broom)
 
+
 source("load_paths.R")
 source("processing_helpers.R")
 source("ct_analysis/helper_functions_CT.R")
@@ -33,13 +34,14 @@ exp_names <- exp_names[!grepl("20200627_IL_EMS_stopSIP10_isolationvsdetAsP_bydet
 exp_names <- exp_names[!grepl("20200628_IL_EMS_stopSIP10_isolationvsdetAsP_bydetSym_lowerTDSym_varyCTtime", exp_names)]
 exp_names <- exp_names[!grepl("20200628_IL_EMS_isolationvsdetAsP_bydetSym_stopSIP20", exp_names)]
 exp_names <- exp_names[!grepl("20200628_IL_EMS_stopSIP20", exp_names)]
+exp_names <- exp_names[!grepl("20200627_IL_EMS_stopSIP10_isolationvsdetAsP_bydetSym_lowerTD_stopAll", exp_names)]
+exp_names <- exp_names[!grepl("20200627_IL_EMS_stopSIP10_isolationvsdetAsP_bydetSym", exp_names)]
 
-exp_names <- exp_names[grep("20200628_IL_EMS_stopSIP20_isolationvsdetAsP_bydetSym_lowerTDSym", exp_names)]
 ### Run analysis scripts
 describeDat <- FALSE
-heatmapPerEMS <- TRUE
+heatmapPerEMS <- FALSE
 tresholdsAll <- FALSE
-tresholdsAll2 <- TRUE
+tresholdsAll2 <- FALSE
 estimateRt <- FALSE ## run on quest
 
 
@@ -115,6 +117,8 @@ for (exp_name in exp_names) {
   trajectoriesDat <- trajectoriesDat %>% filter(time >= as.Date(reopeningdate) - as.Date(max(startdate)) - 30)
 
   if (heatmapPerEMS) source(file.path("ct_analysis/heatmap_contactTracing.R"))
+  
+  
   if (tresholdsAll) source(file.path("ct_analysis/ct_regionAll.R"))
   if (tresholdsAll2) source(file.path("ct_analysis/ct_regionAll_v2.R"))
 }

@@ -2,13 +2,31 @@
 # R script that analysis trajectoriesDat
 ## ==================================================
 
+library(scales)
+library(data.table)
 
-pplot <- ggplot(data = subset(trajectoriesDat, Date == max(Date))) +
+
+subd =  subset(trajectoriesDat, Date == max(Date))
+tapply(subd$crit_cumul_All,subd$grpvar, summary )
+
+
+
+
+pplot <- ggplot(data = subset(trajectoriesDat, Date == max(Date)), aes(x=grpvar, y =crit_cumul_All, group=grpvar )) +
   theme_minimal() +
-  geom_boxplot(aes(x=grpvar, y =crit_cumul_All, group=grpvar ), fill="deepskyblue3")
+  geom_violin(fill="deepskyblue3", col="deepskyblue3")+
+  stat_summary(fun=median, geom="point", size=2, color="black")+
+  scale_y_continuous(expand=c(0,0), labels = scales::comma) +
+  labs(y="Daily critical cases", x="")+
+  customThemeNoFacet+
+  theme( panel.grid.major.x = element_blank(),panel.grid.minor.x = element_blank() )+
+  geom_hline(yintercept=20000)
 
 ggsave(paste0("_boxplot_by_grp.png"),
-       plot = pplot, path = file.path(exp_dir), width = 14, height = 6, device = "png"
+       plot = pplot, path = file.path(exp_dir), width = 10, height = 6, device = "png"
+)
+ggsave(paste0("_boxplot_by_grp.pdf"),
+       plot = pplot, path = file.path(exp_dir), width = 10, height = 6, device = "pdf"
 )
 
 

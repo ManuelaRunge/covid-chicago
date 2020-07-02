@@ -3,6 +3,7 @@
 ## ============================================================
 
 
+#### COmbine Rt estimates per region
 load(file.path(Rt_dir, "1_temp_Rt_tempdat_All.Rdata"))
 Rt_dat <- Rt_tempdat_All
 rm(Rt_tempdat_All)
@@ -18,8 +19,7 @@ table(Rt_dat$region)
 table(Rt_dat$scen_num, Rt_dat$t_start)
 
 
-
-###############--------------------------
+### add variables from simulation dataset
 selected_ems <- c(1:11)
 emsvars_temp <- c(paste0(selected_outcome,"_EMS."), "N_EMS_", "Ki_EMS_")
 
@@ -61,14 +61,7 @@ subdat <- trajectoriesDat %>%
   filter(outcome == selected_outcome) %>%
   as.data.frame()
 
-peakTimes <- subdat %>%
-  mutate(region = as.numeric(region)) %>%
-  group_by(region, capacity, isolation_success, detection_success, grpvar, scen_num, sample_num, run_num) %>%
-  filter(value == max(value)) %>%
-  rename(Date_peak = Date) %>%
-  select(region, capacity, Date_peak, outcome, isolation_success, detection_success, grpvar, scen_num, sample_num, run_num)
 
-tapply(peakTimes$Date_peak, peakTimes$region, summary)
 ###############--------------------------
 
 
@@ -93,23 +86,14 @@ Rt_dat2$region_label <- factor(Rt_dat2$region, levels = c(1:11), labels = paste0
 unique(Rt_dat2$detection_success)
 unique(Rt_dat2$detection_success)
 
-pplot <- ggplot(data = subset(Rt_dat2)) +
+pplot <- ggplot(data = subset(Rt_dat2, Date >= "2020-07-01" )) +
   theme_minimal() +
   geom_line(aes(x = Date, y = Mean, group = scen_num), col = "darkgrey") +
   # geom_smooth(aes(x=Date, y =Mean ),col="darkred") +
-  geom_line(data = subset(Rt_dat2, detection_success >= 0.29 & detection_success <= 0.31), aes(x = Date, y = Mean, group = scen_num), col = "darkred") +
   scale_x_date(breaks = "1 month", labels = date_format("%b")) +
   geom_hline(yintercept = 1) +
   facet_wrap(~region_label) +
-  scale_y_continuous(lim = c(-1, 10))
-
-
-Rt_dat3 <- Rt_dat2 %>%
-  left_join(peakTimes, by = c("region", "scen_num", "isolation_success", "detection_success", "grpvar")) %>%
-  filter(Date == Date_peak)
-
-
-pplot2 <- pplot + geom_vline(data = Rt_dat3, aes(xintercept = Date_peak))
+  scale_y_continuous(lim = c(0,2))
 
 
 ggsave(paste0(selected_outcome, "_Rt_over_time.png"),
@@ -117,29 +101,25 @@ ggsave(paste0(selected_outcome, "_Rt_over_time.png"),
 )
 
 
-ggsave(paste0(selected_outcome, "_Rt_over_time_criticalPeakDates.png"),
-  plot = pplot2, path = file.path(exp_dir), width = 12, height = 7, dpi = 300, device = "png"
-)
-
-
-###----------------------------------------------------------------
-###----------------------------------------------------------------
-
-df <- subset(Rt_dat3, Date == Rt_dat3$Date_peak)
+### Linear regression models and thresholds
+df <- Rt_dat3 %>% filter(Date >= as.Date("2020-07-01") & Date <= as.Date("2020-12-30") ) %>%
+                  group_by(region, region_label, Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>% 
+                  summarize(average_median_Rt = mean(Median))
 
 df$region_label <- factor(df$region, levels = c(1:11), labels = paste0("EMS_", c(1:11), "\n"))
-
 df$capacity =1
+
+summary(df$average_median_Rt)
+summary(df$Date)
+tapply(df$average_median_Rt, df$region, summary)
+
+#ggplot(data = subset(df, isolation_success ==max(isolation_success))) + geom_point(aes(x=detection_success, y = average_median_Rt, col=region_label)) 
 
 testplot1 <- ggplot(data = df) +
   theme_classic() +
-  geom_point(data = subset(df, Mean != 1), aes(x = detection_success, y = isolation_success, group = grpvar), shape = 21, fill = "white", size = 2) +
-  geom_point(data = subset(df, Mean <= 1), aes(x = detection_success, y = isolation_success, fill = as.factor(grpvar)), shape = 21, size = 2) +
+  geom_point(data = subset(df, average_median_Rt > 1), aes(x = detection_success, y = isolation_success, group = grpvar), shape = 21, fill = "white", size = 2) +
+  geom_point(data = subset(df, average_median_Rt < 1), aes(x = detection_success, y = isolation_success, fill = as.factor(grpvar)), shape = 21, size = 2) +
   scale_fill_viridis(option = "C", discrete = TRUE, direction = -1) +
-  geom_smooth(data = subset(df, Mean <= 1), aes(
-    x = detection_success, y = isolation_success, col = as.factor(grpvar),
-    fill = as.factor(grpvar)
-  ), se = FALSE, method = "lm") +
   scale_color_viridis(option = "C", discrete = TRUE, direction = -1) +
   customThemeNoFacet +
   scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
@@ -162,14 +142,17 @@ ggsave(paste0(selected_outcome, "_Rt_sample_scatterplot.png"),
 )
 
 
+#####---------------------------------------------
+###  Regresson model 
+#####---------------------------------------------
 
 dfLM <- df %>%
   rename(
     x = detection_success,
     y = isolation_success,
-    z = Mean
+    z = average_median_Rt
   ) %>%
-  group_by(region, grpvar, outcome, capacity) %>%
+  group_by(region, grpvar, capacity) %>%
   do(fitlm = lm(z ~ y + x, data = .))
 
 (dfLMCoef <- tidy(dfLM, fitlm))
@@ -219,11 +202,8 @@ tdat <- matdat %>%
 
 matdat <- left_join(matdat, tdat, by = c("grpvar", "x"))
 
-
-
 matdat$grpvar <- round(matdat$grpvar, 2)
 df$grpvar <- round(df$grpvar, 2)
-
 
 tdat_wide <- tdat %>% pivot_wider(names_from = "statistic", values_from = "ythreshold")
 
@@ -235,56 +215,18 @@ tdat_wide %>%
     lwrmin = min(lwr), lwrmax = max(lwr)
   )
 
-
 write.csv(tdat_wide,file.path(exp_dir,  "Rt_tdat_wide.csv"), row.names = FALSE)
-
-
-#### Assemble polygon to fill boundary lines
-xpol <- c(tdat_wide$x, rev(tdat_wide$x))
-ypol <- c(tdat_wide$lwr, rev(tdat_wide$upr))
-grpvar <- c(tdat_wide$grpvar, rev(tdat_wide$grpvar))
-region <- c(tdat_wide$region, rev(tdat_wide$region))
-
-datpol <- as.data.frame(cbind(xpol, ypol, grpvar, region))
-
-datpol$xpol <- as.numeric(datpol$xpol)
-datpol$ypol <- as.numeric(datpol$ypol)
-datpol$grpvar <- as.numeric(datpol$grpvar)
-
-datpol$region_label <- factor(datpol$region, levels = c(1:11), labels = paste0("EMS_", c(1:11), "\n"))
-tdat_wide$region_label <- factor(tdat_wide$region, levels = c(1:11), labels = paste0("EMS_", c(1:11), "\n"))
-
-datpol$region_label <- factor(datpol$region, levels = c(1:11), labels = paste0("EMS_", c(1:11), "\n"))
-tdat_wide$region_label <- factor(tdat_wide$region, levels = c(1:11), labels = paste0("EMS_", c(1:11), "\n"))
-
-
-datpol$grpvar <- round(datpol$grpvar, 2)
-tdat_wide$grpvar <- round(tdat_wide$grpvar, 2)
-
-regLabel <- df %>%
-  select(region, capacity) %>%
-  unique() %>%
-  mutate(regLabel = paste0("EMS_", region, "\n limit: ", capacity))
-
-datpol$region_label2 <- factor(datpol$region, levels = c(1:11), labels = labs)
-tdat_wide$region_label2 <- factor(tdat_wide$region, levels = c(1:11), labels = labs)
-
 
 matdatp2 <- ggplot(data = tdat_wide) +
   theme_cowplot() +
- # geom_polygon(data = datpol, aes(x = xpol, y = ypol, fill = as.factor(grpvar)), alpha = 0.5) +
-  geom_smooth(
-    data = subset(tdat_wide),
-    aes(x = x, y = fit, col = as.factor(grpvar), group = grpvar),
-    method = "lm", size = 1.3, show.legend = FALSE
-  ) +
+  geom_line(aes(x = x, y = fit, col = as.factor(grpvar), group = grpvar), size = 1.3, show.legend = FALSE) +
   scale_fill_viridis(option = "C", discrete = TRUE, direction = -1) +
   scale_color_viridis(option = "C", discrete = TRUE, direction = -1) +
   customThemeNoFacet +
   scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
   scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
   theme(panel.spacing = unit(2, "lines")) +
-  facet_wrap(~region_label2, scales = "free") +
+  facet_wrap(~region, scales = "free") +
   labs(
     color = grpvar,
     subtitle = "",
@@ -295,7 +237,7 @@ matdatp2 <- ggplot(data = tdat_wide) +
   theme(legend.position = "right")
 
 
-ggsave(paste0("all_Rt_capacity_thresholds_2.png"),
+ggsave(paste0("all_Rt_capacity_thresholds.png"),
        plot = matdatp2, path = file.path(exp_dir), width = 15, height = 10, dpi = 300, device = "png"
 )
 
