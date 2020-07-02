@@ -116,7 +116,7 @@ for (exp_name in exp_names) {
   ### Subset
   trajectoriesDat <- trajectoriesDat %>% filter(time >= as.Date(reopeningdate) - as.Date(max(startdate)) - 30)
 
-  if (heatmapPerEMS) source(file.path("ct_analysis/heatmap_contactTracing.R"))
+  if (heatmapPerEMS) source(file.path("ct_analysis/heatmap_loess_contactTracing.R"))  
   
   
   if (tresholdsAll) source(file.path("ct_analysis/ct_regionAll.R"))

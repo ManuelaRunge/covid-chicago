@@ -81,19 +81,22 @@ summary(Rt_dat2$Date)
 
 ### --------------------------------------------------
 
-Rt_dat2$region_label <- factor(Rt_dat2$region, levels = c(1:11), labels = paste0("EMS_", c(1:11), "\n"))
+Rt_dat2$region_label <- factor(Rt_dat2$region, levels = c(1:11), labels = paste0("EMS ", c(1:11), "\n"))
 
 unique(Rt_dat2$detection_success)
 unique(Rt_dat2$detection_success)
 
-pplot <- ggplot(data = subset(Rt_dat2, Date >= "2020-07-01" )) +
+pplot <- ggplot(data = subset(Rt_dat2, Date >= "2020-06-01"& Date < as.Date("2020-08-01") )) +
   theme_minimal() +
-  geom_line(aes(x = Date, y = Mean, group = scen_num), col = "darkgrey") +
+  geom_vline(xintercept = c(as.Date("2020-06-15"),as.Date("2020-07-01")), linetype="dashed", size=0.7, col="darkgrey") +
+  geom_line(aes(x = Date, y = Mean, group = scen_num), col = "deepskyblue3",size=0.7) +
   # geom_smooth(aes(x=Date, y =Mean ),col="darkred") +
-  scale_x_date(breaks = "1 month", labels = date_format("%b")) +
+  scale_x_date(breaks = "2 weeks", labels = date_format("%b%d")) +
   geom_hline(yintercept = 1) +
   facet_wrap(~region_label) +
-  scale_y_continuous(lim = c(0,2))
+  scale_y_continuous(lim = c(0.5,1.5)) +
+  labs(y= expression(italic(R[t])),x="")+
+  theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank())
 
 
 ggsave(paste0(selected_outcome, "_Rt_over_time.png"),
@@ -101,10 +104,12 @@ ggsave(paste0(selected_outcome, "_Rt_over_time.png"),
 )
 
 
+
 ### Linear regression models and thresholds
-df <- Rt_dat3 %>% filter(Date >= as.Date("2020-07-01") & Date <= as.Date("2020-12-30") ) %>%
-                  group_by(region, region_label, Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>% 
-                  summarize(average_median_Rt = mean(Median))
+df <- Rt_dat2 %>% dplyr::filter(Date >= as.Date("2020-06-15")& Date < as.Date("2020-07-15"))   %>%
+  dplyr::group_by(region, region_label, Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>% 
+  dplyr::summarize(average_median_Rt = mean(Mean)) %>%
+  mutate(Rt_fct = ifelse(average_median_Rt < 1,"<1", ">=1"))
 
 df$region_label <- factor(df$region, levels = c(1:11), labels = paste0("EMS_", c(1:11), "\n"))
 df$capacity =1
@@ -115,10 +120,9 @@ tapply(df$average_median_Rt, df$region, summary)
 
 #ggplot(data = subset(df, isolation_success ==max(isolation_success))) + geom_point(aes(x=detection_success, y = average_median_Rt, col=region_label)) 
 
-testplot1 <- ggplot(data = df) +
+testplot1 <- ggplot(data = subset(df, grpvar==0.17)) +
   theme_classic() +
-  geom_point(data = subset(df, average_median_Rt > 1), aes(x = detection_success, y = isolation_success, group = grpvar), shape = 21, fill = "white", size = 2) +
-  geom_point(data = subset(df, average_median_Rt < 1), aes(x = detection_success, y = isolation_success, fill = as.factor(grpvar)), shape = 21, size = 2) +
+  geom_point( aes(x = detection_success, y = isolation_success, fill = Rt_fct), shape = 21, size = 2) +
   scale_fill_viridis(option = "C", discrete = TRUE, direction = -1) +
   scale_color_viridis(option = "C", discrete = TRUE, direction = -1) +
   customThemeNoFacet +
@@ -135,110 +139,148 @@ testplot1 <- ggplot(data = df) +
   geom_vline(xintercept = c(-Inf, Inf)) +
   geom_hline(yintercept = c(-Inf, Inf)) +
   theme(legend.position = "right") +
-  facet_wrap(~region_label)
+  facet_wrap(~region_label) +
+  theme(panel.spacing = unit(1.5, "lines"))
 
 ggsave(paste0(selected_outcome, "_Rt_sample_scatterplot.png"),
        plot = testplot1, path = file.path(exp_dir), width = 12, height = 7, dpi = 300, device = "png"
 )
 
 
+
 #####---------------------------------------------
 ###  Regresson model 
 #####---------------------------------------------
 
-dfLM <- df %>%
-  rename(
-    x = detection_success,
-    y = isolation_success,
-    z = average_median_Rt
-  ) %>%
-  group_by(region, grpvar, capacity) %>%
-  do(fitlm = lm(z ~ y + x, data = .))
+for (ems in c(1:11)) {
 
-(dfLMCoef <- tidy(dfLM, fitlm))
-# augment(dfLM, fitlm)
-glance(dfLM, fitlm)
-
-## Parameter combinations that did run
-sink(file.path(ems_dir, paste0("perEMS_", selected_outcome, "_Rt_linear_models.txt")))
-cat("\ntidy(dfLM, fitlm)")
-print(tidy(dfLM, fitlm))
-cat("\naugment(dfLM, fitlm)")
-print(augment(dfLM, fitlm))
-cat("\nglance(dfLM, fitlm)")
-print((d <- glance(dfLM, fitlm)))
-print(summary(d$r.squared))
-print(tapply(d$r.squared, d$region, summary))
-sink()
-
-
-### Generate prediction dataset
-xnew <- seq(0, 1, 0.01)
-ynew <- seq(0, 1, 0.01)
-
-matdat_list <- list()
-for (region_i in unique(dfLM$region)) {
-  for (testDelay in unique(dfLM$grpvar)) {
-    lmmodel <- dfLM %>% filter(grpvar == testDelay & region == region_i)
+  dat <- subset(df, region ==ems)
+  fitlist <- list()
+  
+  for (grp in unique(dat$grpvar)) {
+    #grp <- unique(dat$grpvar)[1]
+    #### Do loess regression
+    detection_success <- seq(0, 1, 0.001)
+    isolation_success <- seq(0, 1, 0.001)
+    t_matdat <- expand.grid(detection_success = detection_success, isolation_success = isolation_success)
     
-    t_matdat <- expand.grid(x = xnew, y = ynew)
-    t_matdat <- as.data.frame(cbind(t_matdat, predict(lmmodel$fitlm[[1]], newdata = t_matdat, interval = "confidence")))
-    t_matdat$grpvar <- testDelay
-    t_matdat$region <- region_i
-    t_matdat$capacity <- lmmodel$capacity
+    m <- loess(average_median_Rt ~ detection_success * isolation_success,
+               span = 0.5,
+               degree = 2, data = subset(dat, grpvar == grp)
+    )
     
-    matdat_list[[length(matdat_list) + 1]] <- t_matdat
+    temp.fit_mat <- predict(m, t_matdat)
+    temp.fit <- melt(temp.fit_mat)
+    temp.fit$detection_success <- gsub("detection_success=", "", temp.fit$detection_success)
+    temp.fit$isolation_success <- gsub("isolation_success=", "", temp.fit$isolation_success)
+    
+    
+    # library(plotly)
+    # fig <- plot_ly(
+    #   x = temp.fit$detection_success,
+    #   y = temp.fit$isolation_success,
+    #   z =  temp.fit$value, ,
+    #   type = "contour"
+    # )
+    
+    temp.fit$value_fct <- NA
+    temp.fit$value_fct[temp.fit$value >= 1.02] <- ">1.02"
+    temp.fit$value_fct[temp.fit$value < 1.02] <- "<1.02"
+    temp.fit$value_fct[temp.fit$value < 1.01] <- "<1.01"
+    temp.fit$value_fct[temp.fit$value < 1] <- "<1"
+    temp.fit$value_fct[temp.fit$value < 0.99] <- "<0.99"
+    temp.fit$value_fct[temp.fit$value < 0.98] <- "<0.98"
+    
+    table(temp.fit$value_fct, exclude = NULL)
+    
+    temp.fit$value_fct <- factor(temp.fit$value_fct,
+                                levels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98"),
+                                labels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98")
+    )
+    
+    temp.fit$detection_success <- as.numeric(temp.fit$detection_success)
+    temp.fit$isolation_success <- as.numeric(temp.fit$isolation_success)
+    
+    temp.fit$grpvar <- grp
+    fitlist[[length(fitlist) + 1]] <- temp.fit
+    
+    rm(temp.fit_mat, temp.fit)
   }
+  
+  
+  dtfit <- bind_rows(fitlist)
+  rm(fitlist)
+  
+  
+  dat$value_fct <- NA
+  dat$value_fct[dat$average_median_Rt >= 1.02] <- ">1.02"
+  dat$value_fct[dat$average_median_Rt < 1.02] <- "<1.02"
+  dat$value_fct[dat$average_median_Rt < 1.01] <- "<1.01"
+  dat$value_fct[dat$average_median_Rt < 1] <- "<1"
+  dat$value_fct[dat$average_median_Rt < 0.99] <- "<0.99"
+  dat$value_fct[dat$average_median_Rt < 0.98] <- "<0.98"
+  
+  table(dat$value_fct, exclude = NULL)
+  
+  dat$value_fct <- factor(dat$value_fct,
+                               levels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98"),
+                               labels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98")
+  )
+  
+  
+  thresholdDat <- dtfit %>%
+    filter(value <= 1) %>%
+    group_by(detection_success, grpvar) %>%
+    filter(isolation_success == min(isolation_success)) %>%
+    mutate(regin = ems)
+  
+  p1 <- ggplot(data = subset(dtfit, !is.na(value_fct)), aes(x = detection_success, y = isolation_success)) +
+    theme_minimal() +
+    geom_tile(aes(fill = value_fct), alpha = 0.8) +
+    geom_line(data = subset(thresholdDat, isolation_success != min(isolation_success)), aes(x = detection_success, y = isolation_success), size = 1.3) +
+    scale_fill_viridis(option = "C", discrete = TRUE) +
+    labs(
+      x = "detections (%)",
+      y = "isolation success (%)",
+      col = "",
+      fill = expression(italic(R[t])),
+      shape = "",
+      linetype = ""
+    ) +
+    scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
+    scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
+    facet_wrap(~grpvar) +
+    customThemeNoFacet
+  
+  p2 <- p1 +  geom_point(data = dat, aes(x = detection_success, y = isolation_success, fill = value_fct), shape = 21, size = 3, show.legend = FALSE)
+  
+  plotname1 <- paste0("EMS", "_", ems, "_Rt_heatmap_loess")
+  
+  ggsave(paste0(plotname1, ".png"),
+         plot = p2, path = file.path(ems_dir), width = 12, height = 5, dpi = 300, device = "png"
+ )
+  
+  #ggsave(paste0(plotname1, ".pdf"),
+  #       plot = p1, path = file.path(ems_dir), width = 12, height = 5, dpi = 300, device = "pdf"
+  #)
+  
+  
+  write.csv(thresholdDat, file = file.path(ems_dir, paste0(ems, "_Rt_loess_thresholds.csv")), row.names=FALSE)
 }
 
-matdat <- matdat_list %>% bind_rows()
-# table(matdat$grpvar)
-
-tdat <- matdat %>%
-  pivot_longer(cols = -c(region, capacity, x, y, grpvar), names_to = "statistic") %>%
-  filter(value <= capacity) %>%
-  dplyr::group_by(region, grpvar, x, statistic) %>%
-  dplyr::summarize(ythreshold = min(y))
-
-matdat <- left_join(matdat, tdat, by = c("grpvar", "x"))
-
-matdat$grpvar <- round(matdat$grpvar, 2)
-df$grpvar <- round(df$grpvar, 2)
-
-tdat_wide <- tdat %>% pivot_wider(names_from = "statistic", values_from = "ythreshold")
-
-tdat_wide %>%
-  dplyr::filter(!is.na(fit)) %>%
-  group_by(region, grpvar, x) %>%
-  summarize(
-    xmin = min(x), xmax = max(x),
-    lwrmin = min(lwr), lwrmax = max(lwr)
-  )
-
-write.csv(tdat_wide,file.path(exp_dir,  "Rt_tdat_wide.csv"), row.names = FALSE)
-
-matdatp2 <- ggplot(data = tdat_wide) +
-  theme_cowplot() +
-  geom_line(aes(x = x, y = fit, col = as.factor(grpvar), group = grpvar), size = 1.3, show.legend = FALSE) +
-  scale_fill_viridis(option = "C", discrete = TRUE, direction = -1) +
-  scale_color_viridis(option = "C", discrete = TRUE, direction = -1) +
-  customThemeNoFacet +
-  scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
-  scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
-  theme(panel.spacing = unit(2, "lines")) +
-  facet_wrap(~region, scales = "free") +
-  labs(
-    color = grpvar,
-    subtitle = "",
-    fill = groupVar_label,
-    x = detectionVar_label,
-    y = isolationVar_label
-  ) +
-  theme(legend.position = "right")
 
 
-ggsave(paste0("all_Rt_capacity_thresholds.png"),
-       plot = matdatp2, path = file.path(exp_dir), width = 15, height = 10, dpi = 300, device = "png"
-)
+### Combine all EMS tresholds into one file 
+thresholdsfiles <- list.files(file.path(ems_dir), pattern = "Rt_loess_thresholds", recursive = TRUE, full.names = TRUE)
+lmthresholdsDat <- sapply(thresholdsfiles, read.csv, simplify = FALSE) %>%
+  bind_rows(.id = "id")   
+
+lmthresholdsDat$id = gsub(ems_dir, "", lmthresholdsDat$id )
+lmthresholdsDat$region = gsub("_Rt_loess_thresholds","", lmthresholdsDat$id )
+lmthresholdsDat$region = gsub("[/]","", lmthresholdsDat$region )
+
+
+write.csv(lmthresholdsDat, file.path(exp_dir, "Rt_thresholds_loess.csv"), row.names = FALSE)
+
 
 
