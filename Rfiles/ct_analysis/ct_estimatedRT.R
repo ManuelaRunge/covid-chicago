@@ -1,5 +1,5 @@
 ## ============================================================
-## Heatmap based on Rt and plot of Rt over time 
+## Heatmap based on Rt and plot of Rt over time
 ## ============================================================
 
 
@@ -21,7 +21,7 @@ table(Rt_dat$scen_num, Rt_dat$t_start)
 
 ### add variables from simulation dataset
 selected_ems <- c(1:11)
-emsvars_temp <- c(paste0(selected_outcome,"_EMS."), "N_EMS_", "Ki_EMS_")
+emsvars_temp <- c(paste0(selected_outcome, "_EMS."), "N_EMS_", "Ki_EMS_")
 
 emsvars <- NULL
 for (ems in selected_ems) {
@@ -30,13 +30,6 @@ for (ems in selected_ems) {
 
 groupvars <- c("time", "Date", "startdate", "scen_num", "sample_num", "run_num", "grpvar", "detection_success", "isolation_success")
 (keepvars <- c(groupvars, emsvars))
-
-capacity <- load_capacity("all")
-capacity$region <- as.character(rownames(capacity))
-capacity <- capacity %>%
-  rename(capacity = selected_outcome) %>%
-  select(region, capacity)
-
 
 dat <- trajectoriesDat %>%
   select(Date, scen_num, isolation_success, detection_success, grpvar) %>%
@@ -62,7 +55,7 @@ subdat <- trajectoriesDat %>%
   as.data.frame()
 
 
-###############--------------------------
+############### --------------------------
 
 
 ### Edit dataframe
@@ -86,16 +79,16 @@ Rt_dat2$region_label <- factor(Rt_dat2$region, levels = c(1:11), labels = paste0
 unique(Rt_dat2$detection_success)
 unique(Rt_dat2$detection_success)
 
-pplot <- ggplot(data = subset(Rt_dat2, Date >= "2020-06-01"& Date < as.Date("2020-08-01") )) +
+pplot <- ggplot(data = subset(Rt_dat2, Date >= "2020-06-01" & Date < as.Date("2020-08-01"))) +
   theme_minimal() +
-  geom_vline(xintercept = c(as.Date("2020-06-15"),as.Date("2020-07-01")), linetype="dashed", size=0.7, col="darkgrey") +
-  geom_line(aes(x = Date, y = Mean, group = scen_num), col = "deepskyblue3",size=0.7) +
+  geom_vline(xintercept = c(as.Date("2020-06-15"), as.Date("2020-07-01")), linetype = "dashed", size = 0.7, col = "darkgrey") +
+  geom_line(aes(x = Date, y = Mean, group = scen_num), col = "deepskyblue3", size = 0.7) +
   # geom_smooth(aes(x=Date, y =Mean ),col="darkred") +
   scale_x_date(breaks = "2 weeks", labels = date_format("%b%d")) +
   geom_hline(yintercept = 1) +
   facet_wrap(~region_label) +
-  scale_y_continuous(lim = c(0.5,1.5)) +
-  labs(y= expression(italic(R[t])),x="")+
+  scale_y_continuous(lim = c(0.5, 1.5)) +
+  labs(y = expression(italic(R[t])), x = "") +
   theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank())
 
 
@@ -106,23 +99,24 @@ ggsave(paste0(selected_outcome, "_Rt_over_time.png"),
 
 
 ### Linear regression models and thresholds
-df <- Rt_dat2 %>% dplyr::filter(Date >= as.Date("2020-06-15")& Date < as.Date("2020-07-15"))   %>%
-  dplyr::group_by(region, region_label, Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>% 
+df <- Rt_dat2 %>%
+  dplyr::filter(Date >= as.Date("2020-06-15") & Date < as.Date("2020-07-15")) %>%
+  dplyr::group_by(region, region_label, Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>%
   dplyr::summarize(average_median_Rt = mean(Mean)) %>%
-  mutate(Rt_fct = ifelse(average_median_Rt < 1,"<1", ">=1"))
+  mutate(Rt_fct = ifelse(average_median_Rt < 1, "<1", ">=1"))
 
 df$region_label <- factor(df$region, levels = c(1:11), labels = paste0("EMS_", c(1:11), "\n"))
-df$capacity =1
+df$capacity <- 1
 
 summary(df$average_median_Rt)
 summary(df$Date)
 tapply(df$average_median_Rt, df$region, summary)
 
-#ggplot(data = subset(df, isolation_success ==max(isolation_success))) + geom_point(aes(x=detection_success, y = average_median_Rt, col=region_label)) 
+# ggplot(data = subset(df, isolation_success ==max(isolation_success))) + geom_point(aes(x=detection_success, y = average_median_Rt, col=region_label))
 
-testplot1 <- ggplot(data = subset(df, grpvar==0.17)) +
+testplot1 <- ggplot(data = subset(df, grpvar == 0.17)) +
   theme_classic() +
-  geom_point( aes(x = detection_success, y = isolation_success, fill = Rt_fct), shape = 21, size = 2) +
+  geom_point(aes(x = detection_success, y = isolation_success, fill = Rt_fct), shape = 21, size = 2) +
   scale_fill_viridis(option = "C", discrete = TRUE, direction = -1) +
   scale_color_viridis(option = "C", discrete = TRUE, direction = -1) +
   customThemeNoFacet +
@@ -132,7 +126,7 @@ testplot1 <- ggplot(data = subset(df, grpvar==0.17)) +
   labs(
     color = groupVar_label,
     subtitle = "",
-    fill =groupVar_label,
+    fill = groupVar_label,
     x = detectionVar_label,
     y = isolationVar_label
   ) +
@@ -143,38 +137,37 @@ testplot1 <- ggplot(data = subset(df, grpvar==0.17)) +
   theme(panel.spacing = unit(1.5, "lines"))
 
 ggsave(paste0(selected_outcome, "_Rt_sample_scatterplot.png"),
-       plot = testplot1, path = file.path(exp_dir), width = 12, height = 7, dpi = 300, device = "png"
+  plot = testplot1, path = file.path(exp_dir), width = 12, height = 7, dpi = 300, device = "png"
 )
 
 
 
-#####---------------------------------------------
-###  Regresson model 
-#####---------------------------------------------
+##### ---------------------------------------------
+###  Regresson model
+##### ---------------------------------------------
 
 for (ems in c(1:11)) {
-
-  dat <- subset(df, region ==ems)
+  dat <- subset(df, region == ems)
   fitlist <- list()
-  
+
   for (grp in unique(dat$grpvar)) {
-    #grp <- unique(dat$grpvar)[1]
+    # grp <- unique(dat$grpvar)[1]
     #### Do loess regression
     detection_success <- seq(0, 1, 0.001)
     isolation_success <- seq(0, 1, 0.001)
     t_matdat <- expand.grid(detection_success = detection_success, isolation_success = isolation_success)
-    
+
     m <- loess(average_median_Rt ~ detection_success * isolation_success,
-               span = 0.5,
-               degree = 2, data = subset(dat, grpvar == grp)
+      span = 0.5,
+      degree = 2, data = subset(dat, grpvar == grp)
     )
-    
+
     temp.fit_mat <- predict(m, t_matdat)
     temp.fit <- melt(temp.fit_mat)
     temp.fit$detection_success <- gsub("detection_success=", "", temp.fit$detection_success)
     temp.fit$isolation_success <- gsub("isolation_success=", "", temp.fit$isolation_success)
-    
-    
+
+
     # library(plotly)
     # fig <- plot_ly(
     #   x = temp.fit$detection_success,
@@ -182,7 +175,7 @@ for (ems in c(1:11)) {
     #   z =  temp.fit$value, ,
     #   type = "contour"
     # )
-    
+
     temp.fit$value_fct <- NA
     temp.fit$value_fct[temp.fit$value >= 1.02] <- ">1.02"
     temp.fit$value_fct[temp.fit$value < 1.02] <- "<1.02"
@@ -190,28 +183,28 @@ for (ems in c(1:11)) {
     temp.fit$value_fct[temp.fit$value < 1] <- "<1"
     temp.fit$value_fct[temp.fit$value < 0.99] <- "<0.99"
     temp.fit$value_fct[temp.fit$value < 0.98] <- "<0.98"
-    
+
     table(temp.fit$value_fct, exclude = NULL)
-    
+
     temp.fit$value_fct <- factor(temp.fit$value_fct,
-                                levels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98"),
-                                labels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98")
+      levels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98"),
+      labels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98")
     )
-    
+
     temp.fit$detection_success <- as.numeric(temp.fit$detection_success)
     temp.fit$isolation_success <- as.numeric(temp.fit$isolation_success)
-    
+
     temp.fit$grpvar <- grp
     fitlist[[length(fitlist) + 1]] <- temp.fit
-    
+
     rm(temp.fit_mat, temp.fit)
   }
-  
-  
+
+
   dtfit <- bind_rows(fitlist)
   rm(fitlist)
-  
-  
+
+
   dat$value_fct <- NA
   dat$value_fct[dat$average_median_Rt >= 1.02] <- ">1.02"
   dat$value_fct[dat$average_median_Rt < 1.02] <- "<1.02"
@@ -219,21 +212,21 @@ for (ems in c(1:11)) {
   dat$value_fct[dat$average_median_Rt < 1] <- "<1"
   dat$value_fct[dat$average_median_Rt < 0.99] <- "<0.99"
   dat$value_fct[dat$average_median_Rt < 0.98] <- "<0.98"
-  
+
   table(dat$value_fct, exclude = NULL)
-  
+
   dat$value_fct <- factor(dat$value_fct,
-                               levels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98"),
-                               labels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98")
+    levels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98"),
+    labels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98")
   )
-  
-  
+
+
   thresholdDat <- dtfit %>%
     filter(value <= 1) %>%
     group_by(detection_success, grpvar) %>%
     filter(isolation_success == min(isolation_success)) %>%
     mutate(regin = ems)
-  
+
   p1 <- ggplot(data = subset(dtfit, !is.na(value_fct)), aes(x = detection_success, y = isolation_success)) +
     theme_minimal() +
     geom_tile(aes(fill = value_fct), alpha = 0.8) +
@@ -251,36 +244,33 @@ for (ems in c(1:11)) {
     scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
     facet_wrap(~grpvar) +
     customThemeNoFacet
-  
-  p2 <- p1 +  geom_point(data = dat, aes(x = detection_success, y = isolation_success, fill = value_fct), shape = 21, size = 3, show.legend = FALSE)
-  
+
+  p2 <- p1 + geom_point(data = dat, aes(x = detection_success, y = isolation_success, fill = value_fct), shape = 21, size = 3, show.legend = FALSE)
+
   plotname1 <- paste0("EMS", "_", ems, "_Rt_heatmap_loess")
-  
+
   ggsave(paste0(plotname1, ".png"),
-         plot = p2, path = file.path(ems_dir), width = 12, height = 5, dpi = 300, device = "png"
- )
-  
-  #ggsave(paste0(plotname1, ".pdf"),
+    plot = p2, path = file.path(ems_dir), width = 12, height = 5, dpi = 300, device = "png"
+  )
+
+  # ggsave(paste0(plotname1, ".pdf"),
   #       plot = p1, path = file.path(ems_dir), width = 12, height = 5, dpi = 300, device = "pdf"
-  #)
-  
-  
-  write.csv(thresholdDat, file = file.path(ems_dir, paste0(ems, "_Rt_loess_thresholds.csv")), row.names=FALSE)
+  # )
+
+
+  write.csv(thresholdDat, file = file.path(ems_dir, paste0(ems, "_Rt_loess_thresholds.csv")), row.names = FALSE)
 }
 
 
 
-### Combine all EMS tresholds into one file 
+### Combine all EMS tresholds into one file
 thresholdsfiles <- list.files(file.path(ems_dir), pattern = "Rt_loess_thresholds", recursive = TRUE, full.names = TRUE)
 lmthresholdsDat <- sapply(thresholdsfiles, read.csv, simplify = FALSE) %>%
-  bind_rows(.id = "id")   
+  bind_rows(.id = "id")
 
-lmthresholdsDat$id = gsub(ems_dir, "", lmthresholdsDat$id )
-lmthresholdsDat$region = gsub("_Rt_loess_thresholds","", lmthresholdsDat$id )
-lmthresholdsDat$region = gsub("[/]","", lmthresholdsDat$region )
+lmthresholdsDat$id <- gsub(ems_dir, "", lmthresholdsDat$id)
+lmthresholdsDat$region <- gsub("_Rt_loess_thresholds", "", lmthresholdsDat$id)
+lmthresholdsDat$region <- gsub("[/]", "", lmthresholdsDat$region)
 
 
 write.csv(lmthresholdsDat, file.path(exp_dir, "Rt_thresholds_loess.csv"), row.names = FALSE)
-
-
-
