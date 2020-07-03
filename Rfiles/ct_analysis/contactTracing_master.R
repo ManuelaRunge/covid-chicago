@@ -41,12 +41,11 @@ exp_names <- exp_names[!grepl("20200627_IL_EMS_stopSIP10_isolationvsdetAsP_bydet
 describeDat <- FALSE
 heatmapPerEMS <- FALSE
 tresholdsAll <- FALSE
-tresholdsAll2 <- FALSE
 estimateRt <- FALSE ## run on quest
-
+heatmapRt <- TRUE ## run on quest
 
 geography <- "EMS"
-#geography <- "Region"
+# geography <- "Region"
 scalePop <- TRUE
 
 for (exp_name in exp_names) {
@@ -111,14 +110,13 @@ for (exp_name in exp_names) {
 
   if (describeDat) source(file.path("ct_analysis/describeTrajectoriesDat.R"))
   if (estimateRt) source(file.path("ct_analysis/get_Rt_from_contactTracingSimulations.R"))
-  if (estimateRt) source(file.path("ct_analysis/ct_estimatedRT.R"))
+  if (heatmapRt) source(file.path("ct_analysis/ct_estimatedRT.R"))
 
   ### Subset
   trajectoriesDat <- trajectoriesDat %>% filter(time >= as.Date(reopeningdate) - as.Date(max(startdate)) - 30)
 
-  if (heatmapPerEMS) source(file.path("ct_analysis/heatmap_loess_contactTracing.R"))  
-  
-  
-  if (tresholdsAll) source(file.path("ct_analysis/ct_regionAll.R"))
-  if (tresholdsAll2) source(file.path("ct_analysis/ct_regionAll_v2.R"))
+  if (heatmapPerEMS) source(file.path("ct_analysis/heatmap_loess_contactTracing.R"))
 }
+
+summary1=FALSE
+if (summary1) source(file.path("ct_analysis/combined_exp_summary_plot.R"))
