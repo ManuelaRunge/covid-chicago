@@ -30,12 +30,6 @@ labs <- c(
 
 ### Load simulation data
 exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
-exp_names <- exp_names[!grepl("20200627_IL_EMS_stopSIP10_isolationvsdetAsP_bydetSym_witsamples", exp_names)]
-exp_names <- exp_names[!grepl("20200628_IL_EMS_stopSIP10_isolationvsdetAsP_bydetSym_lowerTDSym_varyCTtime", exp_names)]
-exp_names <- exp_names[!grepl("20200628_IL_EMS_isolationvsdetAsP_bydetSym_stopSIP20", exp_names)]
-exp_names <- exp_names[!grepl("20200628_IL_EMS_stopSIP20", exp_names)]
-exp_names <- exp_names[!grepl("20200627_IL_EMS_stopSIP10_isolationvsdetAsP_bydetSym_lowerTD_stopAll", exp_names)]
-exp_names <- exp_names[!grepl("20200627_IL_EMS_stopSIP10_isolationvsdetAsP_bydetSym", exp_names)]
 
 ### Run analysis scripts
 describeDat <- FALSE
@@ -119,4 +113,5 @@ for (exp_name in exp_names) {
 }
 
 summary1=FALSE
+selected_outcome <- "Rt"
 if (summary1) source(file.path("ct_analysis/combined_exp_summary_plot.R"))
