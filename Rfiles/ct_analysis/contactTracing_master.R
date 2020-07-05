@@ -1,18 +1,16 @@
-## ==================================================
-# R script that analysis trajectoriesDat
-## ==================================================
-
-require(tidyverse)
-require(cowplot)
-require(scales)
-require(lattice)
-require(readxl)
-require(viridis)
-require(stringr)
-require(ggrepel)
-require(broom)
+## =====================================================================================
+# R script that analyses contact tracing simulations
+# Simulations are stored by date under the "contact_tracing" folder in simulation_output
+# Contact tracing simulations are specified by having varying detection and isolation parameters for As+P and/or Sym
+# To avoid noise of sample parameters, most simulations are run with fixed sample parameters, only varying the contact tracing specific parameters
+## =====================================================================================
 
 
+## Load packages
+packages_needed <- c( 'tidyverse', 'cowplot', 'scales', 'readxl', 'viridis', 'stringr', 'broom') 
+lapply(packages_needed, require, character.only = TRUE) 
+
+## Load directories and custom objects and functions
 source("load_paths.R")
 source("processing_helpers.R")
 source("ct_analysis/helper_functions_CT.R")
@@ -31,36 +29,43 @@ labs <- c(
 ### Load simulation data
 exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
 
-### Run analysis scripts
+### Define which analysis scripts to run
 describeDat <- FALSE
 heatmapPerEMS <- FALSE
 tresholdsAll <- FALSE
-estimateRt <- FALSE ## run on quest
-heatmapRt <- TRUE ## run on quest
+estimateRt <- FALSE 
+heatmapRt <- TRUE 
+generateMap <- FALSE
 
+### Loop through each EMS or the operational 'super-regions' 
 geography <- "EMS"
 # geography <- "Region"
+
+## When plotting heatmaps, should the legend show predictions per 100'000 population ? 
 scalePop <- TRUE
 
+## RUn analysis scripts for each experiment in exp_names (must have same contact tracing parameters!)
 for (exp_name in exp_names) {
   # exp_name <- exp_names[1]
   print(exp_name)
+
+  ### Define experiment specfic directories
   exp_dir <- file.path(ct_dir, simdate, exp_name)
   ems_dir <- file.path(ct_dir, simdate, exp_name, "per_ems")
   if (!dir.exists(ems_dir)) dir.create(ems_dir)
 
   Rt_dir <- file.path(ct_dir, simdate, exp_name, "estimatedRt")
   if (!dir.exists(Rt_dir)) dir.create(Rt_dir)
-  # nexpsfiles <- list.files(file.path(ct_dir, simdate), pattern = "trajectoriesDat.csv", recursive = TRUE, full.names = TRUE)
-  # trajectoriesDat <- sapply(nexpsfiles, read.csv, simplify = FALSE) %>%  bind_rows(.id = "id")
 
-
+  ## Load trajectories Dat
   trajectoriesDat <- read.csv(file.path(exp_dir, "trajectoriesDat.csv"))
 
+  ## Define contact  tracing parameters
   detectionVar <- "d_AsP_ct1" # "d_Sym_ct1"
   isolationVar <- "reduced_inf_of_det_cases_ct1"
   groupVar <- "d_Sym_ct1" # "time_to_detection" # "change_testDelay_Sym_1"
 
+  ## Define label per parameter for plotting
   detectionVar_label <- detectionVar
   isolationVar_label <- isolationVar
   groupVar_label <- groupVar
@@ -73,7 +78,7 @@ for (exp_name in exp_names) {
   if (isolationVar == "reduced_inf_of_det_cases_ct1") isolationVar_label <- "isolation success As, P (%)"
   if (groupVar == "contact_tracing_start_1") trajectoriesDat <- trajectoriesDat %>% mutate(grpvar = as.Date(contact_tracing_start_1 + startdate))
 
-
+  ### Extract relevant dates from trajectpries dat
   reopeningdate <- unique(as.Date(trajectoriesDat$socialDistanceSTOP_time, origin = trajectoriesDat$startdate))
   interventionstart <- unique(as.Date(trajectoriesDat$contact_tracing_start_1, origin = trajectoriesDat$startdate))
   interventionstop <- unique(as.Date(trajectoriesDat$contact_tracing_stop1, origin = trajectoriesDat$startdate))
@@ -91,27 +96,31 @@ for (exp_name in exp_names) {
   trajectoriesDat$grpvar <- trajectoriesDat[, colnames(trajectoriesDat) == groupVar]
   if (isolationVar == "reduced_inf_of_det_cases_ct1") trajectoriesDat$isolation_success <- 1 - (trajectoriesDat$isolation_success)
 
-  table(trajectoriesDat$grpvar)
-  summary(trajectoriesDat$detection_success)
-  summary(trajectoriesDat$isolation_success)
-  summary(trajectoriesDat$Date)
-
-  summary(trajectoriesDat$Date)
-
-  # outcomeList <- c("critical")
-  # for (selected_outcome in outcomeList) {
+  ## Check CT parameters
+  unique(trajectoriesDat$detection_success)
+  unique(trajectoriesDat$isolation_success)
+  unique(trajectoriesDat$grpvar)
+  
+  ### Run analysis scripts for selected outcome
   selected_outcome <- "critical"
-
   if (describeDat) source(file.path("ct_analysis/describeTrajectoriesDat.R"))
   if (estimateRt) source(file.path("ct_analysis/get_Rt_from_contactTracingSimulations.R"))
   if (heatmapRt) source(file.path("ct_analysis/ct_estimatedRT.R"))
 
-  ### Subset
-  trajectoriesDat <- trajectoriesDat %>% filter(time >= as.Date(reopeningdate) - as.Date(max(startdate)) - 30)
+  ### Subset for identifying thresholds (historical estimates not needed)
+  trajectoriesDat <- trajectoriesDat %>%
+    filter(time >= as.Date(reopeningdate) - as.Date(max(startdate)) - 30)
 
   if (heatmapPerEMS) source(file.path("ct_analysis/heatmap_loess_contactTracing.R"))
+  
+  if (generateMap) source(file.path("ct_analysis/map_threshold_values.R"))
+  
+  
 }
 
-summary1=FALSE
-selected_outcome <- "Rt"
+### Generate pointrange plots with minimum detection level aggregated for Illinois
+### Running either with Rt or critical (and includes plot comparing both )
+summary1 <- FALSE
+selected_outcome <- "Rt" # critical
 if (summary1) source(file.path("ct_analysis/combined_exp_summary_plot.R"))
+
