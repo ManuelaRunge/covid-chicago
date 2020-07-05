@@ -3,7 +3,7 @@
 ## ============================================================
 
 
-#### COmbine Rt estimates per region
+#### Combine Rt estimates per region
 load(file.path(Rt_dir, "1_temp_Rt_tempdat_All.Rdata"))
 Rt_dat <- Rt_tempdat_All
 rm(Rt_tempdat_All)
@@ -14,10 +14,8 @@ for (i in c(1:11)) {
   rm(Rt_tempdat_All)
 }
 
-
 table(Rt_dat$region)
 table(Rt_dat$scen_num, Rt_dat$t_start)
-
 
 ### add variables from simulation dataset
 selected_ems <- c(1:11)
@@ -55,9 +53,6 @@ subdat <- trajectoriesDat %>%
   as.data.frame()
 
 
-############### --------------------------
-
-
 ### Edit dataframe
 Rt_dat2 <- Rt_dat %>%
   merge(unique(dat[, c("time", "Date", "scen_num", "isolation_success", "detection_success", "grpvar")]),
@@ -73,7 +68,6 @@ write.csv(Rt_dat2, file = file.path(Rt_dir, paste0("EMS_combined_estimated_Rt.cs
 summary(Rt_dat2$Date)
 
 ### --------------------------------------------------
-
 Rt_dat2$region_label <- factor(Rt_dat2$region, levels = c(1:11), labels = paste0("EMS ", c(1:11), "\n"))
 
 unique(Rt_dat2$detection_success)
@@ -96,9 +90,7 @@ ggsave(paste0(selected_outcome, "_Rt_over_time.png"),
   plot = pplot, path = file.path(exp_dir), width = 12, height = 7, dpi = 300, device = "png"
 )
 
-
-
-### Linear regression models and thresholds
+### 
 df <- Rt_dat2 %>%
   dplyr::filter(Date >= as.Date("2020-06-15") & Date < as.Date("2020-07-15")) %>%
   dplyr::group_by(region, region_label, Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>%
@@ -257,13 +249,11 @@ for (ems in c(1:11)) {
   #       plot = p1, path = file.path(ems_dir), width = 12, height = 5, dpi = 300, device = "pdf"
   # )
 
-
   write.csv(thresholdDat, file = file.path(ems_dir, paste0(ems, "_Rt_loess_thresholds.csv")), row.names = FALSE)
 }
 
 
-
-### Combine all EMS tresholds into one file
+### Combine all EMS thresholds into one file
 thresholdsfiles <- list.files(file.path(ems_dir), pattern = "Rt_loess_thresholds", recursive = TRUE, full.names = TRUE)
 lmthresholdsDat <- sapply(thresholdsfiles, read.csv, simplify = FALSE) %>%
   bind_rows(.id = "id")
@@ -272,5 +262,5 @@ lmthresholdsDat$id <- gsub(ems_dir, "", lmthresholdsDat$id)
 lmthresholdsDat$region <- gsub("_Rt_loess_thresholds", "", lmthresholdsDat$id)
 lmthresholdsDat$region <- gsub("[/]", "", lmthresholdsDat$region)
 
-
+## Write results in csv table
 write.csv(lmthresholdsDat, file.path(exp_dir, "Rt_thresholds_loess.csv"), row.names = FALSE)
