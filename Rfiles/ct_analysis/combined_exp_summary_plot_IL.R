@@ -1,19 +1,28 @@
 ## ============================================================
 ## Combine simulated experiments and make summary plot
+## Script currently specific for evaluating varying test delay options for 3 different reopening levels
+
+## Test delay
+#- "no reduction in test delay"
+#- "reduced test delay As, Sym"
+#- reduced test delay Sym only"
+
+## Reopening
+# 10%, 20% and 30%
 ## ============================================================
 
-#selected_outcome <- "critical"
+# selected_outcome <- "critical"
 ### Load simulation data
 exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
 sim_dir <- file.path(ct_dir, simdate)
 
-if(selected_outcome=="critical") csvfilename = "thresholds_loess.csv"
-if(selected_outcome=="Rt") csvfilename = "Rt_thresholds_loess.csv"
-    
+if (selected_outcome == "critical") csvfilename <- "thresholds_loess.csv"
+if (selected_outcome == "Rt") csvfilename <- "Rt_thresholds_loess.csv"
+
 ### 20%
 tdat_wide0 <- read.csv(file.path(sim_dir, exp_names[5], csvfilename))
 tdat_wide1 <- read.csv(file.path(sim_dir, exp_names[6], csvfilename))
-tdat_wide2 <- read.csv(file.path(sim_dir, exp_names[13], csvfilename ))
+tdat_wide2 <- read.csv(file.path(sim_dir, exp_names[13], csvfilename))
 
 ### 10%
 tdat_wide3 <- read.csv(file.path(sim_dir, exp_names[1], csvfilename))
@@ -57,34 +66,78 @@ minIsolation <- tdat_wide %>%
   group_by(region, sim, reopening) %>%
   mutate(minIsolation = min(isolation_success, na.rm = TRUE))
 
-tdat_wide$region <- as.numeric( gsub(".csv","",tdat_wide$region))
+tdat_wide$region <- as.numeric(gsub(".csv", "", tdat_wide$region))
 
-for (perc in c("10%", "20%", "30%")) {
-  for (reduction in c("no reduction in test delay", "reduced test delay As, Sym", "reduced test delay Sym only")) {
+
+for (perc in unique(tdat_wide$reopening)) {
+  for (reduction in unique(tdat_wide$sim)) {
     # perc <- "10%"
     # reduction <- "no reduction in test delay"
-    
+
     pplot <- ggplot(data = subset(tdat_wide, reopening == perc & sim == reduction)) +
-      theme_minimal() +
-      geom_line(aes(x = detection_success, y = isolation_success, col = as.factor(grpvar), group = grpvar), size = 1.3) +
-      # geom_hline(data=subset(minIsolation, reopening==perc & sim ==reduction), aes(yintercept = minIsolation), linetype="dashed") +
+      theme_cowplot() +
+      geom_ribbon(aes(
+        x = detection_success,
+        xmin = detection_success, xmax = 1,
+        ymin = isolation_success, ymax = 1, fill = as.factor(grpvar), group = grpvar
+      ), alpha = 0.5
+      ) +
+      geom_ribbon(
+        data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.585),
+        aes(
+          x = detection_success,
+          xmin = detection_success, xmax = 1,
+          ymin = isolation_success, ymax = 1
+        ),
+        fill = "white"
+      ) +
+      geom_ribbon(
+        data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.585), aes(
+          x = detection_success,
+          xmin = detection_success, xmax = 1,
+          ymin = isolation_success, ymax = 1, fill = as.factor(grpvar), group = grpvar
+        ), alpha = 0.5
+      ) +
+      geom_hline(yintercept = seq(0, 1, 0.1), alpha = 0.3, col = "lightgrey", size = 0.3) +
+      geom_vline(xintercept = seq(0, 1, 0.1), alpha = 0.3, col = "lightgrey", size = 0.3) +
+      geom_ribbon(
+        data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.17),
+        aes(
+          x = detection_success,
+          xmin = detection_success, xmax = 1,
+          ymin = isolation_success, ymax = 1
+        ),
+        fill = "white"
+      ) +
+      geom_ribbon(
+        data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.17), aes(
+          x = detection_success,
+          xmin = detection_success, xmax = 1,
+          ymin = isolation_success, ymax = 1, fill = as.factor(grpvar), group = grpvar
+        ), alpha = 0.5
+      ) +
+      geom_line(aes(x = detection_success, y = isolation_success, col = as.factor(grpvar), group = grpvar), size = 0.7) +
       facet_wrap(~region) +
       scale_color_viridis(option = "viridis", discrete = TRUE) +
+      scale_fill_viridis(option = "viridis", discrete = TRUE) +
       customThemeNoFacet +
       scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
       scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
       labs(
         x = detectionVar_label,
         y = isolationVar_label,
+        fill = groupVar_label,
         col = groupVar_label
       ) +
-      theme(panel.spacing = unit(1.5, "lines"))
+      theme(panel.spacing = unit(1, "lines")) +
+      geom_hline(yintercept = c(-Inf, Inf)) +
+      geom_vline(xintercept = c(-Inf, Inf))
 
     ggsave(paste0(selected_outcome, "_IL_thresholds_perEMS_loess_", gsub("%", "perc", perc), reduction, ".png"),
-      plot = pplot, path = file.path(sim_dir), width = 12, height = 7, device = "png"
+      plot = pplot, path = file.path(sim_dir), width = 10, height = 5, device = "png"
     )
     ggsave(paste0(selected_outcome, "_IL_thresholds_perEMS_loess_", gsub("%", "perc", perc), reduction, ".pdf"),
-      plot = pplot, path = file.path(sim_dir), width = 12, height = 7, device = "pdf"
+      plot = pplot, path = file.path(sim_dir), width = 10, height = 5, device = "pdf"
     )
   }
 }
@@ -94,18 +147,20 @@ for (perc in c("10%", "20%", "30%")) {
 
 
 ### add population for population weighting
-pop = c(736370,1124941,619366,698886,417674,788985,1814891,1673408,1970275,1052839,2716921)
-popdat <- cbind(region=c(1:11), pop) %>% as.data.frame()
+pop <- c(736370, 1124941, 619366, 698886, 417674, 788985, 1814891, 1673408, 1970275, 1052839, 2716921)
+popdat <- cbind(region = c(1:11), pop) %>% as.data.frame()
 
 tdat_wide <- tdat_wide %>%
-  left_join(popdat, by="region") %>%
+  left_join(popdat, by = "region") %>%
   group_by(region, grpvar, sim, reopening) %>%
   mutate(fitmax = max(isolation_success, na.rm = TRUE))
 
 
-## Select maximum isolation, for mnimum detection 
-### Aggregate data using custom weighting function 
-tdat_wideAggrIL <- tdat_wide %>% filter( isolation_success == fitmax) %>% f_weighted.aggrDat(c("sim", "reopening"), "detection_success", "pop")
+## Select maximum isolation, for mnimum detection
+### Aggregate data using custom weighting function
+tdat_wideAggrIL <- tdat_wide %>%
+  filter(isolation_success == fitmax) %>%
+  f_weighted.aggrDat(c("sim", "reopening"), "detection_success", "pop")
 
 tdat_wideAggrIL2 <- tdat_wideAggrIL %>%
   pivot_wider(names_from = sim, values_from = c("min.val", "max.val", "mean.val", "median.val", "sd.val", "n.val", "q25", "q75", "q2.5", "q97.5", "se.val", "lower.ci.val", "upper.ci.val"))
@@ -144,12 +199,10 @@ ggsave(paste0(selected_outcome, "_IL_thresholds_summary_loess.pdf"),
 )
 
 
-
-
 ####################
-### aggregate regions  - population weighted           
-tdat_wideAggrIL <- tdat_wide %>% f_weighted.aggrDat(c("sim", "reopening",  "grpvar"), "detection_success", "pop")
-### aggregate grpvar 
+### aggregate regions  - population weighted
+tdat_wideAggrIL <- tdat_wide %>% f_weighted.aggrDat(c("sim", "reopening", "grpvar"), "detection_success", "pop")
+### aggregate grpvar
 tdat_wideAggrIL <- tdat_wideAggrIL %>% f_aggrDat(c("sim", "reopening"), "mean.val")
 
 tdat_wideAggrIL2 <- tdat_wideAggrIL %>%
@@ -189,53 +242,49 @@ ggsave(paste0(selected_outcome, "_IL_thresholds_summary4_loess.pdf"),
 
 
 
-### Comparison plot 
+### Comparison plot
 savefilename <- paste0(selected_outcome, "_aggregatedMinThresholds.csv")
 write.csv(tdat_wideAggrIL, file.path(sim_dir, savefilename), row.names = FALSE)
 
 
 ###
-compareOutcomes=FALSE
-if(compareOutcomes){
-dat1 <- read.csv( file.path(sim_dir,  paste0("Rt", "_aggregatedMinThresholds.csv")))
-dat2 <- read.csv(file.path(sim_dir,  paste0("critical", "_aggregatedMinThresholds.csv")))
+compareOutcomes <- FALSE
+if (compareOutcomes) {
+  dat1 <- read.csv(file.path(sim_dir, paste0("Rt", "_aggregatedMinThresholds.csv")))
+  dat2 <- read.csv(file.path(sim_dir, paste0("critical", "_aggregatedMinThresholds.csv")))
 
-dat1$outcome = "Rt"
-dat2$outcome = "critical"
-dat <- rbind(dat1, dat2)
+  dat1$outcome <- "Rt"
+  dat2$outcome <- "critical"
+  dat <- rbind(dat1, dat2)
 
-dat$sim <- factor(dat$sim,
-                              levels = c("no reduction in test delay", "reduced test delay Sym only", "reduced test delay As, Sym"),
-                              labels = c("no reduction in test delay", "reduced test delay Sym only", "reduced test delay As, Sym")
-)
-
-
-pplot <- ggplot(data=dat) + 
-  theme_minimal() +
-  geom_pointrange( aes(x = reopening, y = mean.val, ymin = min.val, ymax = max.val, shape = outcome, col = sim, group = sim),
-    size = 1, position = position_dodge(0.3)
-  ) +
-  labs(
-    title = "",
-    subtitle = "",
-    x = "\nPartial reopening scenario",
-    y = "Minimum detection of a- and presymptomatics\nto prevent exceeding ICU capacities\n",
-    col = "",
-    shape = ""
-  ) +
-  scale_color_manual(values = c("deepskyblue3", "orange", "mediumvioletred")) +
-  customThemeNoFacet +
-  scale_y_continuous(breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10))
+  dat$sim <- factor(dat$sim,
+    levels = c("no reduction in test delay", "reduced test delay Sym only", "reduced test delay As, Sym"),
+    labels = c("no reduction in test delay", "reduced test delay Sym only", "reduced test delay As, Sym")
+  )
 
 
-ggsave(paste0( "IL_thresholds_summary4_loess.png"),
-       plot = pplot, path = file.path(sim_dir), width = 8, height = 5, device = "png"
-)
-ggsave(paste0("IL_thresholds_summary4_loess.pdf"),
-       plot = pplot, path = file.path(sim_dir), width = 10, height = 5, device = "pdf"
-)
+  pplot <- ggplot(data = dat) +
+    theme_minimal() +
+    geom_pointrange(aes(x = reopening, y = mean.val, ymin = min.val, ymax = max.val, shape = outcome, col = sim, group = sim),
+      size = 1, position = position_dodge(0.3)
+    ) +
+    labs(
+      title = "",
+      subtitle = "",
+      x = "\nPartial reopening scenario",
+      y = "Minimum detection of a- and presymptomatics\nto prevent exceeding ICU capacities\n",
+      col = "",
+      shape = ""
+    ) +
+    scale_color_manual(values = c("deepskyblue3", "orange", "mediumvioletred")) +
+    customThemeNoFacet +
+    scale_y_continuous(breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10))
 
 
+  ggsave(paste0("IL_thresholds_summary4_loess.png"),
+    plot = pplot, path = file.path(sim_dir), width = 8, height = 5, device = "png"
+  )
+  ggsave(paste0("IL_thresholds_summary4_loess.pdf"),
+    plot = pplot, path = file.path(sim_dir), width = 10, height = 5, device = "pdf"
+  )
 }
-
-
