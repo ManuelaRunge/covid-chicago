@@ -19,9 +19,7 @@ Per experiment design, multiple separate simulation experiments are run that res
 - 4 heatmap_loess_contactTracing.R (required)
 	output: contour plots for each EMS (or super region) separately
 
-- 5 map_threshold_values.R (optional)
-
-- 6 combined_exp_summary_plot_IL.R  (optional)
+- 5 combined_exp_summary_plot_IL.R  (optional)
 	output: 
 	- one multi-facet plot with thresholds per EMS  
 	- pointrange plot with thresholds aggregated per IL and compared for varying experiments
