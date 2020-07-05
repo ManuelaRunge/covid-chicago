@@ -62,10 +62,6 @@ tdat_wide8$reopening <- "30%"
 tdat_wide <- rbind(tdat_wide0, tdat_wide1, tdat_wide2, tdat_wide3, tdat_wide4, tdat_wide5, tdat_wide6, tdat_wide7, tdat_wide8)
 rm(tdat_wide0, tdat_wide1, tdat_wide2, tdat_wide3, tdat_wide4, tdat_wide5, tdat_wide6)
 
-minIsolation <- tdat_wide %>%
-  group_by(region, sim, reopening) %>%
-  mutate(minIsolation = min(isolation_success, na.rm = TRUE))
-
 tdat_wide$region <- as.numeric(gsub(".csv", "", tdat_wide$region))
 
 
@@ -154,6 +150,51 @@ tdat_wide <- tdat_wide %>%
   left_join(popdat, by = "region") %>%
   group_by(region, grpvar, sim, reopening) %>%
   mutate(fitmax = max(isolation_success, na.rm = TRUE))
+
+
+### Generate map 
+if(generateMap){
+  library(raster)
+  library(ggthemes)
+  
+  shp <- shapefile(file.path(data_path, "covid_IDPH/shapefiles/EMS_Regions/EMS_Regions.shp"))
+  # plot(shp)
+  
+  perc = "10%"
+  reduction = c( "reduced test delay As, Sym" , "no reduction in test delay" ) # 
+  grp = 0.17
+  
+  ### filter 
+  dat <- tdat_wide %>%
+    filter(isolation_success == fitmax)  %>%
+    filter(reopening ==perc & sim  %in% reduction & grpvar ==grp)
+  
+  ## Combine with shapefile - spatial dataframe
+  ## ID is not the regions in correct order !!
+  shp_f <- fortify(shp, id = REGION)
+  shp_f$region <- as.numeric(factor(shp_f$id , levels=c(9, 8, 7, 6, 5, 4,2, 1, 3,10, 0), labels=c(1:11)))
+  shp_f <- left_join(shp_f, dat, by = "region")
+  
+  
+  pmap <- ggplot(data=shp_f) +
+    geom_polygon(aes(x = long, y = lat, group = region), fill = "lightgrey", color = "black") +
+    geom_polygon(aes(x = long, y = lat, fill = detection_success, group = region), color = "black") +
+    scale_fill_gradient2(low = "#f7fcfd", high = "#542788") +
+    labs(fill = "Minimum detection coverage") +
+    facet_wrap(~ sim) +
+    customThemeNoFacet +
+    theme_map() +
+    theme(legend.position = "right")
+  
+  ggsave(paste0("IL_thresholds_map",gsub("%","perc",perc),"_", grp,".png"),
+         plot = pmap, path = file.path(sim_dir,"maps"), width = 11, height = 8, device = "png"
+  )
+  
+  ggsave(paste0("IL_thresholds_map",gsub("%","perc",perc),"_", grp,".pdf"),
+         plot = pmap, path = file.path(sim_dir,"maps"), width = 11, height = 8, device = "pdf"
+  )
+  
+}
 
 
 ## Select maximum isolation, for mnimum detection
@@ -248,7 +289,6 @@ write.csv(tdat_wideAggrIL, file.path(sim_dir, savefilename), row.names = FALSE)
 
 
 ###
-compareOutcomes <- FALSE
 if (compareOutcomes) {
   dat1 <- read.csv(file.path(sim_dir, paste0("Rt", "_aggregatedMinThresholds.csv")))
   dat2 <- read.csv(file.path(sim_dir, paste0("critical", "_aggregatedMinThresholds.csv")))

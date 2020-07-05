@@ -113,14 +113,15 @@ for (exp_name in exp_names) {
 
   if (heatmapPerEMS) source(file.path("ct_analysis/heatmap_loess_contactTracing.R"))
   
-  if (generateMap) source(file.path("ct_analysis/map_threshold_values.R"))
-  
-  
 }
 
 ### Generate pointrange plots with minimum detection level aggregated for Illinois
 ### Running either with Rt or critical (and includes plot comparing both )
 summary1 <- FALSE
-selected_outcome <- "Rt" # critical
-if (summary1) source(file.path("ct_analysis/combined_exp_summary_plot.R"))
+if (summary1){
+  selected_outcome <- "Rt" # critical
+  compareOutcomes <- FALSE
+  generateMap=FALSE
+  source(file.path("ct_analysis/combined_exp_summary_plot.R"))
+}
 
