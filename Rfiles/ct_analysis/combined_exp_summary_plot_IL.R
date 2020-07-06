@@ -11,7 +11,7 @@
 # 10%, 20% and 30%
 ## ============================================================
 
-# selected_outcome <- "critical"
+# selected_outcome <- "Rt" # critical"
 ### Load simulation data
 exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
 sim_dir <- file.path(ct_dir, simdate)
@@ -199,13 +199,19 @@ if(generateMap){
 
 ## Select maximum isolation, for mnimum detection
 ### Aggregate data using custom weighting function
+require(spatstat)
+# tdat_wideAggrIL <- tdat_wide %>%
+#   filter(isolation_success == fitmax) %>%
+#   f_weighted.aggrDat(c("sim", "reopening", "grpvar"), "detection_success", "pop")
+
 tdat_wideAggrIL <- tdat_wide %>%
-  filter(isolation_success == fitmax) %>%
-  f_weighted.aggrDat(c("sim", "reopening"), "detection_success", "pop")
-
-tdat_wideAggrIL2 <- tdat_wideAggrIL %>%
-  pivot_wider(names_from = sim, values_from = c("min.val", "max.val", "mean.val", "median.val", "sd.val", "n.val", "q25", "q75", "q2.5", "q97.5", "se.val", "lower.ci.val", "upper.ci.val"))
-
+   filter(isolation_success == fitmax) %>%
+   group_by(sim, reopening, grpvar) %>% 
+  summarize(mean.val=weighted.mean(detection_success, pop)) %>%
+  group_by(sim, reopening) %>% 
+  summarize(min.val=min(mean.val),
+            max.val=max(mean.val),
+            mean.val=mean(mean.val))
 
 tdat_wideAggrIL$sim <- factor(tdat_wideAggrIL$sim,
   levels = c("no reduction in test delay", "reduced test delay Sym only", "reduced test delay As, Sym"),
@@ -215,8 +221,7 @@ tdat_wideAggrIL$sim <- factor(tdat_wideAggrIL$sim,
 
 pplot <- ggplot(data = tdat_wideAggrIL) +
   theme_minimal() +
-  geom_pointrange(
-    data = tdat_wideAggrIL, aes(x = reopening, y = median.val, ymin = q25, ymax = q75, shape = sim, col = sim, group = sim),
+  geom_pointrange(aes(x = reopening, y = mean.val, ymin = min.val, ymax = max.val, shape = sim, col = sim, group = sim),
     size = 1, position = position_dodge(0.3)
   ) +
   labs(
@@ -229,7 +234,8 @@ pplot <- ggplot(data = tdat_wideAggrIL) +
   ) +
   scale_color_manual(values = c("deepskyblue3", "orange", "mediumvioletred")) +
   customThemeNoFacet +
-  scale_y_continuous(breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10))
+  scale_y_continuous(lim=c(0,1), breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10), expand=c(0,0)) +
+  theme( panel.grid.major.x = element_blank() )
 
 
 ggsave(paste0(selected_outcome, "_IL_thresholds_summary_loess.png"),
@@ -238,49 +244,6 @@ ggsave(paste0(selected_outcome, "_IL_thresholds_summary_loess.png"),
 ggsave(paste0(selected_outcome, "_IL_thresholds_summary_loess.pdf"),
   plot = pplot, path = file.path(sim_dir), width = 10, height = 5, device = "pdf"
 )
-
-
-####################
-### aggregate regions  - population weighted
-tdat_wideAggrIL <- tdat_wide %>% f_weighted.aggrDat(c("sim", "reopening", "grpvar"), "detection_success", "pop")
-### aggregate grpvar
-tdat_wideAggrIL <- tdat_wideAggrIL %>% f_aggrDat(c("sim", "reopening"), "mean.val")
-
-tdat_wideAggrIL2 <- tdat_wideAggrIL %>%
-  pivot_wider(names_from = sim, values_from = c("min.val", "max.val", "mean.val", "median.val", "sd.val", "n.val", "q25", "q75", "q2.5", "q97.5", "se.val", "lower.ci.val", "upper.ci.val"))
-
-
-tdat_wideAggrIL$sim <- factor(tdat_wideAggrIL$sim,
-  levels = c("no reduction in test delay", "reduced test delay Sym only", "reduced test delay As, Sym"),
-  labels = c("no reduction in test delay", "reduced test delay Sym only", "reduced test delay As, Sym")
-)
-
-
-pplot <- ggplot(data = tdat_wideAggrIL) +
-  theme_minimal() +
-  geom_pointrange(
-    data = tdat_wideAggrIL, aes(x = reopening, y = mean.val, ymin = min.val, ymax = max.val, shape = sim, col = sim, group = sim),
-    size = 1, position = position_dodge(0.3)
-  ) +
-  labs(
-    title = "",
-    subtitle = "",
-    x = "\nPartial reopening scenario",
-    y = "Minimum detection of a- and presymptomatics\nto prevent exceeding ICU capacities\n",
-    col = "",
-    shape = ""
-  ) +
-  scale_color_manual(values = c("deepskyblue3", "orange", "mediumvioletred")) +
-  customThemeNoFacet +
-  scale_y_continuous(breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10))
-
-ggsave(paste0(selected_outcome, "_IL_thresholds_summary4_loess.png"),
-  plot = pplot, path = file.path(sim_dir), width = 8, height = 5, device = "png"
-)
-ggsave(paste0(selected_outcome, "_IL_thresholds_summary4_loess.pdf"),
-  plot = pplot, path = file.path(sim_dir), width = 10, height = 5, device = "pdf"
-)
-
 
 
 ### Comparison plot
@@ -318,13 +281,131 @@ if (compareOutcomes) {
     ) +
     scale_color_manual(values = c("deepskyblue3", "orange", "mediumvioletred")) +
     customThemeNoFacet +
-    scale_y_continuous(breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10))
+    scale_y_continuous(lim=c(0,1), breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10), expand=c(0,0)) +
+    theme( panel.grid.major.x = element_blank() )
 
 
-  ggsave(paste0("IL_thresholds_summary4_loess.png"),
+  ggsave(paste0("IL_thresholds_loess.png"),
     plot = pplot, path = file.path(sim_dir), width = 8, height = 5, device = "png"
   )
-  ggsave(paste0("IL_thresholds_summary4_loess.pdf"),
+  ggsave(paste0("IL_thresholds_loess.pdf"),
     plot = pplot, path = file.path(sim_dir), width = 10, height = 5, device = "pdf"
   )
 }
+
+
+#c("deepskyblue3", "orange", "mediumvioletred")
+simcols = c("no reduction in test delay"="deepskyblue3",  "reduced test delay As, Sym"="orange", "reduced test delay Sym only"="mediumvioletred")
+
+p1 <- ggplot(data=dat) +
+  theme_minimal() +
+  geom_pointrange(aes(x = reopening, y = mean.val, ymin = min.val, ymax = max.val, group =interaction(outcome,sim)),
+                  size = 1, position = position_dodge(0.7), col ="white",show.legend=FALSE
+  ) +
+  geom_pointrange(data = subset(dat, outcome=="critical" & sim  %in% c("no reduction in test delay")),
+                  aes(x = reopening, y = mean.val, ymin = min.val, ymax = max.val, shape = outcome, col = sim, group = sim),
+                  size = 1, position = position_dodge(0.7)
+  ) +
+  labs(
+    title = "",
+    subtitle = "",
+    x = "\nPartial reopening scenario",
+    y = "Minimum detection of As andP\nto prevent exceeding ICU capacities\n",
+    col = "",
+    shape = ""
+  ) +
+  scale_color_manual(values = simcols) +
+  customThemeNoFacet +
+  scale_y_continuous(lim=c(0,1), breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10), expand=c(0,0)) +
+  theme( panel.grid.major.x = element_blank() , legend.position = "none") 
+
+
+ggsave(paste0("p1.png"),
+       plot = p1, path = file.path(sim_dir), width = 8, height = 5, device = "png"
+)
+
+
+
+p2 <- ggplot(data=dat) +
+  theme_minimal() +
+  geom_pointrange(aes(x = reopening, y = mean.val, ymin = min.val, ymax = max.val, group =interaction(outcome,sim)),
+                  size = 1, position = position_dodge(0.7), col ="white",show.legend=FALSE
+  ) +
+  geom_pointrange(data = subset(dat, outcome=="critical" & sim  %in% c("no reduction in test delay",  "reduced test delay Sym only")),
+                  aes(x = reopening, y = mean.val, ymin = min.val, ymax = max.val, shape = outcome, col = sim, group = sim),
+                  size = 1, position = position_dodge(0.7)
+  ) +
+  labs(
+    title = "",
+    subtitle = "",
+    x = "\nPartial reopening scenario",
+    y = "Minimum detection of As andP\nto prevent exceeding ICU capacities\n",
+    col = "",
+    shape = ""
+  ) +
+  scale_color_manual(values = simcols) +
+  customThemeNoFacet +
+  scale_y_continuous(lim=c(0,1), breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10), expand=c(0,0)) +
+  theme( panel.grid.major.x = element_blank() , legend.position = "none") 
+
+
+ggsave(paste0("p2.png"),
+       plot = p2, path = file.path(sim_dir), width = 8, height = 5, device = "png"
+)
+
+
+
+p3 <- ggplot(data=dat) +
+  theme_minimal() +
+  geom_pointrange(aes(x = reopening, y = mean.val, ymin = min.val, ymax = max.val, group =interaction(outcome,sim)),
+                  size = 1, position = position_dodge(0.7), col ="white",show.legend=FALSE
+  ) +
+  geom_pointrange(data = subset(dat, outcome=="critical" ),
+                  aes(x = reopening, y = mean.val, ymin = min.val, ymax = max.val, shape = outcome, col = sim, group = sim),
+                  size = 1, position = position_dodge(0.7)
+  ) +
+  labs(
+    title = "",
+    subtitle = "",
+    x = "\nPartial reopening scenario",
+    y = "Minimum detection of As andP\nto prevent exceeding ICU capacities\n",
+    col = "",
+    shape = ""
+  ) +
+  scale_color_manual(values = simcols) +
+  customThemeNoFacet +
+  scale_y_continuous(lim=c(0,1), breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10), expand=c(0,0)) +
+  theme( panel.grid.major.x = element_blank() , legend.position = "none") 
+
+
+ggsave(paste0("p3.png"),
+       plot = p3, path = file.path(sim_dir), width = 8, height = 5, device = "png"
+)
+
+
+p4 <- ggplot(data=dat) +
+  theme_minimal() +
+  geom_pointrange(aes(x = reopening, y = mean.val, ymin = min.val, ymax = max.val, group =interaction(outcome,sim)),
+                  size = 1, position = position_dodge(0.7), col ="white",show.legend=FALSE
+  ) +
+  geom_pointrange(data = subset(dat ),
+                  aes(x = reopening, y = mean.val, ymin = min.val, ymax = max.val, shape = outcome, col = sim, group = sim),
+                  size = 1, position = position_dodge(0.7)
+  ) +
+  labs(
+    title = "",
+    subtitle = "",
+    x = "\nPartial reopening scenario",
+    y = "Minimum detection of As andP\nto prevent exceeding ICU capacities\n",
+    col = "",
+    shape = ""
+  ) +
+  scale_color_manual(values = simcols) +
+  customThemeNoFacet +
+  scale_y_continuous(lim=c(0,1), breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10), expand=c(0,0)) +
+  theme( panel.grid.major.x = element_blank() , legend.position = "none") 
+
+
+ggsave(paste0("p4.png"),
+       plot = p4, path = file.path(sim_dir), width = 8, height = 5, device = "png"
+)
