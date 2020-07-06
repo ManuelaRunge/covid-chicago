@@ -76,8 +76,7 @@ for (perc in unique(tdat_wide$reopening)) {
         x = detection_success,
         xmin = detection_success, xmax = 1,
         ymin = isolation_success, ymax = 1, fill = as.factor(grpvar), group = grpvar
-      ), alpha = 0.5
-      ) +
+      ), alpha = 0.5) +
       geom_ribbon(
         data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.585),
         aes(
@@ -152,48 +151,47 @@ tdat_wide <- tdat_wide %>%
   mutate(fitmax = max(isolation_success, na.rm = TRUE))
 
 
-### Generate map 
-if(generateMap){
+### Generate map
+if (generateMap) {
   library(raster)
   library(ggthemes)
-  
+
   shp <- shapefile(file.path(data_path, "covid_IDPH/shapefiles/EMS_Regions/EMS_Regions.shp"))
   # plot(shp)
-  
-  perc = "10%"
-  reduction = c( "reduced test delay As, Sym" , "no reduction in test delay" ) # 
-  grp = 0.17
-  
-  ### filter 
+
+  perc <- "10%"
+  reduction <- c("reduced test delay As, Sym", "no reduction in test delay") #
+  grp <- 0.17
+
+  ### filter
   dat <- tdat_wide %>%
-    filter(isolation_success == fitmax)  %>%
-    filter(reopening ==perc & sim  %in% reduction & grpvar ==grp)
-  
+    filter(isolation_success == fitmax) %>%
+    filter(reopening == perc & sim %in% reduction & grpvar == grp)
+
   ## Combine with shapefile - spatial dataframe
   ## ID is not the regions in correct order !!
   shp_f <- fortify(shp, id = REGION)
-  shp_f$region <- as.numeric(factor(shp_f$id , levels=c(9, 8, 7, 6, 5, 4,2, 1, 3,10, 0), labels=c(1:11)))
+  shp_f$region <- as.numeric(factor(shp_f$id, levels = c(9, 8, 7, 6, 5, 4, 2, 1, 3, 10, 0), labels = c(1:11)))
   shp_f <- left_join(shp_f, dat, by = "region")
-  
-  
-  pmap <- ggplot(data=shp_f) +
+
+
+  pmap <- ggplot(data = shp_f) +
     geom_polygon(aes(x = long, y = lat, group = region), fill = "lightgrey", color = "black") +
     geom_polygon(aes(x = long, y = lat, fill = detection_success, group = region), color = "black") +
     scale_fill_gradient2(low = "#f7fcfd", high = "#542788") +
     labs(fill = "Minimum detection coverage") +
-    facet_wrap(~ sim) +
+    facet_wrap(~sim) +
     customThemeNoFacet +
     theme_map() +
     theme(legend.position = "right")
-  
-  ggsave(paste0("IL_thresholds_map",gsub("%","perc",perc),"_", grp,".png"),
-         plot = pmap, path = file.path(sim_dir,"maps"), width = 11, height = 8, device = "png"
+
+  ggsave(paste0("IL_thresholds_map", gsub("%", "perc", perc), "_", grp, ".png"),
+    plot = pmap, path = file.path(sim_dir, "maps"), width = 11, height = 8, device = "png"
   )
-  
-  ggsave(paste0("IL_thresholds_map",gsub("%","perc",perc),"_", grp,".pdf"),
-         plot = pmap, path = file.path(sim_dir,"maps"), width = 11, height = 8, device = "pdf"
+
+  ggsave(paste0("IL_thresholds_map", gsub("%", "perc", perc), "_", grp, ".pdf"),
+    plot = pmap, path = file.path(sim_dir, "maps"), width = 11, height = 8, device = "pdf"
   )
-  
 }
 
 
@@ -205,13 +203,15 @@ require(spatstat)
 #   f_weighted.aggrDat(c("sim", "reopening", "grpvar"), "detection_success", "pop")
 
 tdat_wideAggrIL <- tdat_wide %>%
-   filter(isolation_success == fitmax) %>%
-   group_by(sim, reopening, grpvar) %>% 
-  summarize(mean.val=weighted.mean(detection_success, pop)) %>%
-  group_by(sim, reopening) %>% 
-  summarize(min.val=min(mean.val),
-            max.val=max(mean.val),
-            mean.val=mean(mean.val))
+  filter(isolation_success == fitmax) %>%
+  group_by(sim, reopening, grpvar) %>%
+  summarize(mean.val = weighted.mean(detection_success, pop)) %>%
+  group_by(sim, reopening) %>%
+  summarize(
+    min.val = min(mean.val),
+    max.val = max(mean.val),
+    mean.val = mean(mean.val)
+  )
 
 tdat_wideAggrIL$sim <- factor(tdat_wideAggrIL$sim,
   levels = c("no reduction in test delay", "reduced test delay Sym only", "reduced test delay As, Sym"),
@@ -234,8 +234,8 @@ pplot <- ggplot(data = tdat_wideAggrIL) +
   ) +
   scale_color_manual(values = c("deepskyblue3", "orange", "mediumvioletred")) +
   customThemeNoFacet +
-  scale_y_continuous(lim=c(0,1), breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10), expand=c(0,0)) +
-  theme( panel.grid.major.x = element_blank() )
+  scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10), expand = c(0, 0)) +
+  theme(panel.grid.major.x = element_blank())
 
 
 ggsave(paste0(selected_outcome, "_IL_thresholds_summary_loess.png"),
@@ -281,8 +281,8 @@ if (compareOutcomes) {
     ) +
     scale_color_manual(values = c("deepskyblue3", "orange", "mediumvioletred")) +
     customThemeNoFacet +
-    scale_y_continuous(lim=c(0,1), breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10), expand=c(0,0)) +
-    theme( panel.grid.major.x = element_blank() )
+    scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10), expand = c(0, 0)) +
+    theme(panel.grid.major.x = element_blank())
 
 
   ggsave(paste0("IL_thresholds_loess.png"),
@@ -292,4 +292,3 @@ if (compareOutcomes) {
     plot = pplot, path = file.path(sim_dir), width = 10, height = 5, device = "pdf"
   )
 }
-
