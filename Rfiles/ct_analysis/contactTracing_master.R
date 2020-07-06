@@ -44,7 +44,29 @@ geography <- "EMS"
 ## When plotting heatmaps, should the legend show predictions per 100'000 population ? 
 scalePop <- TRUE
 
-## RUn analysis scripts for each experiment in exp_names (must have same contact tracing parameters!)
+selected_outcome <- "critical"
+
+
+## Define contact  tracing parameters
+detectionVar <- "d_AsP_ct1" # "d_Sym_ct1"
+isolationVar <- "reduced_inf_of_det_cases_ct1"
+groupVar <- "d_Sym_ct1" # "time_to_detection" # "change_testDelay_Sym_1"
+
+## Define label per parameter for plotting
+detectionVar_label <- detectionVar
+isolationVar_label <- isolationVar
+groupVar_label <- groupVar
+
+if (detectionVar == "d_AsP_ct1") detectionVar_label <- "detection of As and P (%)"
+if (detectionVar == "d_Sym_ct1") detectionVar_label <- "increased detection of Sym (%)"
+if (detectionVar == "d_AsPSym_ct1") detectionVar_label <- "detection of As, P, Sym (%)"
+if (groupVar == "d_Sym_ct1") groupVar_label <- "increased detection of Sym (%)"
+if (groupVar == "change_testDelay_Sym_1") groupVar_label <- "reduced detection delay of Sym (days)"
+if (isolationVar == "reduced_inf_of_det_cases_ct1") isolationVar_label <- "isolation success As, P (%)"
+if (groupVar == "contact_tracing_start_1") trajectoriesDat <- trajectoriesDat %>% mutate(grpvar = as.Date(contact_tracing_start_1 + startdate))
+
+
+## Run analysis scripts for each experiment in exp_names (must have same contact tracing parameters!)
 for (exp_name in exp_names) {
   # exp_name <- exp_names[1]
   print(exp_name)
@@ -59,24 +81,6 @@ for (exp_name in exp_names) {
 
   ## Load trajectories Dat
   trajectoriesDat <- read.csv(file.path(exp_dir, "trajectoriesDat.csv"))
-
-  ## Define contact  tracing parameters
-  detectionVar <- "d_AsP_ct1" # "d_Sym_ct1"
-  isolationVar <- "reduced_inf_of_det_cases_ct1"
-  groupVar <- "d_Sym_ct1" # "time_to_detection" # "change_testDelay_Sym_1"
-
-  ## Define label per parameter for plotting
-  detectionVar_label <- detectionVar
-  isolationVar_label <- isolationVar
-  groupVar_label <- groupVar
-
-  if (detectionVar == "d_AsP_ct1") detectionVar_label <- "detection of As and P (%)"
-  if (detectionVar == "d_Sym_ct1") detectionVar_label <- "increased detection of Sym (%)"
-  if (detectionVar == "d_AsPSym_ct1") detectionVar_label <- "detection of As, P, Sym (%)"
-  if (groupVar == "d_Sym_ct1") groupVar_label <- "increased detection of Sym (%)"
-  if (groupVar == "change_testDelay_Sym_1") groupVar_label <- "reduced detection delay of Sym (days)"
-  if (isolationVar == "reduced_inf_of_det_cases_ct1") isolationVar_label <- "isolation success As, P (%)"
-  if (groupVar == "contact_tracing_start_1") trajectoriesDat <- trajectoriesDat %>% mutate(grpvar = as.Date(contact_tracing_start_1 + startdate))
 
   ### Extract relevant dates from trajectpries dat
   reopeningdate <- unique(as.Date(trajectoriesDat$socialDistanceSTOP_time, origin = trajectoriesDat$startdate))
@@ -102,7 +106,6 @@ for (exp_name in exp_names) {
   unique(trajectoriesDat$grpvar)
   
   ### Run analysis scripts for selected outcome
-  selected_outcome <- "critical"
   if (describeDat) source(file.path("ct_analysis/describeTrajectoriesDat.R"))
   if (estimateRt) source(file.path("ct_analysis/get_Rt_from_contactTracingSimulations.R"))
   if (heatmapRt) source(file.path("ct_analysis/ct_estimatedRT.R"))
