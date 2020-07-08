@@ -18,7 +18,7 @@ source("ct_analysis/helper_functions_CT.R")
 
 # Define experiment iteration and simdate
 ct_dir <- file.path(simulation_output, "contact_tracing")
-simdate <- "20200627"
+simdate <- "20200707"
 
 ### Limit for ICU beds
 labs <- c(
@@ -31,10 +31,10 @@ exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names
 
 ### Define which analysis scripts to run
 describeDat <- FALSE
-heatmapPerEMS <- FALSE
+heatmapPerEMS <- TRUE
 tresholdsAll <- FALSE
 estimateRt <- FALSE 
-heatmapRt <- TRUE 
+heatmapRt <- FALSE 
 generateMap <- FALSE
 
 ### Loop through each EMS or the operational 'super-regions' 
