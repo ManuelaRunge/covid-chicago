@@ -3,79 +3,83 @@
 ## ============================================================
 
 
-#### Combine Rt estimates per region
-load(file.path(Rt_dir, "1_temp_Rt_tempdat_All.Rdata"))
-Rt_dat <- Rt_tempdat_All
-rm(Rt_tempdat_All)
+# #### Combine Rt estimates per region
+# load(file.path(Rt_dir, "1_temp_Rt_tempdat_All.Rdata"))
+# Rt_dat <- Rt_tempdat_All
+# rm(Rt_tempdat_All)
+# 
+# for (i in c(1:11)) {
+#   load(file.path(Rt_dir, paste0(i, "_temp_Rt_tempdat_All.Rdata")))
+#   Rt_dat <- rbind(Rt_dat, Rt_tempdat_All)
+#   rm(Rt_tempdat_All)
+# }
 
-for (i in c(1:11)) {
-  load(file.path(Rt_dir, paste0(i, "_temp_Rt_tempdat_All.Rdata")))
-  Rt_dat <- rbind(Rt_dat, Rt_tempdat_All)
-  rm(Rt_tempdat_All)
-}
+# table(Rt_dat$region)
+# table(Rt_dat$scen_num, Rt_dat$t_start)
+# 
+# ### add variables from simulation dataset
+# selected_ems <- c(1:11)
+# emsvars_temp <- c(paste0('critical', "_EMS."), "N_EMS_", "Ki_EMS_")
+# 
+# emsvars <- NULL
+# for (ems in selected_ems) {
+#   emsvars <- c(emsvars, paste0(emsvars_temp, ems))
+# }
+# 
+# groupvars <- c("time", "Date", "startdate", "scen_num", "sample_num", "run_num", "grpvar", "detection_success", "isolation_success")
+# (keepvars <- c(groupvars, emsvars))
+# 
+# dat <- trajectoriesDat %>%
+#   dplyr::select(Date, scen_num, isolation_success, detection_success, grpvar) %>%
+#   dplyr::arrange(Date) %>%
+#   dplyr::group_by(scen_num) %>%
+#   dplyr::mutate(date = as.Date(Date), time = c(1:n_distinct(date))) %>%
+#   unique()
+# 
+# subdat <- trajectoriesDat %>% dplyr::select(keepvars)
+# # rm(trajectoriesDat)
+# 
+# subdat <- trajectoriesDat %>%
+#   dplyr::select(keepvars) %>%
+#   pivot_longer(cols = -c(groupvars)) %>%
+#   dplyr::mutate(
+#     name = gsub("All", "EMS.IL", name)
+#   ) %>%
+#   separate(name, into = c("outcome", "region"), sep = "_EMS[.]") %>%
+#   dplyr::filter(Date >= reopeningdate) %>%
+#   dplyr::select(-c(time)) %>%
+#   filter(outcome == selected_outcome) %>%
+#   as.data.frame()
+# 
+# 
+# ### Edit dataframe
+# Rt_dat2 <- Rt_dat %>%
+#   merge(unique(dat[, c("time", "Date", "scen_num", "isolation_success", "detection_success", "grpvar")]),
+#     by.x = c("t_start", "scen_num"), by.y = c("time", "scen_num")
+#   )
+# 
+# colnames(Rt_dat2) <- gsub("[(R]", "", colnames(Rt_dat2))
+# colnames(Rt_dat2) <- gsub("[)]", "", colnames(Rt_dat2))
+# 
+# Rt_dat2 <- Rt_dat2 %>% mutate(meanRtLE1 = ifelse(Median < 1, 1, 0))
 
-table(Rt_dat$region)
-table(Rt_dat$scen_num, Rt_dat$t_start)
-
-### add variables from simulation dataset
-selected_ems <- c(1:11)
-emsvars_temp <- c(paste0(selected_outcome, "_EMS."), "N_EMS_", "Ki_EMS_")
-
-emsvars <- NULL
-for (ems in selected_ems) {
-  emsvars <- c(emsvars, paste0(emsvars_temp, ems))
-}
-
-groupvars <- c("time", "Date", "startdate", "scen_num", "sample_num", "run_num", "grpvar", "detection_success", "isolation_success")
-(keepvars <- c(groupvars, emsvars))
-
-dat <- trajectoriesDat %>%
-  select(Date, scen_num, isolation_success, detection_success, grpvar) %>%
-  arrange(Date) %>%
-  group_by(scen_num) %>%
-  mutate(date = as.Date(Date), time = c(1:n_distinct(date))) %>%
-  unique()
-
-subdat <- trajectoriesDat %>% dplyr::select(keepvars)
-# rm(trajectoriesDat)
-
-subdat <- trajectoriesDat %>%
-  dplyr::select(keepvars) %>%
-  pivot_longer(cols = -c(groupvars)) %>%
-  mutate(
-    name = gsub("All", "EMS.IL", name)
-  ) %>%
-  separate(name, into = c("outcome", "region"), sep = "_EMS[.]") %>%
-  dplyr::filter(Date >= reopeningdate) %>%
-  select(-c(time)) %>%
-  left_join(capacity, by = "region") %>%
-  filter(outcome == selected_outcome) %>%
-  as.data.frame()
-
-
-### Edit dataframe
-Rt_dat2 <- Rt_dat %>%
-  merge(unique(dat[, c("time", "Date", "scen_num", "isolation_success", "detection_success", "grpvar")]),
-    by.x = c("t_start", "scen_num"), by.y = c("time", "scen_num")
-  )
-
-colnames(Rt_dat2) <- gsub("[(R]", "", colnames(Rt_dat2))
-colnames(Rt_dat2) <- gsub("[)]", "", colnames(Rt_dat2))
-
-Rt_dat2 <- Rt_dat2 %>% mutate(meanRtLE1 = ifelse(Median < 1, 1, 0))
-
-write.csv(Rt_dat2, file = file.path(Rt_dir, paste0("EMS_combined_estimated_Rt.csv")), row.names = FALSE)
+#write.csv(Rt_dat2, file = file.path(Rt_dir, paste0("EMS_combined_estimated_Rt.csv")), row.names = FALSE)
+Rt_dat2 <- read.csv(file.path(Rt_dir,"EMS_combined_estimated_Rt.csv" ))
+Rt_dat2$Date <- as.Date(Rt_dat2$Date)
 summary(Rt_dat2$Date)
+summary(Rt_dat2$t_start)
 
+
+### Readjust date for 2 weeks estimation of Rt (to do double check)
+Rt_dat2$Date <- Rt_dat2$Date+14
 ### --------------------------------------------------
 Rt_dat2$region_label <- factor(Rt_dat2$region, levels = c(1:11), labels = paste0("EMS ", c(1:11), "\n"))
 
 unique(Rt_dat2$detection_success)
-unique(Rt_dat2$detection_success)
 
-pplot <- ggplot(data = subset(Rt_dat2, Date >= "2020-06-01" & Date < as.Date("2020-08-01"))) +
+pplot <- ggplot(data = subset(Rt_dat2, Date >= "2020-05-01" & Date < as.Date("2020-09-01"))) +
   theme_minimal() +
-  geom_vline(xintercept = c(as.Date("2020-06-15"), as.Date("2020-07-01")), linetype = "dashed", size = 0.7, col = "darkgrey") +
+  geom_vline(xintercept = c(as.Date("2020-07-01"), as.Date("2020-08-01")), linetype = "dashed", size = 0.7, col = "darkgrey") +
   geom_line(aes(x = Date, y = Mean, group = scen_num), col = "deepskyblue3", size = 0.7) +
   # geom_smooth(aes(x=Date, y =Mean ),col="darkred") +
   scale_x_date(breaks = "2 weeks", labels = date_format("%b%d")) +
@@ -90,9 +94,10 @@ ggsave(paste0(selected_outcome, "_Rt_over_time.png"),
   plot = pplot, path = file.path(exp_dir), width = 12, height = 7, dpi = 300, device = "png"
 )
 
+
 ### 
 df <- Rt_dat2 %>%
-  dplyr::filter(Date >= as.Date("2020-06-15") & Date < as.Date("2020-07-15")) %>%
+  dplyr::filter(Date >= as.Date("2020-07-01") & Date < as.Date("2020-08-01")) %>%
   dplyr::group_by(region, region_label, Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>%
   dplyr::summarize(average_median_Rt = mean(Mean)) %>%
   mutate(Rt_fct = ifelse(average_median_Rt < 1, "<1", ">=1"))
@@ -141,6 +146,8 @@ ggsave(paste0(selected_outcome, "_Rt_sample_scatterplot.png"),
 for (ems in c(1:11)) {
   dat <- subset(df, region == ems)
   fitlist <- list()
+  
+ if( min(dat$average_median_Rt)>1)next
 
   for (grp in unique(dat$grpvar)) {
     # grp <- unique(dat$grpvar)[1]
@@ -255,9 +262,18 @@ for (ems in c(1:11)) {
 
 ### Combine all EMS thresholds into one file
 thresholdsfiles <- list.files(file.path(ems_dir), pattern = "Rt_loess_thresholds", recursive = TRUE, full.names = TRUE)
-lmthresholdsDat <- sapply(thresholdsfiles, read.csv, simplify = FALSE) %>%
-  bind_rows(.id = "id")
+#lmthresholdsDat <- sapply(thresholdsfiles, read.csv, simplify = FALSE) %>%
+#  bind_rows(.id = "id")
 
+datlist <- list()
+for(i in c(1:length(thresholdsfiles))){
+  temp <-  read.csv(thresholdsfiles[i])
+  if(dim(temp)[1]<1)next
+  temp$id <- thresholdsfiles[i]
+  datlist[[length(datlist)+1]] <- temp 
+  
+}
+lmthresholdsDat <- datlist %>% bind_rows()
 lmthresholdsDat$id <- gsub(ems_dir, "", lmthresholdsDat$id)
 lmthresholdsDat$region <- gsub("_Rt_loess_thresholds", "", lmthresholdsDat$id)
 lmthresholdsDat$region <- gsub("[/]", "", lmthresholdsDat$region)

@@ -44,10 +44,10 @@ for (ems in emsregions) {
   ### Identify peak at least 10 days after reopening
   peakTimes <- plotdat %>%
     filter(Date > min(Date) + 10) %>%
-    group_by(N, Ki, region, isolation_success, detection_success, grpvar, scen_num, sample_num, run_num) %>%
-    filter(value == max(value)) %>%
+    dplyr::group_by(N, Ki, region, isolation_success, detection_success, grpvar, scen_num, sample_num, run_num) %>%
+    dplyr::filter(value == max(value)) %>%
     dplyr::rename("Date_peak" = Date) %>%
-    select(N, Ki, region, Date_peak, outcome, isolation_success, detection_success, grpvar, scen_num, sample_num, run_num)
+    dplyr::select(N, Ki, region, Date_peak, outcome, isolation_success, detection_success, grpvar, scen_num, sample_num, run_num)
 
   summary(peakTimes$Date_peak)
 
@@ -156,7 +156,7 @@ for (ems in emsregions) {
     filter(value <= capacity) %>%
     group_by(detection_success, grpvar) %>%
     filter(isolation_success == min(isolation_success)) %>%
-    mutate(regin = ems)
+    mutate(region = ems)
 
   ### Plot contour-heatmap plot
   p1 <- ggplot(data = subset(dtfit, !is.na(value_fct)), aes(x = detection_success, y = isolation_success)) +
@@ -198,14 +198,21 @@ for (ems in emsregions) {
 
 ### Combine all EMS thresholds into one file
 thresholdsfiles <- list.files(file.path(ems_dir), pattern = "loess_thresholds", recursive = TRUE, full.names = TRUE)
-lmthresholdsDat <- sapply(thresholdsfiles, read.csv, simplify = FALSE) %>%
-  bind_rows(.id = "id")
+#lmthresholdsDat <- sapply(thresholdsfiles, read.csv, simplify = FALSE) %>%
+#  bind_rows(.id = "id")
+datlist <- list()
+for(i in c(1:length(thresholdsfiles))){
+ temp <-  read.csv(thresholdsfiles[i])
+ if(dim(temp)[1]<1)next
+ temp$id <- thresholdsfiles[i]
+ datlist[[length(datlist)+1]] <- temp 
 
+}
+lmthresholdsDat <- datlist %>% bind_rows()
 if (dim(lmthresholdsDat)[1] <= 1) next
-
+colnames(lmthresholdsDat)[colnames(lmthresholdsDat)=="regin"] <- "region"
 lmthresholdsDat$id <- gsub(ems_dir, "", lmthresholdsDat$id)
 lmthresholdsDat$region <- gsub("_loess_thresholds.csv", "", lmthresholdsDat$id)
 lmthresholdsDat$region <- gsub("[/]", "", lmthresholdsDat$region)
-lmthresholdsDat <- lmthresholdsDat[, !(colnames(lmthresholdsDat) == "regin")]
 
 write.csv(lmthresholdsDat, file.path(exp_dir, "thresholds_loess.csv"), row.names = FALSE)

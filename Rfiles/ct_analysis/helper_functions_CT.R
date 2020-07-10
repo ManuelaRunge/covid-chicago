@@ -39,12 +39,12 @@ getdata <- function(dat, selected_ems) {
 
   subdat <- subdat %>%
     pivot_longer(cols = -c(groupvars)) %>%
-    mutate( name = gsub("All", "EMS.IL", name)
+    dplyr::mutate( name = gsub("All", "EMS.IL", name)
     ) %>%
     dplyr::mutate(name = gsub("[.]", "_", name)) %>%
     separate(name, into = c("outcome", "region"), sep = "_EMS_") %>%
     dplyr::filter(Date >= reopeningdate) %>%
-    select(-c(time))
+    dplyr::select(-c(time))
   
   
   subdat1 <- subdat %>%

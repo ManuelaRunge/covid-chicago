@@ -13,9 +13,9 @@ source("load_paths.R")
 source("processing_helpers.R")
 outdir <- file.path("estimate_Rt/from_simulations")
 
-simdate = "20200624"
+simdate = "20200708"
 ### Load simulation outputs
-dat <- read.csv(file.path(project_path, "NU_civis_outputs",simdate,paste0("csv/nu_il_july1partial10_changeTDdetSym60AsP30_",simdate,".csv")))
+dat <- read.csv(file.path(project_path, "NU_civis_outputs",simdate,paste0("csv/nu_il_july1partial17_",simdate,".csv")))
 summary(as.Date(dat$Date))
 
 
@@ -107,5 +107,5 @@ Rt_dat %>%
   filter(
     Date <= "2020-08-01") %>%
   select(Date, geography_modeled, Median.of.covid.19.Rt, Lower.error.bound.of.covid.19.Rt, Upper.error.bound.of.covid.19.Rt) %>%
-  write.csv(paste0("estimate_Rt","/nu_il_july1partial10_changeTDdetSym60AsP30_estimated_Rt_",simdate,".csv"), row.names = FALSE)
+  write.csv(paste0("estimate_Rt","/nu_il_july1partial17_estimated_Rt_",simdate,".csv"), row.names = FALSE)
 
