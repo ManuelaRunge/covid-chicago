@@ -7,7 +7,7 @@
 
 
 ## Load packages
-packages_needed <- c( 'tidyverse', 'cowplot', 'scales', 'readxl', 'viridis', 'stringr', 'broom') 
+packages_needed <- c( 'tidyverse','reshape', 'cowplot', 'scales', 'readxl', 'viridis', 'stringr', 'broom') 
 lapply(packages_needed, require, character.only = TRUE) 
 
 ## Load directories and custom objects and functions
@@ -28,13 +28,14 @@ labs <- c(
 
 ### Load simulation data
 exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
-
+#exp_names =c( "20200707_IL_EMS_stopSIP30_isolationvsdetAsP_bydetSym_lowerTDSym")
+exp_names <- exp_names[c(4:9)]
 ### Define which analysis scripts to run
 describeDat <- FALSE
-heatmapPerEMS <- TRUE
+heatmapPerEMS <- FALSE
 tresholdsAll <- FALSE
 estimateRt <- FALSE 
-heatmapRt <- FALSE 
+heatmapRt <- TRUE 
 generateMap <- FALSE
 
 ### Loop through each EMS or the operational 'super-regions' 
@@ -44,7 +45,7 @@ geography <- "EMS"
 ## When plotting heatmaps, should the legend show predictions per 100'000 population ? 
 scalePop <- TRUE
 
-selected_outcome <- "critical"
+selected_outcome <- "Rt"
 
 
 ## Define contact  tracing parameters
@@ -125,6 +126,6 @@ if (summary1){
   selected_outcome <- "Rt" # critical
   compareOutcomes <- FALSE
   generateMap=FALSE
-  source(file.path("ct_analysis/combined_exp_summary_plot.R"))
+  source(file.path("ct_analysis/combined_exp_summary_plot_IL.R"))
 }
 

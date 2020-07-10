@@ -11,7 +11,7 @@
 # 10%, 20% and 30%
 ## ============================================================
 
-# selected_outcome <- "Rt" # critical"
+ selected_outcome <- "critical" # Rt"
 ### Load simulation data
 exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
 sim_dir <- file.path(ct_dir, simdate)
@@ -19,19 +19,18 @@ sim_dir <- file.path(ct_dir, simdate)
 if (selected_outcome == "critical") csvfilename <- "thresholds_loess.csv"
 if (selected_outcome == "Rt") csvfilename <- "Rt_thresholds_loess.csv"
 
-### 20%
-tdat_wide0 <- read.csv(file.path(sim_dir, exp_names[5], csvfilename))
-tdat_wide1 <- read.csv(file.path(sim_dir, exp_names[6], csvfilename))
-tdat_wide2 <- read.csv(file.path(sim_dir, exp_names[13], csvfilename))
-
 ### 10%
-tdat_wide3 <- read.csv(file.path(sim_dir, exp_names[1], csvfilename))
-tdat_wide4 <- read.csv(file.path(sim_dir, exp_names[2], csvfilename))
-tdat_wide5 <- read.csv(file.path(sim_dir, exp_names[14], csvfilename))
+tdat_wide0 <- read.csv(file.path(sim_dir, exp_names[1], csvfilename))
+tdat_wide1 <- read.csv(file.path(sim_dir, exp_names[2], csvfilename))
+tdat_wide2 <- read.csv(file.path(sim_dir, exp_names[3], csvfilename))
+### 20%
+tdat_wide3 <- read.csv(file.path(sim_dir, exp_names[4], csvfilename))
+tdat_wide4 <- read.csv(file.path(sim_dir, exp_names[5], csvfilename))
+tdat_wide5 <- read.csv(file.path(sim_dir, exp_names[6], csvfilename))
 ### 30%
 tdat_wide6 <- read.csv(file.path(sim_dir, exp_names[7], csvfilename))
 tdat_wide7 <- read.csv(file.path(sim_dir, exp_names[8], csvfilename))
-tdat_wide8 <- read.csv(file.path(sim_dir, exp_names[15], csvfilename))
+tdat_wide8 <- read.csv(file.path(sim_dir, exp_names[9], csvfilename))
 
 tdat_wide0$sim <- "no reduction in test delay"
 tdat_wide1$sim <- "reduced test delay As, Sym"
@@ -46,13 +45,13 @@ tdat_wide7$sim <- "reduced test delay As, Sym"
 tdat_wide8$sim <- "reduced test delay Sym only"
 
 #### reopening
-tdat_wide0$reopening <- "20%"
-tdat_wide1$reopening <- "20%"
-tdat_wide2$reopening <- "20%"
+tdat_wide0$reopening <- "10%"
+tdat_wide1$reopening <- "10%"
+tdat_wide2$reopening <- "10%"
 
-tdat_wide3$reopening <- "10%"
-tdat_wide4$reopening <- "10%"
-tdat_wide5$reopening <- "10%"
+tdat_wide3$reopening <- "20%"
+tdat_wide4$reopening <- "20%"
+tdat_wide5$reopening <- "20%"
 
 tdat_wide6$reopening <- "30%"
 tdat_wide7$reopening <- "30%"
@@ -69,64 +68,98 @@ for (perc in unique(tdat_wide$reopening)) {
   for (reduction in unique(tdat_wide$sim)) {
     # perc <- "10%"
     # reduction <- "no reduction in test delay"
-
-    pplot <- ggplot(data = subset(tdat_wide, reopening == perc & sim == reduction)) +
-      theme_cowplot() +
-      geom_ribbon(aes(
+  
+      
+    tempdat = subset(tdat_wide, reopening == perc & sim == reduction)
+    if(dim(tempdat)[1]==0)next
+    
+if(length(unique(tempdat$grpvar))==3){
+  pplot <- ggplot(tempdat) +
+    theme_cowplot() +
+    geom_ribbon(aes(
+      x = detection_success,
+      xmin = detection_success, xmax = 1,
+      ymin = isolation_success, ymax = 1, fill = as.factor(grpvar), group = grpvar
+    ), alpha = 0.5) +
+    geom_ribbon(
+      data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.585),
+      aes(
+        x = detection_success,
+        xmin = detection_success, xmax = 1,
+        ymin = isolation_success, ymax = 1
+      ),
+      fill = "white"
+    ) +
+    geom_ribbon(
+      data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.585), aes(
         x = detection_success,
         xmin = detection_success, xmax = 1,
         ymin = isolation_success, ymax = 1, fill = as.factor(grpvar), group = grpvar
-      ), alpha = 0.5) +
-      geom_ribbon(
-        data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.585),
-        aes(
-          x = detection_success,
-          xmin = detection_success, xmax = 1,
-          ymin = isolation_success, ymax = 1
-        ),
-        fill = "white"
-      ) +
-      geom_ribbon(
-        data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.585), aes(
+      ), alpha = 0.5
+    ) +
+    geom_hline(yintercept = seq(0, 1, 0.1), alpha = 0.3, col = "lightgrey", size = 0.3) +
+    geom_vline(xintercept = seq(0, 1, 0.1), alpha = 0.3, col = "lightgrey", size = 0.3) +
+    geom_ribbon(
+      data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.17),
+      aes(
+        x = detection_success,
+        xmin = detection_success, xmax = 1,
+        ymin = isolation_success, ymax = 1
+      ),
+      fill = "white"
+    ) +
+    geom_ribbon(
+      data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.17), aes(
+        x = detection_success,
+        xmin = detection_success, xmax = 1,
+        ymin = isolation_success, ymax = 1, fill = as.factor(grpvar), group = grpvar
+      ), alpha = 0.5
+    ) +
+    geom_line(aes(x = detection_success, y = isolation_success, col = as.factor(grpvar), group = grpvar), size = 0.7) +
+    facet_wrap(~region) +
+    scale_color_viridis(option = "viridis", discrete = TRUE) +
+    scale_fill_viridis(option = "viridis", discrete = TRUE) +
+    customThemeNoFacet +
+    scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
+    scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
+    labs(
+      x = detectionVar_label,
+      y = isolationVar_label,
+      fill = groupVar_label,
+      col = groupVar_label
+    ) +
+    theme(panel.spacing = unit(1, "lines")) +
+    geom_hline(yintercept = c(-Inf, Inf)) +
+    geom_vline(xintercept = c(-Inf, Inf))
+}
+    
+    if(length(unique(tempdat$grpvar))==1){
+      pplot <- ggplot(tempdat) +
+        theme_cowplot() +
+        geom_ribbon(aes(
           x = detection_success,
           xmin = detection_success, xmax = 1,
           ymin = isolation_success, ymax = 1, fill = as.factor(grpvar), group = grpvar
-        ), alpha = 0.5
-      ) +
-      geom_hline(yintercept = seq(0, 1, 0.1), alpha = 0.3, col = "lightgrey", size = 0.3) +
-      geom_vline(xintercept = seq(0, 1, 0.1), alpha = 0.3, col = "lightgrey", size = 0.3) +
-      geom_ribbon(
-        data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.17),
-        aes(
-          x = detection_success,
-          xmin = detection_success, xmax = 1,
-          ymin = isolation_success, ymax = 1
-        ),
-        fill = "white"
-      ) +
-      geom_ribbon(
-        data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.17), aes(
-          x = detection_success,
-          xmin = detection_success, xmax = 1,
-          ymin = isolation_success, ymax = 1, fill = as.factor(grpvar), group = grpvar
-        ), alpha = 0.5
-      ) +
-      geom_line(aes(x = detection_success, y = isolation_success, col = as.factor(grpvar), group = grpvar), size = 0.7) +
-      facet_wrap(~region) +
-      scale_color_viridis(option = "viridis", discrete = TRUE) +
-      scale_fill_viridis(option = "viridis", discrete = TRUE) +
-      customThemeNoFacet +
-      scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
-      scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
-      labs(
-        x = detectionVar_label,
-        y = isolationVar_label,
-        fill = groupVar_label,
-        col = groupVar_label
-      ) +
-      theme(panel.spacing = unit(1, "lines")) +
-      geom_hline(yintercept = c(-Inf, Inf)) +
-      geom_vline(xintercept = c(-Inf, Inf))
+        ), alpha = 0.5) +
+        geom_hline(yintercept = seq(0, 1, 0.1), alpha = 0.3, col = "lightgrey", size = 0.3) +
+        geom_vline(xintercept = seq(0, 1, 0.1), alpha = 0.3, col = "lightgrey", size = 0.3) +
+        geom_line(aes(x = detection_success, y = isolation_success, col = as.factor(grpvar), group = grpvar), size = 0.7) +
+        facet_wrap(~region) +
+        scale_color_viridis(option = "viridis", discrete = TRUE) +
+        scale_fill_viridis(option = "viridis", discrete = TRUE) +
+        customThemeNoFacet +
+        scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
+        scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
+        labs(
+          x = detectionVar_label,
+          y = isolationVar_label,
+          fill = groupVar_label,
+          col = groupVar_label
+        ) +
+        theme(panel.spacing = unit(1, "lines")) +
+        geom_hline(yintercept = c(-Inf, Inf)) +
+        geom_vline(xintercept = c(-Inf, Inf))
+    }
 
     ggsave(paste0(selected_outcome, "_IL_thresholds_perEMS_loess_", gsub("%", "perc", perc), reduction, ".png"),
       plot = pplot, path = file.path(sim_dir), width = 10, height = 5, device = "png"
@@ -152,6 +185,7 @@ tdat_wide <- tdat_wide %>%
 
 
 ### Generate map
+generateMap=TRUE
 if (generateMap) {
   library(raster)
   library(ggthemes)
@@ -160,14 +194,18 @@ if (generateMap) {
   # plot(shp)
 
   perc <- "10%"
-  reduction <- c("reduced test delay As, Sym", "no reduction in test delay") #
+  reduction <- c("reduced test delay As, Sym", "no reduction in test delay" , "reduced test delay Sym only") #
   grp <- 0.17
 
   ### filter
   dat <- tdat_wide %>%
+    filter(grpvar == grp) %>%
+    group_by(region, sim, reopening, grpvar ) %>% 
     filter(isolation_success == fitmax) %>%
-    filter(reopening == perc & sim %in% reduction & grpvar == grp)
+    filter(reopening == perc & sim %in% reduction &  detection_success ==min(detection_success)) 
 
+  unique(dat$sim)
+  if(dim(dat)[1]>33)break("too many rows!")
   ## Combine with shapefile - spatial dataframe
   ## ID is not the regions in correct order !!
   shp_f <- fortify(shp, id = REGION)
@@ -185,12 +223,14 @@ if (generateMap) {
     theme_map() +
     theme(legend.position = "right")
 
-  ggsave(paste0("IL_thresholds_map", gsub("%", "perc", perc), "_", grp, ".png"),
-    plot = pmap, path = file.path(sim_dir, "maps"), width = 11, height = 8, device = "png"
+  
+  if(!dir.exists(file.path(sim_dir, "maps")))dir.create(file.path(sim_dir, "maps"))
+  ggsave(paste0("IL_",selected_outcome,"_thresholds_map2", gsub("%", "perc", perc), "_", grp, ".png"),
+    plot = pmap, path = file.path(sim_dir, "maps"), width = 12, height = 6, device = "png"
   )
 
-  ggsave(paste0("IL_thresholds_map", gsub("%", "perc", perc), "_", grp, ".pdf"),
-    plot = pmap, path = file.path(sim_dir, "maps"), width = 11, height = 8, device = "pdf"
+  ggsave(paste0("IL",selected_outcome,"thresholds_map2", gsub("%", "perc", perc), "_", grp, ".pdf"),
+    plot = pmap, path = file.path(sim_dir, "maps"), width = 12, height = 6, device = "pdf"
   )
 }
 
@@ -202,8 +242,11 @@ require(spatstat)
 #   filter(isolation_success == fitmax) %>%
 #   f_weighted.aggrDat(c("sim", "reopening", "grpvar"), "detection_success", "pop")
 
-tdat_wideAggrIL <- tdat_wide %>%
-  filter(isolation_success == fitmax) %>%
+tdat_wide_sub <- tdat_wide %>%
+  group_by(region, sim, reopening, grpvar ) %>% 
+  filter(isolation_success == fitmax &  detection_success ==min(detection_success)) 
+
+tdat_wideAggrIL <- tdat_wide_sub %>%
   group_by(sim, reopening, grpvar) %>%
   summarize(mean.val = weighted.mean(detection_success, pop)) %>%
   group_by(sim, reopening) %>%
@@ -247,11 +290,16 @@ ggsave(paste0(selected_outcome, "_IL_thresholds_summary_loess.pdf"),
 
 
 ### Comparison plot
+savefilename <- paste0(selected_outcome, "_regionMinThresholds.csv")
+write.csv(tdat_wide_sub, file.path(sim_dir, savefilename), row.names = FALSE)
+
+
 savefilename <- paste0(selected_outcome, "_aggregatedMinThresholds.csv")
 write.csv(tdat_wideAggrIL, file.path(sim_dir, savefilename), row.names = FALSE)
 
 
 ###
+compareOutcomes=FALSE
 if (compareOutcomes) {
   dat1 <- read.csv(file.path(sim_dir, paste0("Rt", "_aggregatedMinThresholds.csv")))
   dat2 <- read.csv(file.path(sim_dir, paste0("critical", "_aggregatedMinThresholds.csv")))
