@@ -11,7 +11,7 @@
 # 10%, 20% and 30%
 ## ============================================================
 
- selected_outcome <- "critical" # Rt"
+selected_outcome <- "critical" # Rt"
 ### Load simulation data
 exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
 sim_dir <- file.path(ct_dir, simdate)
@@ -68,72 +68,72 @@ for (perc in unique(tdat_wide$reopening)) {
   for (reduction in unique(tdat_wide$sim)) {
     # perc <- "10%"
     # reduction <- "no reduction in test delay"
-  
-      
-    tempdat = subset(tdat_wide, reopening == perc & sim == reduction)
-    if(dim(tempdat)[1]==0)next
-    
-if(length(unique(tempdat$grpvar))==3){
-  pplot <- ggplot(tempdat) +
-    theme_cowplot() +
-    geom_ribbon(aes(
-      x = detection_success,
-      xmin = detection_success, xmax = 1,
-      ymin = isolation_success, ymax = 1, fill = as.factor(grpvar), group = grpvar
-    ), alpha = 0.5) +
-    geom_ribbon(
-      data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.585),
-      aes(
-        x = detection_success,
-        xmin = detection_success, xmax = 1,
-        ymin = isolation_success, ymax = 1
-      ),
-      fill = "white"
-    ) +
-    geom_ribbon(
-      data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.585), aes(
-        x = detection_success,
-        xmin = detection_success, xmax = 1,
-        ymin = isolation_success, ymax = 1, fill = as.factor(grpvar), group = grpvar
-      ), alpha = 0.5
-    ) +
-    geom_hline(yintercept = seq(0, 1, 0.1), alpha = 0.3, col = "lightgrey", size = 0.3) +
-    geom_vline(xintercept = seq(0, 1, 0.1), alpha = 0.3, col = "lightgrey", size = 0.3) +
-    geom_ribbon(
-      data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.17),
-      aes(
-        x = detection_success,
-        xmin = detection_success, xmax = 1,
-        ymin = isolation_success, ymax = 1
-      ),
-      fill = "white"
-    ) +
-    geom_ribbon(
-      data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.17), aes(
-        x = detection_success,
-        xmin = detection_success, xmax = 1,
-        ymin = isolation_success, ymax = 1, fill = as.factor(grpvar), group = grpvar
-      ), alpha = 0.5
-    ) +
-    geom_line(aes(x = detection_success, y = isolation_success, col = as.factor(grpvar), group = grpvar), size = 0.7) +
-    facet_wrap(~region) +
-    scale_color_viridis(option = "viridis", discrete = TRUE) +
-    scale_fill_viridis(option = "viridis", discrete = TRUE) +
-    customThemeNoFacet +
-    scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
-    scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
-    labs(
-      x = detectionVar_label,
-      y = isolationVar_label,
-      fill = groupVar_label,
-      col = groupVar_label
-    ) +
-    theme(panel.spacing = unit(1, "lines")) +
-    geom_hline(yintercept = c(-Inf, Inf)) +
-    geom_vline(xintercept = c(-Inf, Inf))
-}
-    
-    if(length(unique(tempdat$grpvar))==1){
+
+
+    tempdat <- subset(tdat_wide, reopening == perc & sim == reduction)
+    if (dim(tempdat)[1] == 0) next
+
+    if (length(unique(tempdat$grpvar)) == 3) {
+      pplot <- ggplot(tempdat) +
+        theme_cowplot() +
+        geom_ribbon(aes(
+          x = detection_success,
+          xmin = detection_success, xmax = 1,
+          ymin = isolation_success, ymax = 1, fill = as.factor(grpvar), group = grpvar
+        ), alpha = 0.5) +
+        geom_ribbon(
+          data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.585),
+          aes(
+            x = detection_success,
+            xmin = detection_success, xmax = 1,
+            ymin = isolation_success, ymax = 1
+          ),
+          fill = "white"
+        ) +
+        geom_ribbon(
+          data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.585), aes(
+            x = detection_success,
+            xmin = detection_success, xmax = 1,
+            ymin = isolation_success, ymax = 1, fill = as.factor(grpvar), group = grpvar
+          ), alpha = 0.5
+        ) +
+        geom_hline(yintercept = seq(0, 1, 0.1), alpha = 0.3, col = "lightgrey", size = 0.3) +
+        geom_vline(xintercept = seq(0, 1, 0.1), alpha = 0.3, col = "lightgrey", size = 0.3) +
+        geom_ribbon(
+          data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.17),
+          aes(
+            x = detection_success,
+            xmin = detection_success, xmax = 1,
+            ymin = isolation_success, ymax = 1
+          ),
+          fill = "white"
+        ) +
+        geom_ribbon(
+          data = subset(tdat_wide, reopening == perc & sim == reduction & grpvar == 0.17), aes(
+            x = detection_success,
+            xmin = detection_success, xmax = 1,
+            ymin = isolation_success, ymax = 1, fill = as.factor(grpvar), group = grpvar
+          ), alpha = 0.5
+        ) +
+        geom_line(aes(x = detection_success, y = isolation_success, col = as.factor(grpvar), group = grpvar), size = 0.7) +
+        facet_wrap(~region) +
+        scale_color_viridis(option = "viridis", discrete = TRUE) +
+        scale_fill_viridis(option = "viridis", discrete = TRUE) +
+        customThemeNoFacet +
+        scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
+        scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
+        labs(
+          x = detectionVar_label,
+          y = isolationVar_label,
+          fill = groupVar_label,
+          col = groupVar_label
+        ) +
+        theme(panel.spacing = unit(1, "lines")) +
+        geom_hline(yintercept = c(-Inf, Inf)) +
+        geom_vline(xintercept = c(-Inf, Inf))
+    }
+
+    if (length(unique(tempdat$grpvar)) == 1) {
       pplot <- ggplot(tempdat) +
         theme_cowplot() +
         geom_ribbon(aes(
@@ -185,7 +185,7 @@ tdat_wide <- tdat_wide %>%
 
 
 ### Generate map
-generateMap=TRUE
+generateMap <- TRUE
 if (generateMap) {
   library(raster)
   library(ggthemes)
@@ -193,46 +193,56 @@ if (generateMap) {
   shp <- shapefile(file.path(data_path, "covid_IDPH/shapefiles/EMS_Regions/EMS_Regions.shp"))
   # plot(shp)
 
-  perc <- "10%"
-  reduction <- c("reduced test delay As, Sym", "no reduction in test delay" , "reduced test delay Sym only") #
-  grp <- 0.17
-
-  ### filter
-  dat <- tdat_wide %>%
-    filter(grpvar == grp) %>%
-    group_by(region, sim, reopening, grpvar ) %>% 
-    filter(isolation_success == fitmax) %>%
-    filter(reopening == perc & sim %in% reduction &  detection_success ==min(detection_success)) 
-
-  unique(dat$sim)
-  if(dim(dat)[1]>33)break("too many rows!")
-  ## Combine with shapefile - spatial dataframe
-  ## ID is not the regions in correct order !!
-  shp_f <- fortify(shp, id = REGION)
-  shp_f$region <- as.numeric(factor(shp_f$id, levels = c(9, 8, 7, 6, 5, 4, 2, 1, 3, 10, 0), labels = c(1:11)))
-  shp_f <- left_join(shp_f, dat, by = "region")
 
 
-  pmap <- ggplot(data = shp_f) +
-    geom_polygon(aes(x = long, y = lat, group = region), fill = "lightgrey", color = "black") +
-    geom_polygon(aes(x = long, y = lat, fill = detection_success, group = region), color = "black") +
-    scale_fill_gradient2(low = "#f7fcfd", high = "#542788") +
-    labs(fill = "Minimum detection coverage") +
-    facet_wrap(~sim) +
-    customThemeNoFacet +
-    theme_map() +
-    theme(legend.position = "right")
+  reduction <- c("reduced test delay As, Sym", "no reduction in test delay", "reduced test delay Sym only") #
 
-  
-  if(!dir.exists(file.path(sim_dir, "maps")))dir.create(file.path(sim_dir, "maps"))
-  ggsave(paste0("IL_",selected_outcome,"_thresholds_map2", gsub("%", "perc", perc), "_", grp, ".png"),
-    plot = pmap, path = file.path(sim_dir, "maps"), width = 12, height = 6, device = "png"
-  )
+  for (grp in unique(tdat_wide$grpvar)) {
+    for (perc in unique(tdat_wide$reopening)) {
+      # grp <- 0.17
+      # perc <- "10%"
+      ### filter
+      dat <- tdat_wide %>%
+        filter(grpvar == grp) %>%
+        group_by(region, sim, reopening, grpvar) %>%
+        filter(isolation_success == fitmax) %>%
+        filter(reopening == perc & sim %in% reduction & detection_success == min(detection_success))
 
-  ggsave(paste0("IL",selected_outcome,"thresholds_map2", gsub("%", "perc", perc), "_", grp, ".pdf"),
-    plot = pmap, path = file.path(sim_dir, "maps"), width = 12, height = 6, device = "pdf"
-  )
+      unique(dat$sim)
+      if (dim(dat)[1] > 33) break("too many rows!")
+      ## Combine with shapefile - spatial dataframe
+      ## ID is not the regions in correct order !!
+      
+      dat$detection_success[dat$detection_success>0.50] <-0.5
+      shp_f <- fortify(shp, id = REGION)
+      shp_f$region <- as.numeric(factor(shp_f$id, levels = c(9, 8, 7, 6, 5, 4, 2, 1, 3, 10, 0), labels = c(1:11)))
+      shp_f <- left_join(shp_f, dat, by = "region")
+
+
+      pmap <- ggplot(data = shp_f) +
+        geom_polygon(aes(x = long, y = lat, group = region), fill = "lightgrey", color = "black") +
+        geom_polygon(aes(x = long, y = lat, fill = detection_success, group = region), color = "black") +
+        scale_fill_gradient2(low = "#f7fcfd", high = "#542788") +
+        labs(fill = "Minimum detection coverage") +
+        facet_wrap(~sim) +
+        customThemeNoFacet +
+        theme_map() +
+        theme(legend.position = "right")
+
+
+      if (!dir.exists(file.path(sim_dir, "maps"))) dir.create(file.path(sim_dir, "maps"))
+      ggsave(paste0("IL_", selected_outcome, "_thresholds_map_", gsub("%", "perc", perc), "_", grp, ".png"),
+        plot = pmap, path = file.path(sim_dir, "maps"), width = 12, height = 6, device = "png"
+      )
+
+      ggsave(paste0("IL_", selected_outcome, "_thresholds_map_", gsub("%", "perc", perc), "_", grp, ".pdf"),
+        plot = pmap, path = file.path(sim_dir, "maps"), width = 12, height = 6, device = "pdf"
+      )
+    }
+  }
 }
+
+
 
 
 ## Select maximum isolation, for mnimum detection
@@ -243,8 +253,8 @@ require(spatstat)
 #   f_weighted.aggrDat(c("sim", "reopening", "grpvar"), "detection_success", "pop")
 
 tdat_wide_sub <- tdat_wide %>%
-  group_by(region, sim, reopening, grpvar ) %>% 
-  filter(isolation_success == fitmax &  detection_success ==min(detection_success)) 
+  group_by(region, sim, reopening, grpvar) %>%
+  filter(isolation_success == fitmax & detection_success == min(detection_success))
 
 tdat_wideAggrIL <- tdat_wide_sub %>%
   group_by(sim, reopening, grpvar) %>%
@@ -299,7 +309,7 @@ write.csv(tdat_wideAggrIL, file.path(sim_dir, savefilename), row.names = FALSE)
 
 
 ###
-compareOutcomes=FALSE
+compareOutcomes <- FALSE
 if (compareOutcomes) {
   dat1 <- read.csv(file.path(sim_dir, paste0("Rt", "_aggregatedMinThresholds.csv")))
   dat2 <- read.csv(file.path(sim_dir, paste0("critical", "_aggregatedMinThresholds.csv")))

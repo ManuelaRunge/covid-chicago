@@ -6,6 +6,76 @@ library(scales)
 library(data.table)
 
 
+
+
+
+emsvars_temp <- c("critical_EMS.","N_EMS_","Ki_EMS_" )
+
+emsvars <- NULL
+for (ems in selected_ems) {
+  emsvars <- c(emsvars, paste0(emsvars_temp, ems))
+}
+
+groupvars <- c("startdate","Date","time", "backtonormal_multiplier", "scen_num", "sample_num", "run_num", "backtonormal_multiplier", "detection_success", "isolation_success", "grpvar"  )
+(keepvars <- c(groupvars, emsvars))
+
+
+subdat <- trajectoriesDat %>% dplyr::select(keepvars)
+
+subdat <- subdat %>%
+  pivot_longer(cols = -c(groupvars)) %>%
+  dplyr::mutate( name = gsub("All", "EMS.IL", name)
+  ) %>%
+  dplyr::mutate(name = gsub("[.]", "_", name)) %>%
+  separate(name, into = c("outcome", "region"), sep = "_EMS_") %>%
+  dplyr::filter(Date >= reopeningdate) %>%
+  dplyr::select(-c(time))
+
+capacity <- load_capacity("all")
+subdat <- merge(subdat, capacity, by.x="region", by.y="ems")
+
+subdat$region_label <- factor(subdat$region, levels=c(1:11), labels=labs)
+trajectoriesDatAggr = f_aggrDat(subdat, c("Date","region", "region_label", "outcome", "hospitalized", "critical","ventilators"), "value")
+
+
+subdatAggr = subdat %>% dplyr::group_by(region,  scen_num, outcome ) %>% dplyr::mutate(valueMax = max(value, na.rm=TRUE)) %>%
+  filter(valueMax<=critical) %>% 
+  f_aggrDat( c("Date","region", "region_label", "outcome", "hospitalized", "critical","ventilators"), "value")
+
+
+### Limit for ICU beds
+ggplot(data = subset(subdat, outcome=="critical")) +
+  theme_minimal() +
+  geom_line(aes(x = Date, y = value, group=scen_num), col="deepskyblue4",size=1.3) +
+  geom_hline(aes(yintercept=critical)) + 
+  scale_color_viridis(discrete = TRUE) +
+  labs(title=paste0("EMS ", ems), subtitle="" ,y="critical") +
+  customThemeNoFacet +
+  scale_x_date(breaks = "1 month", labels = date_format("%b"))  +
+  facet_wrap(~region_label , scales="free")
+
+l_plot2 <- ggplot(data = subset(trajectoriesDatAggr, outcome=="critical")) +
+  theme_minimal() +
+  geom_ribbon(aes(x = Date, ymin =min.val, ymax =max.val ), fill="deepskyblue3", alpha=0.2) +
+  geom_ribbon(aes(x = Date, ymin = q2.5, ymax =q97.5 ), fill="deepskyblue3", alpha=0.35) +
+  geom_ribbon(aes(x = Date, ymin = q25, ymax =q75 ), fill="deepskyblue3", alpha=0.5) +
+  geom_ribbon(aes(x = Date, ymin = lower.ci.val, ymax =upper.ci.val ), fill="deepskyblue3", alpha=0.7) +
+  geom_line(aes(x = Date, y = mean.val), col="deepskyblue4",size=1.3) +
+  geom_ribbon(data = subset(subdatAggr, outcome=="critical"),aes(x = Date, ymin =min.val, ymax =max.val ), fill="brown3", alpha=0.2) +
+  geom_ribbon(data = subset(subdatAggr, outcome=="critical"), aes(x = Date, ymin = q2.5, ymax =q97.5 ), fill="brown3", alpha=0.35) +
+  geom_ribbon(data = subset(subdatAggr, outcome=="critical"), aes(x = Date, ymin = q25, ymax =q75 ), fill="brown3", alpha=0.5) +
+  # geom_line(data = subset(subdat, outcome=="critical" & value<=critical ),aes(x = Date, y = value, group=scen_num), col="brown3",size=1.3) +
+  geom_line(data = subset(subdatAggr, outcome=="critical" ),aes(x = Date, y = mean.val), col="brown3",size=1.3) +
+  geom_hline(aes(yintercept=critical)) + 
+  scale_color_viridis(discrete = TRUE) +
+  labs(title="", subtitle="" ,y="Predicted ICU bed demand") +
+  customThemeNoFacet +
+  scale_x_date(breaks = "1 month", labels = date_format("%b"))  +
+  facet_wrap(~region_label , scales="free")
+
+
+
+
 subd =  subset(trajectoriesDat, Date == max(Date))
 tapply(subd$crit_cumul_All,subd$grpvar, summary )
 

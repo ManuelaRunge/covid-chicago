@@ -6,7 +6,7 @@
 
 if (geography == "EMS") emsregions <- c(1:11)
 if (geography == "Region") emsregions <- names(regions)
-
+emsregions <- "Illinois" 
 
 for (ems in emsregions) {
   # ems <- emsregions[1]

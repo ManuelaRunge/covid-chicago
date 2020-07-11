@@ -29,23 +29,23 @@ labs <- c(
 ### Load simulation data
 exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
 #exp_names =c( "20200707_IL_EMS_stopSIP30_isolationvsdetAsP_bydetSym_lowerTDSym")
-exp_names <- exp_names[c(4:9)]
+
 ### Define which analysis scripts to run
 describeDat <- FALSE
-heatmapPerEMS <- FALSE
+heatmapPerEMS <- TRUE
 tresholdsAll <- FALSE
 estimateRt <- FALSE 
-heatmapRt <- TRUE 
+heatmapRt <- FALSE 
 generateMap <- FALSE
 
 ### Loop through each EMS or the operational 'super-regions' 
-geography <- "EMS"
+geography <- "Region"
 # geography <- "Region"
 
 ## When plotting heatmaps, should the legend show predictions per 100'000 population ? 
 scalePop <- TRUE
 
-selected_outcome <- "Rt"
+selected_outcome <- "critical"
 
 
 ## Define contact  tracing parameters
