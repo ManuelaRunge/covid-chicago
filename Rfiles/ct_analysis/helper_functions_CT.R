@@ -52,9 +52,10 @@ getdata <- function(dat, selected_ems) {
     pivot_wider(names_from = outcome, values_from = value)
   
   
+  mergevars <- colnames(subdat)[colnames(subdat) %in% colnames(subdat1)]
   subdat <- subdat %>%
     filter(!(outcome %in% c("N", "Ki"))) %>%
-    left_join(subdat1, by = c("startdate","Date","scen_num", "sample_num", "run_num" , "backtonormal_multiplier",  "detection_success", "isolation_success", "grpvar" ))
+    left_join(subdat1, by = mergevars)
 
   if (length(selected_ems) > 1) {
     groupvars <- c(groupvars[groupvars != "time"], "outcome", "Date", "scen_num")
