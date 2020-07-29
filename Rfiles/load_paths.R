@@ -68,4 +68,5 @@ if('Ibis' %in%  user_path){
 
 
 simulation_output <- file.path(wdir, "simulation_output")
+ct_dir <- file.path(simulation_output, "contact_tracing")
 
