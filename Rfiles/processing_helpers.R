@@ -25,29 +25,30 @@ combineDat <- function(filelist, namelist){
 }
 
 
+load_capacity <- function(selected_reg) {
+  df <- read.csv(file.path(wdir, "inputs/covid_region_capacities.csv"))
 
-load_capacity <- function(selected_ems) {
-  ems_df <- read_excel(file.path(data_path, "covid_IDPH/Corona virus reports/EMS_report_2020_03_21.xlsx"))
-  ems_df <- ems_df %>%
-    filter(Date == as.Date("2020-03-27")) %>%
-    separate(Region, into = c("ems", "Hospital"), sep = "-") %>%
-    mutate(
-      hospitalized = `Total_Med/_Surg_Beds`,
-      critical = `Total_Adult_ICU_Beds`,
-      ventilators = `Total_Vents`
-    )
-  
-  if (length(selected_ems) == 1) {
-    capacity <- ems_df %>%
-      filter(ems == selected_ems) %>%
-      dplyr::select(hospitalized, critical, ventilators)
-  } else {
-    capacity <- ems_df %>%
-      filter(ems %in% selected_ems) %>%
+  if (length(selected_reg) == 1 & !(selected_reg=="all") ) {
+    capacity <- df %>%
+      filter(covid_region == selected_reg) %>%
+      dplyr::select(ICU_capacity, ICU_availability)
+  } 
+  if(length(selected_reg) > 1 & !(selected_reg=="all") ){
+    capacity <- df %>%
+      filter(covid_region %in% selected_reg) %>%
       dplyr::summarize(
-        hospitalized = sum(hospitalized),
-        critical = sum(critical),
-        ventilators = sum(ventilators)
+        ICU_availability = sum(ICU_availability),
+        ICU_capacity = sum(ICU_capacity)
+      )
+  }
+  if(selected_reg=="all"){
+    capacity <- df 
+  }
+  if(selected_reg=="allsum"){
+    capacity <- df %>%
+      dplyr::summarize(
+        ICU_availability = sum(ICU_availability),
+        ICU_capacity = sum(ICU_capacity)
       )
   }
   
