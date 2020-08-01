@@ -5,7 +5,7 @@
   ## Define contact  tracing parameters
   detectionVar <- "d_AsP_ct1" # "d_Sym_ct1"
   isolationVar <- "reduced_inf_of_det_cases_ct1"
-  groupVar <- "d_Sym_ct1" # "time_to_detection" # "change_testDelay_Sym_1"
+  groupVar <- "reopening_multiplier_4" #"d_Sym_ct1" # "time_to_detection" # "change_testDelay_Sym_1"
   
   ## Define label per parameter for plotting
   detectionVar_label <- detectionVar
@@ -17,6 +17,7 @@
   if (detectionVar == "d_AsPSym_ct1") detectionVar_label <- "detection of As, P, Sym (%)"
   if (groupVar == "d_Sym_ct1") groupVar_label <- "increased detection of Sym (%)"
   if (groupVar == "change_testDelay_Sym_1") groupVar_label <- "reduced detection delay of Sym (days)"
+  if (groupVar == "reopening_multiplier_4") groupVar_label <- "% relaxation"
   if (isolationVar == "reduced_inf_of_det_cases_ct1") isolationVar_label <- "isolation success As, P (%)"
   #if (groupVar == "contact_tracing_start_1") trajectoriesDat <- trajectoriesDat %>% mutate(grpvar = as.Date(contact_tracing_start_1 + startdate))
   

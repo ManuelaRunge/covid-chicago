@@ -11,6 +11,21 @@ regions <- list(
 )
 
 
+f_addRestoreRegion <- function(dat){
+  
+  dat$restore_region <- NA
+  dat$restore_region[dat$region %in%  regions$Northcentral ] <- "Northcentral"
+  dat$restore_region[dat$region %in%  regions$Northeast ] <- "Northeast"
+  dat$restore_region[dat$region %in%  regions$Central ] <- "Central"
+  dat$restore_region[dat$region %in%  regions$Southern ] <- "Southern"
+  
+  
+  return(dat)
+  
+}
+
+
+
 combineDat <- function(filelist, namelist){
   
   count=0
@@ -25,34 +40,19 @@ combineDat <- function(filelist, namelist){
 }
 
 
-load_capacity <- function(selected_reg) {
-  df <- read.csv(file.path(wdir, "inputs/covid_region_capacities.csv"))
-
-  if (length(selected_reg) == 1 & !(selected_reg=="all") ) {
-    capacity <- df %>%
-      filter(covid_region == selected_reg) %>%
-      dplyr::select(ICU_capacity, ICU_availability)
-  } 
-  if(length(selected_reg) > 1 & !(selected_reg=="all") ){
-    capacity <- df %>%
-      filter(covid_region %in% selected_reg) %>%
-      dplyr::summarize(
-        ICU_availability = sum(ICU_availability),
-        ICU_capacity = sum(ICU_capacity)
-      )
-  }
-  if(selected_reg=="all"){
-    capacity <- df 
-  }
-  if(selected_reg=="allsum"){
-    capacity <- df %>%
-      dplyr::summarize(
-        ICU_availability = sum(ICU_availability),
-        ICU_capacity = sum(ICU_capacity)
-      )
-  }
+load_capacity <- function(selected_ems) {
+  ems_df <- read.csv(file.path(data_path, "covid_IDPH/Corona virus reports/capacity_by_covid_region.csv"))  %>%
+    filter(date == max(date) & geography_name !="chicago") %>%
+    mutate(
+      geography_name = gsub("restore_","",geography_name),
+      hospitalized = medsurg_total,
+      critical = icu_total,
+      ventilators = vent_total
+    ) %>%
+    dplyr::select(geography_name,hospitalized, critical, ventilators) %>%
+    filter(geography_name %in% selected_ems)
   
-  return(capacity)
+  return(ems_df)
 }
 
 

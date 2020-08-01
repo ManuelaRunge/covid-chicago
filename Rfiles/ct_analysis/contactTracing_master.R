@@ -15,7 +15,7 @@ source("load_paths.R")
 source("processing_helpers.R")
 source("ct_analysis/helper_functions_CT.R")
 
-simdate <- "20200728"
+simdate <- "20200731"
 exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
 
 ### Define which analysis scripts to run
