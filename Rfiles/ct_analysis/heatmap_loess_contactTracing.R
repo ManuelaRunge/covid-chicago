@@ -15,8 +15,8 @@ f_valuefct = function(df){
   df$value_fct[df$value < 50] <- "<50"
   
   df$value_fct <- factor(df$value_fct,
-                               levels = c(">400", "<400", "<300", "<200", "<100", "<50"),
-                               labels = c(">400", "<400", "<300", "<200", "<100", "<50")
+                         levels = c(">400", "<400", "<300", "<200", "<100", "<50"),
+                         labels = c(">400", "<400", "<300", "<200", "<100", "<50")
   )
   
   return(df)
@@ -33,7 +33,7 @@ f_runHeatmapAnalysis <- function(ems, geography="EMS"){
     selected_ems <- ems
   }
   
-  capacity <- load_capacity(selected_ems)
+  capacity <- load_capacity(selected_ems) %>% dplyr::rename(capacity = critical)
   
   tempdat <- trajectoriesDat %>%
     filter(time >= as.Date(reopeningdate) - as.Date(max(startdate)) - 30) %>%
@@ -41,8 +41,7 @@ f_runHeatmapAnalysis <- function(ems, geography="EMS"){
     filter(outcome == "critical") %>%
     as.data.frame()
   
-  tempdat$capacity <- capacity$ICU_capacity
-  tempdat$availability <- capacity$ICU_availability
+  tempdat$capacity <- capacity$capacity
   
   ### Identify peak at least 10 days after reopening
   peakTimes <- tempdat %>%
@@ -67,8 +66,7 @@ f_runHeatmapAnalysis <- function(ems, geography="EMS"){
     scatterplot <- tempdat %>%
       filter(Date == Date_peak) %>%
       mutate(
-        belowCapacity = ifelse(value <= capacity, "yes", "no"),
-        belowavailability = ifelse(value <= availability, "yes", "no")
+        belowCapacity = ifelse(value <= capacity, "yes", "no")
       ) %>%
       ggplot() +
       theme_minimal() +
@@ -82,7 +80,7 @@ f_runHeatmapAnalysis <- function(ems, geography="EMS"){
   }
   # plotdat %>% filter(Date == plotdat$Date_peak) %>% write.csv(file.path(ems_dir,paste0(ems, "_scatterplot_dat.csv")), row.names = FALSE)
   
-
+  
   fitlist <- list()
   for (grp in unique(peakdat$grpvar)) {
     # grp  <- unique(peakdat$grpvar)[1]
@@ -106,11 +104,11 @@ f_runHeatmapAnalysis <- function(ems, geography="EMS"){
     if(showPlot){
       library(plotly)
       fig <- plot_ly(
-      x = temp_fit$detection_success,
-      y = temp_fit$isolation_success,
-      z =  temp_fit$value, 
-      type = "contour"
-       )
+        x = temp_fit$detection_success,
+        y = temp_fit$isolation_success,
+        z =  temp_fit$value, 
+        type = "contour"
+      )
       print(fig)
     }
     
@@ -132,14 +130,8 @@ f_runHeatmapAnalysis <- function(ems, geography="EMS"){
   peakdat <- f_valuefct(peakdat)
   
   ### Extract  minimum isolation_success for each detection_success
-  thresholdDat_capacity <- dtfit %>%
-    filter(value <= capacity$ICU_capacity) %>%
-    group_by(detection_success, grpvar) %>%
-    filter(isolation_success == min(isolation_success)) %>%
-    mutate(region = ems)
-  
-  thresholdDat_availability <- dtfit %>%
-    filter(value <= capacity$ICU_availability) %>%
+  thresholdDat <- dtfit %>%
+    filter(value <= capacity$capacity) %>%
     group_by(detection_success, grpvar) %>%
     filter(isolation_success == min(isolation_success)) %>%
     mutate(region = ems)
@@ -165,14 +157,10 @@ f_runHeatmapAnalysis <- function(ems, geography="EMS"){
     theme(panel.spacing = unit(1.5, "lines"))
   
   p1_capacity <- p1 + geom_line(
-    data = subset(thresholdDat_capacity, isolation_success != min(isolation_success)),
+    data = subset(thresholdDat, isolation_success != min(isolation_success)),
     aes(x = detection_success, y = isolation_success), size = 1.3
   )
   
-  p1_availability <- p1 + geom_line(
-    data = subset(thresholdDat_availability, isolation_success != min(isolation_success)),
-    aes(x = detection_success, y = isolation_success), size = 1.3
-  )
   
   p2_modelfit <- p1 + geom_point(
     data = peakdat, aes(x = detection_success, y = isolation_success, fill = value_fct),
@@ -181,7 +169,6 @@ f_runHeatmapAnalysis <- function(ems, geography="EMS"){
   
   
   plotname_capacity <- paste0("covid_region", "_", ems, "_ICUcapacity_heatmap_loess")
-  plotname_availability <- paste0("covid_region", "_", ems, "_ICUavailability_heatmap_loess")
   plotname_model <- paste0("covid_region", "_", ems, "_heatmap_with_points_loess")
   
   
@@ -191,9 +178,6 @@ f_runHeatmapAnalysis <- function(ems, geography="EMS"){
            plot = p1_capacity, path = file.path(ems_dir), width = 12, height = 5, device = "png"
     )
     
-    ggsave(paste0(plotname_availability, ".png"),
-           plot = p1_availability, path = file.path(ems_dir), width = 12, height = 5, device = "png"
-    )
     
     ggsave(paste0(plotname_model, ".png"),
            plot = p2_modelfit, path = file.path(ems_dir), width = 12, height = 5, device = "png"
@@ -208,10 +192,6 @@ f_runHeatmapAnalysis <- function(ems, geography="EMS"){
     )
     
     
-    ggsave(paste0(plotname_availability, ".pdf"),
-           plot = p1_availability, path = file.path(ems_dir), width = 12, height = 5, device = "pdf"
-    )
-    
     
     ggsave(paste0(plotname_model, ".pdf"),
            plot = p2_modelfit, path = file.path(ems_dir), width = 12, height = 5, device = "pdf"
@@ -219,8 +199,7 @@ f_runHeatmapAnalysis <- function(ems, geography="EMS"){
   }
   
   
-  write.csv(thresholdDat_capacity, file = file.path(ems_dir, paste0(ems, "_loess_ICUcapacity.csv")), row.names = FALSE)
-  write.csv(thresholdDat_availability, file = file.path(ems_dir, paste0(ems, "_loess_ICUavailability.csv")), row.names = FALSE)
+  write.csv(thresholdDat, file = file.path(ems_dir, paste0(ems, "_loess_ICUcapacity.csv")), row.names = FALSE)
   
   if(file.exists(file.path(ems_dir, paste0(ems, "_loess_ICUcapacity.csv")))) print("CSVs saved")
   
@@ -244,7 +223,8 @@ if(runinBatchMode){
   task_id <- Sys.getenv("SLURM_ARRAY_TASK_ID")
   print(task_id)
   print(ems)
-  #ems <- task_id
+  geography = "EMS"
+  ems <- 1
   
   
   ## Load packages
@@ -258,13 +238,18 @@ if(runinBatchMode){
   source("ct_analysis/helper_functions_CT.R")
   
   
-  simdate <- "20200728"
-  exp_name <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)[1]
-  source('ct_analysis/loadData_defineParam.R')
+  simdate <- "20200731"
+  exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
+  exp_names <- exp_names[grep("reopen_contact",exp_names)]
   
-  ## Run analysis
-  f_runHeatmapAnalysis(ems)
-  
+  for(exp_name in exp_names){
+    #  exp_name  <-  exp_names[1]
+    source('ct_analysis/loadData_defineParam.R')
+    
+    ## Run analysis
+    f_runHeatmapAnalysis(ems)
+    
+  }
   
 } else {
   
