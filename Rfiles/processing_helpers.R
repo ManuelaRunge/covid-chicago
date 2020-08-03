@@ -40,8 +40,8 @@ combineDat <- function(filelist, namelist){
 }
 
 
-load_capacity <- function(selected_ems) {
-  ems_df <- read.csv(file.path(data_path, "covid_IDPH/Corona virus reports/capacity_by_covid_region.csv"))  %>%
+load_capacity <- function(selected_ems=NULL) {
+  df <- read.csv(file.path(data_path, "covid_IDPH/Corona virus reports/capacity_by_covid_region.csv"))  %>%
     filter(date == max(date) & geography_name !="chicago") %>%
     mutate(
       geography_name = gsub("restore_","",geography_name),
@@ -49,10 +49,11 @@ load_capacity <- function(selected_ems) {
       critical = icu_total,
       ventilators = vent_total
     ) %>%
-    dplyr::select(geography_name,hospitalized, critical, ventilators) %>%
-    filter(geography_name %in% selected_ems)
+    dplyr::select(geography_name,hospitalized, critical, ventilators)
   
-  return(ems_df)
+  if(!(is.null(selected_ems))) df <-  df %>% filter(geography_name %in% selected_ems)
+  
+  return(df)
 }
 
 

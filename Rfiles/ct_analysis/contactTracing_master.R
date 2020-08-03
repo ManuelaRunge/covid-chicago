@@ -17,6 +17,7 @@ source("ct_analysis/helper_functions_CT.R")
 
 simdate <- "20200731"
 exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
+exp_names <- exp_names[grep("contact",exp_names)]
 
 ### Define which analysis scripts to run
 describeDat <- FALSE
@@ -29,14 +30,14 @@ tresholdsAll <- FALSE
 generateMap <- FALSE
 
 ### Loop through each EMS or the operational 'super-regions' 
-geography <- "Region"  # 'EMS'
+geography <- "EMS"  # 'EMS'
 
 ## When plotting heatmaps, should the legend show predictions per 100'000 population ? 
 scalePop <- TRUE
 
 ## Run analysis scripts for each experiment in exp_names (must have same contact tracing parameters!)
 for (exp_name in exp_names) {
-  # exp_name <- exp_names[1]
+  # exp_name <- exp_names[2]
   print(exp_name)
    
   ## Load trajectories dat and define parameters for analysis
@@ -45,13 +46,21 @@ for (exp_name in exp_names) {
   ### Run analysis scripts for selected outcome
   LOCAL=TRUE
   if (describeDat) source(file.path("ct_analysis/describeTrajectoriesDat.R"))
-  if (heatmapCritical) source(file.path("ct_analysis/heatmap_loess_contactTracing.R"))  
   
-  if (estimateRt) source(file.path("ct_analysis/get_Rt_from_contactTracingSimulations.R"))
-  if (heatmapRt) source(file.path("ct_analysis/combine_Rt_and_plot.R"))
-  if (heatmapRt) source(file.path("ct_analysis/heatmap_loess_contactTracing_Rt.R"))
+  if (heatmapCritical){
+    #source(file.path("ct_analysis/heatmap_loess_contactTracing.R"))  
+    source(file.path("ct_analysis/combine_thresholds_dat.R"))
+  }
   
-  if (heatmapCritical | heatmapRt) source(file.path("ct_analysis/combine_thresholds_dat.R"))
+  if (estimateRt){ 
+     source(file.path("ct_analysis/get_Rt_from_contactTracingSimulations.R"))
+     source(file.path("ct_analysis/combine_Rt_and_plot.R"))
+     source(file.path("ct_analysis/heatmap_loess_contactTracing_Rt.R"))
+     source(file.path("ct_analysis/combine_Rt_and_plot.R"))
+  }
+  
+  
+
   
 }
 
