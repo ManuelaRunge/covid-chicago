@@ -33,6 +33,8 @@
   Rt_dir <- file.path(ct_dir, simdate, exp_name, "estimatedRt")
   if (!dir.exists(Rt_dir)) dir.create(Rt_dir)
   
+loadTrajectories=FALSE  
+if(loadTrajectories){
   ## Load trajectories Dat
   trajectoriesDat <- read.csv(file.path(exp_dir, "trajectoriesDat.csv"))
   
@@ -55,3 +57,4 @@
   if (isolationVar == "reduced_inf_of_det_cases_ct1") trajectoriesDat$isolation_success <- 1 - (trajectoriesDat$isolation_success)
   
   
+}
