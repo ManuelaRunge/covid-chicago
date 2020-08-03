@@ -7,12 +7,12 @@
 f_valuefct = function(df){
   
   df$value_fct <- NA
-  df$value_fct[df$value >= 1.02] <- ">1.02"
-  df$value_fct[df$value < 1.02] <- "<1.02"
-  df$value_fct[df$value < 1.01] <- "<1.01"
-  df$value_fct[df$value < 1] <- "<1"
-  df$value_fct[df$value < 0.99] <- "<0.99"
-  df$value_fct[df$value < 0.98] <- "<0.98"
+  df$value_fct[df$average_median_Rt >= 1.02] <- ">1.02"
+  df$value_fct[df$average_median_Rt < 1.02] <- "<1.02"
+  df$value_fct[df$average_median_Rt < 1.01] <- "<1.01"
+  df$value_fct[df$average_median_Rt < 1] <- "<1"
+  df$value_fct[df$average_median_Rt < 0.99] <- "<0.99"
+  df$value_fct[df$average_median_Rt < 0.98] <- "<0.98"
   
   df$value_fct <- factor(df$value_fct,
                          levels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98"),
@@ -34,16 +34,23 @@ f_runHeatmapAnalysis_Rt <- function(ems, geography="EMS"){
   }
   
   
-  dat <- read.csv(file.path(Rt_dir,"EMS_combined_estimated_Rt.csv" )) %>%
-    mutate(Date = as.Date(Date)) %>%
-    filter(region == ems &
+  dat <- read.csv(file.path(Rt_dir,"EMS_combined_estimated_Rt.csv" )) %>% mutate(Date = as.Date(Date)) %>%
+    filter(region %in% selected_ems &
              Date >= as.Date("2020-07-01") & Date < as.Date("2020-08-01")) %>%
     dplyr::group_by(region, Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>%
     dplyr::summarize(average_median_Rt = mean(Mean)) %>%
     dplyr::mutate(Rt_fct = ifelse(average_median_Rt < 1, "<1", ">=1"), capacity = 1)
   
   dat$region_label <- factor(dat$region, levels = c(1:11), labels = paste0("covid region ", c(1:11), "\n")) 
+  if(length(selected_ems)>1) {
+    dat <- dat %>% 
+      group_by(Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>%
+      dplyr::summarize(average_median_Rt = mean(average_median_Rt)) %>%
+      dplyr::mutate(Rt_fct = ifelse(average_median_Rt < 1, "<1", ">=1"), capacity = 1)
+  }
+  
   dat <- f_valuefct(dat)
+  summary(dat$average_median_Rt)
   
   fitlist <- list()
   
@@ -91,18 +98,23 @@ f_runHeatmapAnalysis_Rt <- function(ems, geography="EMS"){
   }
   
   dtfit <- bind_rows(fitlist)
-  rm(fitlist)
+ # rm(fitlist)
+  summary(dtfit$value)
+  if(min(  summary(dtfit$value))<1) 
   
   thresholdDat <- dtfit %>%
-    filter(value <= 1) %>%
+    filter( value <= 1) %>%
     group_by(detection_success, grpvar) %>%
     filter(isolation_success == min(isolation_success)) %>%
-    mutate(regin = ems)
+    mutate(region = ems)
   
-  p1 <- ggplot(data = subset(dtfit, !is.na(value_fct)), aes(x = detection_success, y = isolation_success)) +
+  write.csv(thresholdDat, file = file.path(ems_dir, paste0(ems, "_loess_Rt.csv")), row.names = FALSE)
+  
+  
+  p1 <- ggplot(data = subset(dtfit), aes(x = detection_success, y = isolation_success)) +
     theme_minimal() +
     geom_tile(aes(fill = value_fct), alpha = 0.8) +
-    geom_line(data = subset(thresholdDat, isolation_success != min(isolation_success)), aes(x = detection_success, y = isolation_success), size = 1.3) +
+   # geom_line(data = subset(thresholdDat, isolation_success != min(isolation_success)), aes(x = detection_success, y = isolation_success), size = 1.3) +
     scale_fill_viridis(option = "C", discrete = TRUE) +
     labs(
       x = "detections (%)",
@@ -129,7 +141,7 @@ f_runHeatmapAnalysis_Rt <- function(ems, geography="EMS"){
   #       plot = p1, path = file.path(ems_dir), width = 12, height = 5, dpi = 300, device = "pdf"
   # )
   
-  write.csv(thresholdDat, file = file.path(ems_dir, paste0(ems, "_loess_Rt.csv")), row.names = FALSE)
+
 }
 
 
@@ -159,13 +171,13 @@ if(runinBatchMode){
   lapply(packages_needed, require, character.only = TRUE) 
   
   ## Load directories and custom objects and functions
-  setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
+ # setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
   source("load_paths.R")
   source("processing_helpers.R")
   source("ct_analysis/helper_functions_CT.R")
   
   
-  simdate <- "20200728"
+  simdate <- "20200731"
   exp_name <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)[1]
   source('ct_analysis/loadData_defineParam.R')
   
