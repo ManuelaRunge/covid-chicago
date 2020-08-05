@@ -1,6 +1,27 @@
 ## ============================================================
 ## Combine and plot Rt estimates 
 ## ============================================================
+regions <- list(
+  "Northcentral" = c(1, 2),
+  "Northeast" = c(7, 8, 9, 10, 11),
+  "Central" = c(3, 6),
+  "Southern" = c(4, 5),
+  "Illinois" = c(1:11)
+)
+
+
+f_addRestoreRegion <- function(dat){
+  
+  dat$restore_region <- NA
+  dat$restore_region[dat$region %in%  regions$Northcentral ] <- "Northcentral"
+  dat$restore_region[dat$region %in%  regions$Northeast ] <- "Northeast"
+  dat$restore_region[dat$region %in%  regions$Central ] <- "Central"
+  dat$restore_region[dat$region %in%  regions$Southern ] <- "Southern"
+  
+  
+  return(dat)
+  
+}
 
 
 f_combineRtdats <- function(){
@@ -52,33 +73,25 @@ f_combineRtdats <- function(){
   
 
   write.csv(Rt_dat2, file = file.path(Rt_dir, paste0("EMS_combined_estimated_Rt.csv")), row.names = FALSE)
+  
+  return(Rt_dat2)
 }
 
 
-f_Rt_descriptive_plots <- function(){
+f_Rt_descriptive_plots <- function(Rt_dat2){
   
-  Rt_dat2 <- read.csv(file.path(Rt_dir,"EMS_combined_estimated_Rt.csv" ))
+  #Rt_dat2 <- read.csv(file.path(Rt_dir,"EMS_combined_estimated_Rt.csv" ))
   
   summary(Rt_dat2$Date)
   summary(Rt_dat2$t_start)
   
-  df <- Rt_dat2 %>%
-    dplyr::filter(Date >= as.Date("2020-07-01") & Date < as.Date("2020-08-01")) %>%
-    dplyr::group_by(region, region_label, Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>%
-    dplyr::summarize(average_median_Rt = mean(Mean)) %>%
-    mutate(Rt_fct = ifelse(average_median_Rt < 1, "<1", ">=1"))
-  
-  df$region_label <- factor(df$region, levels = c(1:11), labels = paste0("EMS_", c(1:11), "\n"))
-  df$capacity <- 1
-  
-  summary(df$average_median_Rt)
-  summary(df$Date)
-  tapply(df$average_median_Rt, df$region, summary)
-  
+ 
   ### Readjust date for 2 weeks estimation of Rt (to do double check)
   #Rt_dat2$Date <- Rt_dat2$Date+14 # TODO check date!! 
   
   Rt_dat2$region_label <- factor(Rt_dat2$region, levels = c(1:11), labels = paste0("EMS ", c(1:11), "\n"))
+  
+  Rt_dat2 <- Rt_dat2 %>%    f_addRestoreRegion()
   
   pplot <- ggplot(data = subset(Rt_dat2, Date >= "2020-05-01" & Date < as.Date("2020-09-01"))) +
     theme_minimal() +
@@ -93,12 +106,72 @@ f_Rt_descriptive_plots <- function(){
     theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank())
   
   
-  ggsave(paste0(selected_outcome, "_Rt_over_time.png"),
-         plot = pplot, path = file.path(exp_dir), width = 12, height = 7, dpi = 300, device = "png"
+  ggsave(paste0( "_Rt_over_time.png"),
+         plot = pplot, path = file.path(exp_dir), width = 12, height = 7,  device = "png"
+  )
+    ggsave(paste0( "_Rt_over_time.pdf"),
+         plot = pplot, path = file.path(exp_dir), width = 12, height = 7,  device = "pdf"
+  )
+
+
+  
+  pplot <- Rt_dat2 %>%
+    filter(Date >= "2020-03-01" & Date < as.Date("2020-09-01"))%>%
+    group_by(Date,restore_region) %>%
+    summarize(Mean=mean(Mean)) %>%
+    ggplot() + 
+    theme_minimal() +
+    geom_line(aes(x = Date, y = Mean), col = "deepskyblue3", size = 0.7) +
+    scale_x_date(breaks = "2 weeks", labels = date_format("%b%d")) +
+    geom_hline(yintercept = 1) +
+    facet_wrap(~restore_region) +
+    scale_y_continuous(lim = c(0.5, 1.5)) +
+    labs(y = expression(italic(R[t])), x = "") +
+    theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank())
+  
+  
+  ggsave(paste0( "Rt_over_time_restoreRegion.png"),
+         plot = pplot, path = file.path(exp_dir), width = 12, height = 7,  device = "png"
+  )
+    ggsave(paste0( "Rt_over_time_restoreRegion.pdf"),
+         plot = pplot, path = file.path(exp_dir), width = 12, height = 7,  device = "pdf"
+  )
+
+
+  pplot <- Rt_dat2 %>%
+    filter(Date >= "2020-03-01" & Date < as.Date("2020-09-01"))%>%
+    group_by(Date,restore_region, scen_num) %>%
+    summarize(Mean=mean(Mean)) %>%
+    ggplot() + 
+    theme_minimal() +
+    geom_line(aes(x = Date, y = Mean, group=scen_num), col = "deepskyblue3", size = 0.7) +
+    scale_x_date(breaks = "2 weeks", labels = date_format("%b%d")) +
+    geom_hline(yintercept = 1) +
+    facet_wrap(~restore_region) +
+    scale_y_continuous(lim = c(0.5, 1.5)) +
+    labs(y = expression(italic(R[t])), x = "") +
+    theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank())
+  
+  
+  ggsave(paste0( "Rt_over_time_restoreRegion_2.png"),
+         plot = pplot, path = file.path(exp_dir), width = 12, height = 7,  device = "png"
+  )
+    ggsave(paste0( "Rt_over_time_restoreRegion_2.pdf"),
+         plot = pplot, path = file.path(exp_dir), width = 12, height = 7,  device = "pdf"
   )
   
 
-  pplot <- ggplot(data = subset(df, grpvar == 0.17)) +
+  df <- Rt_dat2 %>%
+    dplyr::filter(Date >= as.Date("2020-07-01") & Date < as.Date("2020-08-01")) %>%
+    dplyr::group_by(region, Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>%
+    dplyr::summarize(average_median_Rt = mean(Mean)) %>%
+    mutate(Rt_fct = ifelse(average_median_Rt < 1, "<1", ">=1"))%>%
+    f_addRestoreRegion()
+  
+  df$region_label <- factor(df$region, levels = c(1:11), labels = paste0("EMS_", c(1:11), "\n"))
+  df$capacity <- 1
+
+  pplot <- ggplot(data = subset(df, grpvar ==min(grpvar))) +
     theme_classic() +
     geom_point(aes(x = detection_success, y = isolation_success, fill = Rt_fct), shape = 21, size = 2) +
     scale_fill_viridis(option = "C", discrete = TRUE, direction = -1) +
@@ -117,12 +190,52 @@ f_Rt_descriptive_plots <- function(){
     geom_vline(xintercept = c(-Inf, Inf)) +
     geom_hline(yintercept = c(-Inf, Inf)) +
     theme(legend.position = "right") +
-    facet_wrap(~region_label) +
+    facet_wrap(grpvar~region_label) +
     theme(panel.spacing = unit(1.5, "lines"))
   
-  ggsave(paste0(selected_outcome, "_Rt_sample_scatterplot.png"),
-         plot = pplot, path = file.path(exp_dir), width = 12, height = 7, dpi = 300, device = "png"
+  ggsave(paste0( "_Rt_sample_scatterplot.png"),
+         plot = pplot, path = file.path(exp_dir), width = 14, height = 10,  device = "png"
   )
+    ggsave(paste0( "_Rt_sample_scatterplot.pdf"),
+         plot = pplot, path = file.path(exp_dir), width = 14, height = 10, device = "pdf"
+  )
+  
+  
+  
+  pplot <- df %>%
+    f_addRestoreRegion() %>%
+    dplyr::group_by(Date, t_start, scen_num,  t_end, isolation_success, detection_success, grpvar, restore_region) %>% 
+    dplyr::summarize(average_median_Rt=mean(average_median_Rt)) %>%
+    dplyr::mutate(Rt_fct = ifelse(average_median_Rt < 1, "<1", ">=1"))   %>%
+    ggplot() +
+    theme_classic() +
+    geom_point(aes(x = detection_success, y = isolation_success, fill = Rt_fct), shape = 21, size = 2) +
+    scale_fill_viridis(option = "C", discrete = TRUE, direction = -1) +
+    scale_color_viridis(option = "C", discrete = TRUE, direction = -1) +
+    customThemeNoFacet +
+    scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
+    scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
+    theme(panel.spacing = unit(2, "lines")) +
+    labs(
+      color = "Rt",
+      subtitle = "",
+      fill = groupVar_label,
+      x = detectionVar_label,
+      y = isolationVar_label
+    ) +
+    geom_vline(xintercept = c(-Inf, Inf)) +
+    geom_hline(yintercept = c(-Inf, Inf)) +
+    theme(legend.position = "right") +
+    facet_wrap(grpvar~restore_region) +
+    theme(panel.spacing = unit(1.5, "lines"))
+  
+  ggsave(paste0( "restore_region_Rt_sample_scatterplot.png"),
+         plot = pplot, path = file.path(exp_dir), width = 14, height = 10,  device = "png"
+  )
+    ggsave(paste0( "restore_region_Rt_sample_scatterplot.pdf"),
+         plot = pplot, path = file.path(exp_dir), width = 14, height = 10, device = "pdf"
+  )
+  
   
   
 }
@@ -140,11 +253,6 @@ if(runinBatchMode){
   cmd_agrs <- commandArgs()
   length(cmd_agrs)
   
-  exp_name <- cmd_agrs[length(cmd_agrs)]
-  task_id <- Sys.getenv("SLURM_ARRAY_TASK_ID")
-  print(task_id)
-  print(exp_name)
-
   ## Load packages
   packages_needed <- c( 'tidyverse','reshape', 'cowplot', 'scales', 'readxl', 'viridis', 'stringr', 'broom') 
   lapply(packages_needed, require, character.only = TRUE) 
@@ -156,19 +264,31 @@ if(runinBatchMode){
   source("ct_analysis/helper_functions_CT.R")
   
   
-  simdate <- "20200728"
-  #exp_name <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)[1]
-  source('ct_analysis/loadData_defineParam.R')
+  simdate <- "20200731"
+  exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
+  exp_names <- exp_names[grep("reopen_contact",exp_names)]
+  exp_names ="20200731_IL_reopen_contactTracingHS80"
   
+for(exp_name in exp_names){
+
+
+  source('ct_analysis/loadData_defineParam.R')
+  if(!file.exists(file.path(Rt_dir,"11_temp_Rt_tempdat_All.Rdata" ))) next
+ 
+  ### Combine files
+  #if(!file.exists(file.path(Rt_dir,"EMS_combined_estimated_Rt.csv" )))
+  Rt_dat2 <- f_combineRtdats()
+
+### Descriptive plots 
+f_Rt_descriptive_plots(Rt_dat2=Rt_dat2)
 
 }
 
 
-### Combine files
-if(!file.exists(file.path(Rt_dir,"EMS_combined_estimated_Rt.csv" )))f_combineRtdats()
+}
 
-### Descriptive plots 
-f_Rt_descriptive_plots()
+
+
 
 
 
