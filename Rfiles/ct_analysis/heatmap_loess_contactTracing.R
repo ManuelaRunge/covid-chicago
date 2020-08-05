@@ -4,6 +4,14 @@
 ## --------------------------------------------
 
 
+regions <- list(
+  "Northcentral" = c(1, 2),
+  "Northeast" = c(7, 8, 9, 10, 11),
+  "Central" = c(3, 6),
+  "Southern" = c(4, 5),
+  "Illinois" = c(1:11)
+)
+
 f_valuefct = function(df){
   
   df$value_fct <- NA
@@ -15,8 +23,8 @@ f_valuefct = function(df){
   df$value_fct[df$value < 50] <- "<50"
   
   df$value_fct <- factor(df$value_fct,
-                         levels = c(">400", "<400", "<300", "<200", "<100", "<50"),
-                         labels = c(">400", "<400", "<300", "<200", "<100", "<50")
+                               levels = c(">400", "<400", "<300", "<200", "<100", "<50"),
+                               labels = c(">400", "<400", "<300", "<200", "<100", "<50")
   )
   
   return(df)
@@ -24,22 +32,28 @@ f_valuefct = function(df){
 }
 
 
-f_runHeatmapAnalysis <- function(ems, geography="EMS"){
+f_runHeatmapAnalysis <- function(ems, geography="Region"){
   
   # ems <- emsregions[1]
   if (geography == "Region") {
     selected_ems <- as.numeric(regions[[ems]])
+    regname = ems
   } else {
     selected_ems <- ems
   }
   
-  capacity <- load_capacity(selected_ems) %>% dplyr::rename(capacity = critical)
-  
+ 
   tempdat <- trajectoriesDat %>%
     filter(time >= as.Date(reopeningdate) - as.Date(max(startdate)) - 30) %>%
     getdata(selected_ems) %>%
     filter(outcome == "critical") %>%
     as.data.frame()
+  
+  capacity <- load_capacity(ems) %>% dplyr::rename(capacity = critical)
+  if(length(selected_ems)>1){
+  capacity <- load_capacity(tolower(ems)) %>% dplyr::rename(capacity = critical)
+  tempdat$region = regname
+  }
   
   tempdat$capacity <- capacity$capacity
   
@@ -80,7 +94,7 @@ f_runHeatmapAnalysis <- function(ems, geography="EMS"){
   }
   # plotdat %>% filter(Date == plotdat$Date_peak) %>% write.csv(file.path(ems_dir,paste0(ems, "_scatterplot_dat.csv")), row.names = FALSE)
   
-  
+
   fitlist <- list()
   for (grp in unique(peakdat$grpvar)) {
     # grp  <- unique(peakdat$grpvar)[1]
@@ -104,11 +118,11 @@ f_runHeatmapAnalysis <- function(ems, geography="EMS"){
     if(showPlot){
       library(plotly)
       fig <- plot_ly(
-        x = temp_fit$detection_success,
-        y = temp_fit$isolation_success,
-        z =  temp_fit$value, 
-        type = "contour"
-      )
+      x = temp_fit$detection_success,
+      y = temp_fit$isolation_success,
+      z =  temp_fit$value, 
+      type = "contour"
+       )
       print(fig)
     }
     
@@ -135,7 +149,7 @@ f_runHeatmapAnalysis <- function(ems, geography="EMS"){
     group_by(detection_success, grpvar) %>%
     filter(isolation_success == min(isolation_success)) %>%
     mutate(region = ems)
-  
+    
   ### Plot contour-heatmap plot
   p1 <- ggplot(data = subset(dtfit, !is.na(value_fct)), aes(x = detection_success, y = isolation_success)) +
     theme_minimal() +
@@ -152,7 +166,7 @@ f_runHeatmapAnalysis <- function(ems, geography="EMS"){
     ) +
     scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
     scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
-    facet_wrap(~grpvar) +
+    facet_wrap(~grpvar, nrow=1) +
     customThemeNoFacet +
     theme(panel.spacing = unit(1.5, "lines"))
   
@@ -161,40 +175,40 @@ f_runHeatmapAnalysis <- function(ems, geography="EMS"){
     aes(x = detection_success, y = isolation_success), size = 1.3
   )
   
-  
+ 
   p2_modelfit <- p1 + geom_point(
     data = peakdat, aes(x = detection_success, y = isolation_success, fill = value_fct),
     shape = 21, size = 3, show.legend = FALSE
   )
   
   
-  plotname_capacity <- paste0("covid_region", "_", ems, "_ICUcapacity_heatmap_loess")
-  plotname_model <- paste0("covid_region", "_", ems, "_heatmap_with_points_loess")
+  plotname_capacity <- paste0(geography, "_", ems, "_ICUcapacity_heatmap_loess")
+  plotname_model <- paste0(geography, "_", ems, "_heatmap_with_points_loess")
   
   
   SAVE_png <- TRUE
   if (SAVE_png) {
     ggsave(paste0(plotname_capacity, ".png"),
-           plot = p1_capacity, path = file.path(ems_dir), width = 12, height = 5, device = "png"
+           plot = p1_capacity, path = file.path(ems_dir), width = 12, height = 4, device = "png"
     )
     
     
     ggsave(paste0(plotname_model, ".png"),
-           plot = p2_modelfit, path = file.path(ems_dir), width = 12, height = 5, device = "png"
+           plot = p2_modelfit, path = file.path(ems_dir), width = 12, height = 4, device = "png"
     )
   }
   
   
-  SAVE_pdf <- FALSE
+  SAVE_pdf <- TRUE
   if (SAVE_pdf) {
     ggsave(paste0(plotname_capacity, ".pdf"),
-           plot = p1_capacity, path = file.path(ems_dir), width = 12, height = 5, device = "pdf"
+           plot = p1_capacity, path = file.path(ems_dir), width = 12, height = 4, device = "pdf"
     )
     
     
     
     ggsave(paste0(plotname_model, ".pdf"),
-           plot = p2_modelfit, path = file.path(ems_dir), width = 12, height = 5, device = "pdf"
+           plot = p2_modelfit, path = file.path(ems_dir), width = 12, height = 4, device = "pdf"
     )
   }
   
@@ -223,9 +237,10 @@ if(runinBatchMode){
   task_id <- Sys.getenv("SLURM_ARRAY_TASK_ID")
   print(task_id)
   print(ems)
-  geography = "EMS"
-  ems <- 1
-  
+  #geography = "EMS"
+ # ems <- 1
+  geography = "Region"
+  emsregions <- names(regions)
   
   ## Load packages
   packages_needed <- c( 'tidyverse','reshape', 'cowplot', 'scales', 'readxl', 'viridis', 'stringr', 'broom') 
@@ -242,13 +257,17 @@ if(runinBatchMode){
   exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
   exp_names <- exp_names[grep("reopen_contact",exp_names)]
   
-  for(exp_name in exp_names){
-    #  exp_name  <-  exp_names[1]
-    source('ct_analysis/loadData_defineParam.R')
-    
-    ## Run analysis
-    f_runHeatmapAnalysis(ems)
-    
+for(exp_name in exp_names){
+ #  exp_name  <-  exp_names[1]
+  source('ct_analysis/loadData_defineParam.R')
+  
+  for(ems in emsregions ){
+  #ems = emsregions[1]
+  ## Run analysis
+  print(ems)
+  f_runHeatmapAnalysis(ems)
+  }
+  
   }
   
 } else {
