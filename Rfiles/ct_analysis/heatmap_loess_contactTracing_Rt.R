@@ -3,7 +3,6 @@
 ### Using loess regression per EMS and grpvar
 ## --------------------------------------------
 
-
 f_valuefct = function(df){
   
   df$value_fct <- NA
@@ -24,6 +23,7 @@ f_valuefct = function(df){
 }
 
 
+
 f_runHeatmapAnalysis_Rt <- function(ems, geography="EMS"){
   
   # ems <- emsregions[1]
@@ -33,15 +33,18 @@ f_runHeatmapAnalysis_Rt <- function(ems, geography="EMS"){
     selected_ems <- ems
   }
   
+  if(!file.exists(file.path(Rt_dir,"EMS_combined_estimated_Rt.csv" ))) next
   
-  dat <- read.csv(file.path(Rt_dir,"EMS_combined_estimated_Rt.csv" )) %>% mutate(Date = as.Date(Date)) %>%
-    filter(region %in% selected_ems &
+  dat <- read.csv(file.path(Rt_dir,"EMS_combined_estimated_Rt.csv" )) %>%
+    mutate(Date = as.Date(Date)) %>%
+    filter(region == ems &
              Date >= as.Date("2020-07-01") & Date < as.Date("2020-08-01")) %>%
     dplyr::group_by(region, Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>%
     dplyr::summarize(average_median_Rt = mean(Mean)) %>%
     dplyr::mutate(Rt_fct = ifelse(average_median_Rt < 1, "<1", ">=1"), capacity = 1)
   
   dat$region_label <- factor(dat$region, levels = c(1:11), labels = paste0("covid region ", c(1:11), "\n")) 
+  
   if(length(selected_ems)>1) {
     dat <- dat %>% 
       group_by(Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>%
@@ -49,8 +52,8 @@ f_runHeatmapAnalysis_Rt <- function(ems, geography="EMS"){
       dplyr::mutate(Rt_fct = ifelse(average_median_Rt < 1, "<1", ">=1"), capacity = 1)
   }
   
+  
   dat <- f_valuefct(dat)
-  summary(dat$average_median_Rt)
   
   fitlist <- list()
   
@@ -98,23 +101,20 @@ f_runHeatmapAnalysis_Rt <- function(ems, geography="EMS"){
   }
   
   dtfit <- bind_rows(fitlist)
- # rm(fitlist)
-  summary(dtfit$value)
-  if(min(  summary(dtfit$value))<1) 
+  rm(fitlist)
   
   thresholdDat <- dtfit %>%
-    filter( value <= 1) %>%
+    filter(value <= 1) %>%
     group_by(detection_success, grpvar) %>%
     filter(isolation_success == min(isolation_success)) %>%
-    mutate(region = ems)
+    mutate(regin = ems)
   
-  write.csv(thresholdDat, file = file.path(ems_dir, paste0(ems, "_loess_Rt.csv")), row.names = FALSE)
-  
-  
-  p1 <- ggplot(data = subset(dtfit), aes(x = detection_success, y = isolation_success)) +
+    write.csv(thresholdDat, file = file.path(ems_dir, paste0(ems, "_loess_Rt.csv")), row.names = FALSE)
+    
+  p1 <- ggplot(data = subset(dtfit, !is.na(value_fct)), aes(x = detection_success, y = isolation_success)) +
     theme_minimal() +
     geom_tile(aes(fill = value_fct), alpha = 0.8) +
-   # geom_line(data = subset(thresholdDat, isolation_success != min(isolation_success)), aes(x = detection_success, y = isolation_success), size = 1.3) +
+    geom_line(data = subset(thresholdDat, isolation_success != min(isolation_success)), aes(x = detection_success, y = isolation_success), size = 1.3) +
     scale_fill_viridis(option = "C", discrete = TRUE) +
     labs(
       x = "detections (%)",
@@ -171,18 +171,22 @@ if(runinBatchMode){
   lapply(packages_needed, require, character.only = TRUE) 
   
   ## Load directories and custom objects and functions
- # setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
+  setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
   source("load_paths.R")
   source("processing_helpers.R")
   source("ct_analysis/helper_functions_CT.R")
   
   
   simdate <- "20200731"
-  exp_name <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)[1]
-  source('ct_analysis/loadData_defineParam.R')
-  
+  #exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
+  exp_names <- exp_names[grep("reopen_contact",exp_names)]
+   # exp_names = "20200731_IL_reopen_contactTracingHS80TD"
+for(exp_name in exp_names){
   ## Run analysis
+    source('ct_analysis/loadData_defineParam.R')
   f_runHeatmapAnalysis_Rt(ems)
+  
+  }
   
   
 } else {
