@@ -8,7 +8,7 @@
 library(tidyverse)
 library(EpiEstim)
 
-runinBatchMode = TRUE
+runinBatchMode = FALSE
 
 
 if(runinBatchMode){
@@ -20,7 +20,7 @@ if(runinBatchMode){
   print(task_id)
   ems <- task_id
 } else {
-  ems <- "TEST"
+  ems <- "3"
 }
 
 
@@ -31,9 +31,9 @@ source("/home/mrm9534/gitrepos/covid-chicago/Rfiles/load_paths.R")
 source("/home/mrm9534/gitrepos/covid-chicago/Rfiles/processing_helpers.R")
 outdir <- file.path("/home/mrm9534/gitrepos/covid-chicago/Rfiles/estimate_Rt/from_simulations")
 
-simdate = "20200728"
-expname = "20200728_IL_test_stopSIP20_isolationvsdetAsP_bydetSym"
-exp_dir <- file.path(simulation_output,'contact_tracing',simdate, expname)
+simdate = "20200731"
+exp_name = "20200731_IL_reopen_counterfactual"
+exp_dir <- file.path(simulation_output,'contact_tracing',simdate, exp_name)
 
 Rt_dir <- file.path(ct_dir, simdate, exp_name, "estimatedRt")
 if (!dir.exists(Rt_dir)) dir.create(Rt_dir)
@@ -51,7 +51,10 @@ dat <- dat %>% mutate(
 
 
 tempdat = dat 
+#colnames(tempdat)
 colnames(tempdat)[colnames(tempdat)== paste0( "infected_cumul_EMS.",ems)]  = "infected_cumul"
+colnames(tempdat)[colnames(tempdat)== paste0( "infected_cumul_EMS-",ems)]  = "infected_cumul"
+colnames(tempdat)
 
 tempdat <- tempdat %>% 
   mutate(
@@ -94,8 +97,11 @@ for (scen in unique(tempdat$scen_num)) {
   }
   
   ## biweekly sliding
+  if(nrow(disease_incidence_data)<=13) next
   t_start <- seq(2, nrow(disease_incidence_data)-13)   
   t_end <- t_start + 13  
+  
+  if(length(t_start)!=nrow(disease_incidence_data))next
   
   ## estimate the reproduction number (method "uncertain_si")
   if(method=="uncertain_si"){
@@ -117,6 +123,7 @@ for (scen in unique(tempdat$scen_num)) {
   Rt_tempdat  <- res$R %>% mutate(region = ems)
   Rt_tempdat$scen_num = scen
   
+
   if(count==1)Rt_tempdat_All  <- Rt_tempdat
   if(count!=1)Rt_tempdat_All  <- rbind(Rt_tempdat_All,Rt_tempdat)
   
@@ -126,10 +133,12 @@ for (scen in unique(tempdat$scen_num)) {
   if(count==1)SI_tempdat_All  <- SI_tempdat
   if(count!=1)SI_tempdat_All  <- rbind(SI_tempdat_All,SI_tempdat) 
   
+  save(Rt_tempdat_All, file=file.path(Rt_dir, paste0(ems,"_temp_Rt.Rdata")))
+
   rm(Rt_tempdat, SI_tempdat)
 }
 
-save(Rt_tempdat_All, file=file.path(Rt_dir, paste0(ems,"_temp_Rt_tempdat_All.Rdata")))
+save(Rt_tempdat_All, file=file.path(Rt_dir, paste0(ems,"_estimated_Rt.Rdata")))
 
 
 
