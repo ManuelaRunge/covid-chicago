@@ -1,11 +1,23 @@
+###=========================================================================================
+###  Rscript to define detectionVar, isolationVar and groupVar
+### for the current experiment to run 
+### Opionally does not load the trajectoriesDat if only the parameter labels are needed
+###=========================================================================================
 
-#loadData_defineParam
+  ### Define experiment specfic directories
+  exp_dir <- file.path(ct_dir, simdate, exp_name)
+  ems_dir <- file.path(ct_dir, simdate, exp_name, "per_ems")
+  if (!dir.exists(ems_dir)) dir.create(ems_dir)
+
+  Rt_dir <- file.path(ct_dir, simdate, exp_name, "estimatedRt")
+  if (!dir.exists(Rt_dir)) dir.create(Rt_dir)
 
 
   ## Define contact  tracing parameters
   detectionVar <- "d_AsP_ct1" # "d_Sym_ct1"
   isolationVar <- "reduced_inf_of_det_cases_ct1"
   groupVar <- "reopening_multiplier_4" #"d_Sym_ct1" # "time_to_detection" # "change_testDelay_Sym_1"
+  
   
   ## Define label per parameter for plotting
   detectionVar_label <- detectionVar
@@ -22,30 +34,16 @@
   #if (groupVar == "contact_tracing_start_1") trajectoriesDat <- trajectoriesDat %>% mutate(grpvar = as.Date(contact_tracing_start_1 + startdate))
   
   
-  # exp_name <- exp_names[1]
-  print(exp_name)
-  
-  ### Define experiment specfic directories
-  exp_dir <- file.path(ct_dir, simdate, exp_name)
-  ems_dir <- file.path(ct_dir, simdate, exp_name, "per_ems")
-  if (!dir.exists(ems_dir)) dir.create(ems_dir)
-  
-  Rt_dir <- file.path(ct_dir, simdate, exp_name, "estimatedRt")
-  if (!dir.exists(Rt_dir)) dir.create(Rt_dir)
-  
-loadTrajectories=FALSE  
-if(loadTrajectories){
+f_loadTrajectories <- function(useTrim=FALSE){
   ## Load trajectories Dat
-  trajectoriesDat <- read.csv(file.path(exp_dir, "trajectoriesDat.csv"))
-  
-  ### Extract relevant dates from trajectpries dat
-  reopeningdate <- unique(as.Date(trajectoriesDat$gradual_reopening_time3, origin = trajectoriesDat$startdate))
-  interventionstart <- unique(as.Date(trajectoriesDat$contact_tracing_start_1, origin = trajectoriesDat$startdate))
-  interventionstop <- unique(as.Date(trajectoriesDat$contact_tracing_stop1, origin = trajectoriesDat$startdate))
-  
+  fname =  "trajectoriesDat.csv"
+  if(useTrim) fname == "trajectoriesDat_trim.csv"
+
+  trajectoriesDat <- read.csv(file.path(exp_dir, fname))
+
   ### Discard time entries before reopening date
   trajectoriesDat <- trajectoriesDat %>%
-    mutate(
+    dplyr::mutate(
       startdate = as.Date(startdate),
       Date = as.Date(time + startdate)
     )
@@ -56,5 +54,21 @@ if(loadTrajectories){
   trajectoriesDat$grpvar <- trajectoriesDat[, colnames(trajectoriesDat) == groupVar]
   if (isolationVar == "reduced_inf_of_det_cases_ct1") trajectoriesDat$isolation_success <- 1 - (trajectoriesDat$isolation_success)
   
+  return(trajectoriesDat)
   
 }
+
+
+if(!exists("loadTrajectores"))loadTrajectores=TRUE
+if(!exists("useTrim"))useTrim=TRUE
+
+if(loadTrajectores){
+  trajectoriesDat <- f_loadTrajectories(useTrim=useTrim)
+  
+  ### Extract relevant dates from trajectpries dat
+  reopeningdate <- unique(as.Date(trajectoriesDat$gradual_reopening_time3, origin = trajectoriesDat$startdate))
+  interventionstart <- unique(as.Date(trajectoriesDat$contact_tracing_start_1, origin = trajectoriesDat$startdate))
+  interventionstop <- unique(as.Date(trajectoriesDat$contact_tracing_stop1, origin = trajectoriesDat$startdate))
+  
+}
+
