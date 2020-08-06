@@ -38,13 +38,13 @@ scalePop <- TRUE
 ## Run analysis scripts for each experiment in exp_names (must have same contact tracing parameters!)
 for (exp_name in exp_names) {
   # exp_name <- exp_names[2]
+  # exp_name ="20200731_IL_reopen_contactTracing"
   print(exp_name)
    
   ## Load trajectories dat and define parameters for analysis
   source('ct_analysis/loadData_defineParam.R')
 
   ### Run analysis scripts for selected outcome
-  LOCAL=TRUE
   if (describeDat) source(file.path("ct_analysis/describeTrajectoriesDat.R"))
   
   if (heatmapCritical){
