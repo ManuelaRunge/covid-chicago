@@ -73,6 +73,51 @@ getdata <- function(dat, selected_ems) {
   return(subdat)
 }
 
+
+f_valuefct = function(df){
+  
+  df$value_fct <- NA
+  df$value_fct[df$value >= 1500] <- ">1500"
+  df$value_fct[df$value < 1500] <- "<1500"
+  df$value_fct[df$value < 1000] <- "<1000"
+  df$value_fct[df$value < 500] <- "<500"
+  df$value_fct[df$value < 400] <- "<400"
+  df$value_fct[df$value < 300] <- "<300"
+  df$value_fct[df$value < 200] <- "<200"
+  df$value_fct[df$value < 100] <- "<100"
+  df$value_fct[df$value < 50] <- "<50"
+  
+  df$value_fct <- factor(df$value_fct,
+                         levels = c(">1500", "<1500", "<1000", "<500",  "<400", "<300", "<200", "<100", "<50"),
+                         labels = c(">1500", "<1500", "<1000", "<500",  "<400", "<300", "<200", "<100", "<50")
+  )
+  
+  return(df)
+  
+}
+
+
+f_valuefctRt = function(df){
+  
+  df$value_fct <- NA
+  df$value_fct[df$value >= 1.02] <- ">1.02"
+  df$value_fct[df$value < 1.02] <- "<1.02"
+  df$value_fct[df$value < 1.01] <- "<1.01"
+  df$value_fct[df$value < 1] <- "<1"
+  df$value_fct[df$value < 0.99] <- "<0.99"
+  df$value_fct[df$value < 0.98] <- "<0.98"
+  
+  df$value_fct <- factor(df$value_fct,
+                         levels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98"),
+                         labels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98")
+  )
+  
+  return(df)
+  
+}
+
+
+
 # region_to_fct
 region_to_fct <- function(dat, geography) {
   #' Helper function to convert region character variable to factor variable

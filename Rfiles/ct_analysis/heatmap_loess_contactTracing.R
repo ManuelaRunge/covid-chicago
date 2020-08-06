@@ -12,24 +12,6 @@ regions <- list(
   "Illinois" = c(1:11)
 )
 
-f_valuefct = function(df){
-  
-  df$value_fct <- NA
-  df$value_fct[df$value >= 400] <- ">400"
-  df$value_fct[df$value < 400] <- "<400"
-  df$value_fct[df$value < 300] <- "<300"
-  df$value_fct[df$value < 200] <- "<200"
-  df$value_fct[df$value < 100] <- "<100"
-  df$value_fct[df$value < 50] <- "<50"
-  
-  df$value_fct <- factor(df$value_fct,
-                               levels = c(">400", "<400", "<300", "<200", "<100", "<50"),
-                               labels = c(">400", "<400", "<300", "<200", "<100", "<50")
-  )
-  
-  return(df)
-  
-}
 
 
 f_runHeatmapAnalysis <- function(ems, geography="Region"){

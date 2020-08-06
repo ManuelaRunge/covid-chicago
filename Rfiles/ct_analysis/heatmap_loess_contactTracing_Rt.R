@@ -3,25 +3,6 @@
 ### Using loess regression per EMS and grpvar
 ## --------------------------------------------
 
-f_valuefct = function(df){
-  
-  df$value_fct <- NA
-  df$value_fct[df$average_median_Rt >= 1.02] <- ">1.02"
-  df$value_fct[df$average_median_Rt < 1.02] <- "<1.02"
-  df$value_fct[df$average_median_Rt < 1.01] <- "<1.01"
-  df$value_fct[df$average_median_Rt < 1] <- "<1"
-  df$value_fct[df$average_median_Rt < 0.99] <- "<0.99"
-  df$value_fct[df$average_median_Rt < 0.98] <- "<0.98"
-  
-  df$value_fct <- factor(df$value_fct,
-                         levels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98"),
-                         labels = c(">1.02", "<1.02", "<1.01", "<1", "<0.99", "<0.98")
-  )
-  
-  return(df)
-  
-}
-
 
 
 f_runHeatmapAnalysis_Rt <- function(ems, geography="EMS"){
@@ -53,7 +34,7 @@ f_runHeatmapAnalysis_Rt <- function(ems, geography="EMS"){
   }
   
   
-  dat <- f_valuefct(dat)
+  dat <- f_valuefctRt(dat)
   
   fitlist <- list()
   
@@ -89,7 +70,7 @@ f_runHeatmapAnalysis_Rt <- function(ems, geography="EMS"){
       print(fig)
     }
     
-    temp.fit <- f_valuefct(temp.fit)
+    temp.fit <- f_valuefctRt(temp.fit)
     
     temp.fit$detection_success <- as.numeric(temp.fit$detection_success)
     temp.fit$isolation_success <- as.numeric(temp.fit$isolation_success)
