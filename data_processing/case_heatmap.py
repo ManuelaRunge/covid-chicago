@@ -141,6 +141,13 @@ def format_ax(ax, name) :
     ax.set_yticks([])
     ax.axis('off')
 
+def categorize_ratio(x):
+    if x < 1:
+        return 'decrease'
+    if x >=1 and x < 1.15:
+        return '0%-15%'
+    if x > 1.15:
+        return '>15%'
 
 class MidpointNormalize(colors.Normalize):
     def __init__(self, vmin=None, vmax=None, vcenter=None, clip=False):
@@ -188,7 +195,7 @@ def plot_ratio_ems() :
     fig.suptitle('week over week ratio of cases by specimen collection date\nLL data ending ' + str(max_date))
     plt.savefig(os.path.join(plot_path, 'EMS_weekly_case_ratio_%sLL.png' % LL_date))
 
-def plot_ratio_covidregion() :
+def plot_ratio_covidregion(CustomBins =False) :
 
     def get_ratio(adf, ems, w):
         edf = adf[adf['covid_region'] == ems]
@@ -217,16 +224,33 @@ def plot_ratio_covidregion() :
         ax = fig.add_subplot(2,3,6-week)
         format_ax(ax, '%d weeks ago vs %d weeks ago' % (week, week+1))
         covid_shp['ratio'] = covid_shp['covid_region'].apply(lambda x : get_ratio(df, x, week))
-        covid_shp.plot(column='ratio', ax=ax, cmap='RdYlBu_r', edgecolor='0.8',
-                     linewidth=0.8, legend=False, norm=norm)
-        sm = plt.cm.ScalarMappable(cmap='RdYlBu_r', norm=norm)
-        sm._A = []
-        cbar = fig.colorbar(sm, ax=ax)
-    fig.suptitle('week over week ratio of cases by specimen collection date\nLL data ending ' + str(max_date))
-    plt.savefig(os.path.join(plot_path, 'covidregion_weekly_case_ratio_%sLL.png' % LL_date))
-    plt.savefig(os.path.join(plot_path, 'covidregion_weekly_case_ratio_%sLL.pdf' % LL_date))
+		covid_shp['ratio_cat'] = covid_shp['ratio'].apply(categorize_ratio)
+        covid_shp['ratio_cat'] = pd.Categorical(covid_shp['ratio_cat'], categories=["decrease", "0%-15%", ">15%"], ordered=True)
 
-def load_county_map_with_public_data() :
+
+        if CustomBins == False :
+            covid_shp.plot(column='ratio', ax=ax, cmap='RdYlBu_r', edgecolor='0.8',
+                     linewidth=0.8, legend=False, norm=norm)
+            sm = plt.cm.ScalarMappable(cmap='RdYlBu_r', norm=norm)
+            sm._A = []
+            cbar = fig.colorbar(sm, ax=ax)
+
+        if CustomBins == True:
+            fname = "percbin"
+            covid_shp.plot(column='ratio_cat', ax=ax, cmap='RdYlBu_r', edgecolor='0.8',
+                    linewidth=0.8, legend=True)
+
+            leg = ax.get_legend()
+            leg.set_bbox_to_anchor((0.3,0.3))
+
+
+    fig.suptitle('week over week ratio of cases by specimen collection date\nLL data ending ' + str(max_date))
+    plt.savefig(os.path.join(plot_path, 'covidregion_weekly_case_'+fname+'_%sLL.png' % LL_date))
+    plt.savefig(os.path.join(plot_path, 'covidregion_weekly_case_'+fname+'_%sLL.pdf' % LL_date))
+
+
+
+def plot_ratio_county(CustomBins =False) :
 
     from public_idph_data import load_county_cases
     df = load_county_cases()
@@ -278,23 +302,39 @@ def plot_ratio_county() :
         ax = fig.add_subplot(2,3,6-week)
         format_ax(ax, '%d weeks ago vs %d weeks ago' % (week, week+1))
         ds_shp['ratio'] = ds_shp['COUNTY_NAM'].apply(lambda x : get_ratio(df, x, week))
-        ds_shp.plot(ax=ax, color='#969696', edgecolor='0.8',
-                    linewidth=0.8, legend=False)
-        pdf = ds_shp[ds_shp['ratio'] < 0]
-        pdf.plot(ax=ax, color='#313695', edgecolor='0.8',
-                 linewidth=0.8, legend=False)
-        pdf = ds_shp[ds_shp['ratio'] >= 0]
-        pdf.plot(column='ratio', ax=ax, cmap='RdYlBu_r', edgecolor='0.8',
+        ds_shp['ratio_cat'] = ds_shp['ratio'].apply(categorize_ratio)
+        ds_shp['ratio_cat'] = pd.Categorical(ds_shp['ratio_cat'], categories=["decrease", "0%-15%", ">15%"], ordered=True)
+
+        if CustomBins==False:
+            fname = "ratio"
+            ds_shp.plot(ax=ax, color='#969696', edgecolor='0.8',
+                        linewidth=0.8, legend=False)
+            pdf = ds_shp[ds_shp['ratio'] < 0]
+            pdf.plot(ax=ax, color='#313695', edgecolor='0.8',
+                     linewidth=0.8, legend=False)
+            pdf = ds_shp[ds_shp['ratio'] >= 0]
+            pdf.plot(column='ratio', ax=ax, cmap='RdYlBu_r', edgecolor='0.8',
                      linewidth=0.8, legend=False, norm=norm)
-        sm = plt.cm.ScalarMappable(cmap='RdYlBu_r', norm=norm)
-        sm._A = []
-        cbar = fig.colorbar(sm, ax=ax)
+
+            plt.legend(loc='upper left', frameon=False)
+            sm = plt.cm.ScalarMappable(cmap='RdYlBu_r', norm=norm)
+            sm._A = []
+            cbar = fig.colorbar(sm, ax=ax)
+
+        if CustomBins == True:
+            fname = "percbin"
+            ds_shp.plot(column='ratio_cat', ax=ax, cmap='RdYlBu_r', edgecolor='0.8',
+                    linewidth=0.8, legend=True)
+
+            leg = ax.get_legend()
+            leg.set_bbox_to_anchor((0.3,0.3))
+
     fig.suptitle('week over week ratio of cases\npublic data ending ' + str(max_date))
-    plt.savefig(os.path.join(plot_path, 'county_weekly_case_ratio_%sLL.png' % LL_date))
-    plt.savefig(os.path.join(plot_path, 'county_weekly_case_ratio_%sLL.pdf' % LL_date))
+    plt.savefig(os.path.join(plot_path, 'county_weekly_case_'+fname+'_%sLL.png' % LL_date))
+    plt.savefig(os.path.join(plot_path, 'county_weekly_case_'+fname+'_%sLL.pdf' % LL_date))
 
 
-def plot_ratio_region() :
+def plot_ratio_region(CustomBins =False) :
 
     region_shp = gpd.read_file(os.path.join(shp_path, 'Restore_Regions', 'Restore_Regions.shp'))
     region_fname = os.path.join(box_data_path, 'Corona virus reports', 'county_restore_region_map.csv')
@@ -333,20 +373,33 @@ def plot_ratio_region() :
         ax = fig.add_subplot(2,3,6-week)
         format_ax(ax, '%d weeks ago vs %d weeks ago' % (week, week+1))
         region_shp['ratio'] = region_shp['REGION'].apply(lambda x : get_ratio(df, x, week))
-        region_shp.plot(ax=ax, color='#969696', edgecolor='0.8',
-                    linewidth=0.8, legend=False)
-        pdf = region_shp[region_shp['ratio'] <0]
-        pdf.plot(ax=ax, color='#313695', edgecolor='0.8',
-                 linewidth=0.8, legend=False)
-        pdf = region_shp[region_shp['ratio'] >= 0]
-        pdf.plot(column='ratio', ax=ax, cmap='RdYlBu_r', edgecolor='0.8',
-                     linewidth=0.8, legend=False, norm=norm)
-        sm = plt.cm.ScalarMappable(cmap='RdYlBu_r', norm=norm)
-        sm._A = []
-        cbar = fig.colorbar(sm, ax=ax)
+        region_shp['ratio_cat'] = region_shp['ratio'].apply(categorize_ratio)
+        region_shp['ratio_cat'] = pd.Categorical(region_shp['ratio_cat'], categories=["decrease", "0%-15%", ">15%"], ordered=True)
+
+        if CustomBins ==False:
+            region_shp.plot(ax=ax, color='#969696', edgecolor='0.8',
+                        linewidth=0.8, legend=False)
+            pdf = region_shp[region_shp['ratio'] <0]
+            pdf.plot(ax=ax, color='#313695', edgecolor='0.8',
+                     linewidth=0.8, legend=False)
+            pdf = region_shp[region_shp['ratio'] >= 0]
+            pdf.plot(column='ratio', ax=ax, cmap='RdYlBu_r', edgecolor='0.8',
+                         linewidth=0.8, legend=False, norm=norm)
+            sm = plt.cm.ScalarMappable(cmap='RdYlBu_r', norm=norm)
+            sm._A = []
+            cbar = fig.colorbar(sm, ax=ax)
+
+        if CustomBins == True:
+            fname = "percbin"
+            covid_shp.plot(column='ratio_cat', ax=ax, cmap='RdYlBu_r', edgecolor='0.8',
+                    linewidth=0.8, legend=True)
+
+            leg = ax.get_legend()
+            leg.set_bbox_to_anchor((0.3,0.3))
+
     fig.suptitle('week over week ratio of cases\npublic data ending ' + str(max_date))
-    plt.savefig(os.path.join(plot_path, 'restoreRegion_weekly_case_ratio_%sLL.png' % LL_date))
-    plt.savefig(os.path.join(plot_path, 'restoreRegion_weekly_case_ratio_%sLL.pdf' % LL_date))
+    plt.savefig(os.path.join(plot_path, 'restoreRegion_weekly_case_'+fname+'_%sLL.png' % LL_date))
+    plt.savefig(os.path.join(plot_path, 'restoreRegion_weekly_case_'+fname+'_%sLL.pdf' % LL_date))
 
 def plot_LL_all_IL() :
 
