@@ -43,48 +43,42 @@ f_runDescriptivePlots <- function(perRestoreRegion = TRUE) {
   capacity <- load_capacity(unique(subdat$region)) %>% dplyr::rename(capacity = critical)
   subdat <- merge(subdat, capacity, by.x = "region", by.y = "geography_name")
 
-  trajectoriesDatAggr <- f_aggrDat(subdat, c("Date", "region", "reopening_multiplier_4", "capacity"), "value")
-
-
-  subdatAggr <- subdat %>%
+  #### aggregate only those below the capacity line 
+  subdatBelowCapacityAggr <- subdat %>%
     dplyr::group_by(region, scen_num, reopening_multiplier_4) %>%
     dplyr::mutate(valueMax = max(value, na.rm = TRUE)) %>%
-    filter(valueMax <= capacity) %>%
-    f_aggrDat(c("Date", "region", "reopening_multiplier_4", "capacity"), "value")
-
+    filter(valueMax <= capacity)
 
   ### Limit for ICU beds
   if (length(unique(subdat$region)) == 11) subdat$region <- factor(subdat$region, levels = c(1:11), labels = c(1:11))
-  for (i in unique(subdat$reopening_multiplier_4)) {
-    tdat <- subset(trajectoriesDatAggr, reopening_multiplier_4 == i)
-    tdatSub <- subset(subdatAggr, reopening_multiplier_4 == i)
+  
+  for (i in unique(subdat$grpvar)) {
+    tdat <- subset(subdat, grpvar == i)
+    tdatSub <- subset(subdatBelowCapacityAggr, grpvar == i)
 
-    l_plot2 <- ggplot(data = tdat) +
+    l_plot <- ggplot(data = tdat) +
       theme_minimal() +
-      geom_ribbon(aes(x = Date, ymin = min.val, ymax = max.val), fill = "deepskyblue3", alpha = 0.2) +
-      geom_ribbon(aes(x = Date, ymin = q2.5, ymax = q97.5), fill = "deepskyblue3", alpha = 0.35) +
-      geom_ribbon(aes(x = Date, ymin = q25, ymax = q75), fill = "deepskyblue3", alpha = 0.5) +
-      geom_ribbon(aes(x = Date, ymin = lower.ci.val, ymax = upper.ci.val), fill = "deepskyblue3", alpha = 0.7) +
-      geom_line(aes(x = Date, y = mean.val), col = "deepskyblue4", size = 1.3) +
-      geom_ribbon(data = tdatSub, aes(x = Date, ymin = min.val, ymax = max.val), fill = "brown3", alpha = 0.2) +
-      geom_ribbon(data = tdatSub, aes(x = Date, ymin = q2.5, ymax = q97.5), fill = "brown3", alpha = 0.35) +
-      geom_ribbon(data = tdatSub, aes(x = Date, ymin = q25, ymax = q75), fill = "brown3", alpha = 0.5) +
-      geom_line(data = tdatSub, aes(x = Date, y = mean.val), col = "brown3", size = 1.3) +
+      geom_line(aes(x = Date, y = value, group=scen_num ), col = "deepskyblue4", size = 1, alpha=0.5) +
       geom_hline(aes(yintercept = capacity)) +
       scale_color_viridis(discrete = TRUE) +
-      labs(title = paste0("reopen ", i, " %"), subtitle = "", y = "Predicted ICU bed demand") +
+      labs(title = paste0("reopen ", i, " %"), 
+           subtitle = "", y = "Predicted ICU bed demand",
+           x="") +
       customThemeNoFacet +
       scale_x_date(breaks = "1 month", labels = date_format("%b")) +
       facet_wrap(~region, scales = "free")
 
-
+    selectedScens <- sample(unique(tdat$scen_num), 5, replace = FALSE, prob = NULL)
+    l_plot_withColor <- l_plot + geom_line(data = tdatSub, aes(x = Date, y = value, group=scen_num), col = "brown3", size = 1, alpha=0.5) 
+    
 
     ggsave(paste0("reopen_", i, "_", adminlevel, "_capacity_timeline.png"),
-      plot = l_plot2, path = file.path(exp_dir), width = 10, height = 6, device = "png"
+      plot = l_plot_withColor, path = file.path(exp_dir), width = 10, height = 6, device = "png"
     )
     ggsave(paste0("reopen_", i, "_", adminlevel, "_capacity_timeline.pdf"),
-      plot = l_plot2, path = file.path(exp_dir), width = 10, height = 6, device = "pdf"
+      plot = l_plot_withColor, path = file.path(exp_dir), width = 10, height = 6, device = "pdf"
     )
+
   }
 
 
@@ -172,10 +166,9 @@ f_runDescriptivePlots <- function(perRestoreRegion = TRUE) {
 
 
 
-
-
-
+###===========================================================
 #### Run either local (for loop) or on NUCLUSTER
+###===========================================================
 
 if (!exists("LOCAL")) runinBatchMode <- TRUE
 if (exists("LOCAL")) runinBatchMode <- FALSE
