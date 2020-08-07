@@ -7,6 +7,7 @@
 
 
 ## Load packages
+Location="LOCAL"
 packages_needed <- c( 'tidyverse','reshape', 'cowplot', 'scales', 'readxl', 'viridis', 'stringr', 'broom') 
 lapply(packages_needed, require, character.only = TRUE) 
 
