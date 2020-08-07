@@ -401,6 +401,72 @@ def plot_ratio_region(CustomBins =False) :
     plt.savefig(os.path.join(plot_path, 'restoreRegion_weekly_case_'+fname+'_%sLL.png' % LL_date))
     plt.savefig(os.path.join(plot_path, 'restoreRegion_weekly_case_'+fname+'_%sLL.pdf' % LL_date))
 
+def plot_ratio_covidregion_EMR(selectedchannel='suspected_and_confirmed_covid_icu',  CustomBins =False) :
+
+    def get_ratio(adf, ems, w, channel='cases'):
+        edf = adf[adf['covid_region'] == ems]
+        col = channel
+        d = edf[col].values
+        if w == 0:
+            recent = np.mean(d[-7:])
+        else:
+            recent = np.mean(d[-7 * (w + 1):-7 * w])
+        back = np.mean(d[-7 * (w + 2):-7 * (w + 1)])
+        return recent / back
+
+    df = pd.read_csv(emr_fname)
+
+    df['suspected_and_confirmed_covid_icu'] = df['suspected_covid_icu'] + df['confirmed_covid_icu']
+    df['date'] = pd.to_datetime(df['date_of_extract'])
+    df['date'] = df['date'].dt.date
+    #max_date = date(2020, 8,7)  #date(2020, 7, 30)
+    #df = df[df['date'] <= max_date]
+    covid_shp = gpd.read_file(os.path.join(shp_path, 'covid_regions', 'covid_regions.shp'))
+    covid_shp['covid_region'] = covid_shp['new_restor'].astype(int)
+
+    fig = plt.figure(figsize=(12, 10))
+    fig.subplots_adjust(top=0.95)
+    vmin, vmax = 0.5, 2
+    norm = MidpointNormalize(vmin=vmin, vcenter=1, vmax=vmax)
+    for week in range(6) :
+        ax = fig.add_subplot(2,3,6-week)
+        format_ax(ax, '%d weeks ago vs %d weeks ago' % (week, week+1))
+        covid_shp['ratio'] = covid_shp['covid_region'].apply(lambda x : get_ratio(df, x, week, channel=selectedchannel))
+
+        if CustomBins ==False:
+            mthd = "ratio"
+            pdf = region_shp[region_shp['ratio'] <0]
+            pdf.plot(ax=ax, color='#313695', edgecolor='0.8',
+                     linewidth=0.8, legend=False)
+            pdf = region_shp[region_shp['ratio'] >= 0]
+            pdf.plot(column='ratio', ax=ax, cmap='RdYlBu_r', edgecolor='0.8',
+                         linewidth=0.8, legend=False, norm=norm)
+            sm = plt.cm.ScalarMappable(cmap='RdYlBu_r', norm=norm)
+            sm._A = []
+            cbar = fig.colorbar(sm, ax=ax)
+
+        if CustomBins ==True:
+            mthd = "percbin"
+            covid_shp.plot(column='ratio_cat', ax=ax, cmap='RdYlBu_r', edgecolor='0.8',
+                    linewidth=0.8, legend=True)
+
+            leg = ax.get_legend()
+            leg.set_bbox_to_anchor((0.3,0.3))
+
+    if selectedchannel =="covid_non_icu" :
+        cvdchannel = 'covid_non_icu'
+        cvdtitle = "COVID non ICU"
+
+    if selectedchannel == "suspected_and_confirmed_covid_icu":
+        cvdchannel = 'covid_icu'
+        cvdtitle = "COVID ICU"
+
+    fig.suptitle('week over week ratio of '+cvdtitle+' cases\nEMresource data processed on ' + str(LL_date))
+    fnam = cvdchannel  + mthd
+    #plt.tight_layout()
+    plt.savefig(os.path.join(plot_path, 'covidregion_weekly_'+fnam+'_%sEMR.png' % LL_date))
+    plt.savefig(os.path.join(plot_path, 'covidregion_weekly_'+fnam+'_%sEMR.pdf' % LL_date))
+
 def plot_LL_all_IL() :
 
     case_df = pd.read_csv(spec_coll_fname)
@@ -452,9 +518,13 @@ if __name__ == '__main__' :
     # plot_EMS_by_line('admissions')
     # plot_EMS_by_line('deaths')
     # plot_ratio_ems()
-    plot_ratio_county()
-    plot_ratio_region()
-    plot_ratio_covidregion()
+    ## Ratio maps
+    plot_ratio_county(CustomBins =False)
+    plot_ratio_region(CustomBins =False)
+    plot_ratio_covidregion(CustomBins =False)
+    plot_ratio_covidregion_EMR(selectedchannel='suspected_and_confirmed_covid_icu',  CustomBins =False)
+    plot_ratio_covidregion_EMR(selectedchannel='covid_non_icu',  CustomBins =False)
+    plot_ratio_covidregion_EMR(selectedchannel='suspected_and_confirmed_covid_icu', CustomBins =True)
+    plot_ratio_covidregion_EMR(selectedchannel='covid_non_icu', CustomBins =True)
     # plot_LL_all_IL()
-    plt.show()
-
+    #plt.show()
