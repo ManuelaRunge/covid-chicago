@@ -250,7 +250,7 @@ def plot_ratio_covidregion(CustomBins =False) :
 
 
 
-def plot_ratio_county(CustomBins =False) :
+def plot_ratio_county1() :
 
     from public_idph_data import load_county_cases
     df = load_county_cases()
@@ -272,7 +272,7 @@ def plot_ratio_county(CustomBins =False) :
     return county_shp, df
 
 
-def plot_ratio_county() :
+def plot_ratio_county(CustomBins =False) :
 
     ds_shp, df = load_county_map_with_public_data()
     max_date = np.max(df['update_date'])
@@ -307,8 +307,6 @@ def plot_ratio_county() :
 
         if CustomBins==False:
             fname = "ratio"
-            ds_shp.plot(ax=ax, color='#969696', edgecolor='0.8',
-                        linewidth=0.8, legend=False)
             pdf = ds_shp[ds_shp['ratio'] < 0]
             pdf.plot(ax=ax, color='#313695', edgecolor='0.8',
                      linewidth=0.8, legend=False)
@@ -377,8 +375,6 @@ def plot_ratio_region(CustomBins =False) :
         region_shp['ratio_cat'] = pd.Categorical(region_shp['ratio_cat'], categories=["decrease", "0%-15%", ">15%"], ordered=True)
 
         if CustomBins ==False:
-            region_shp.plot(ax=ax, color='#969696', edgecolor='0.8',
-                        linewidth=0.8, legend=False)
             pdf = region_shp[region_shp['ratio'] <0]
             pdf.plot(ax=ax, color='#313695', edgecolor='0.8',
                      linewidth=0.8, legend=False)
