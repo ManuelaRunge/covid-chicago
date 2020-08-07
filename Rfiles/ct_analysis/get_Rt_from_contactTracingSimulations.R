@@ -19,6 +19,13 @@ if(runinBatchMode){
   task_id <- Sys.getenv("SLURM_ARRAY_TASK_ID")
   print(task_id)
   ems <- task_id
+  
+  setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
+  source("/home/mrm9534/gitrepos/covid-chicago/Rfiles/load_paths.R")
+  source("/home/mrm9534/gitrepos/covid-chicago/Rfiles/processing_helpers.R")
+  outdir <- file.path("/home/mrm9534/gitrepos/covid-chicago/Rfiles/estimate_Rt/from_simulations")
+  
+  
 } else {
   ems <- "3"
 }
@@ -26,10 +33,6 @@ if(runinBatchMode){
 
 print(ems)
 
-setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
-source("/home/mrm9534/gitrepos/covid-chicago/Rfiles/load_paths.R")
-source("/home/mrm9534/gitrepos/covid-chicago/Rfiles/processing_helpers.R")
-outdir <- file.path("/home/mrm9534/gitrepos/covid-chicago/Rfiles/estimate_Rt/from_simulations")
 
 simdate = "20200731"
 exp_name = "20200731_IL_reopen_counterfactual"
@@ -37,15 +40,15 @@ exp_dir <- file.path(simulation_output,'contact_tracing',simdate, exp_name)
 
 Rt_dir <- file.path(ct_dir, simdate, exp_name, "estimatedRt")
 if (!dir.exists(Rt_dir)) dir.create(Rt_dir)
-
+#list.files(Rt_dir)
 
 ### Load simulation outputs
 dat <- read.csv(file.path(exp_dir, "trajectoriesDat.csv"))
 #dat <- subset(dat, time >= as.Date(reopeningdate) - as.Date(max(dat$startdate)))
 
 
-dat <- dat %>% mutate(
-  startdate = as.Date(startdate),
+dat <- dat %>% 
+  mutate( startdate = as.Date(startdate),
   Date = as.Date(time + startdate)
 )
 
@@ -57,11 +60,11 @@ colnames(tempdat)[colnames(tempdat)== paste0( "infected_cumul_EMS-",ems)]  = "in
 colnames(tempdat)
 
 tempdat <- tempdat %>% 
-  mutate(
+  dplyr::mutate(
     startdate = as.Date(startdate),
     Date = as.Date(time + startdate),
   ) %>%
-  group_by( scen_num) %>%
+  dplyr::group_by( scen_num) %>%
   arrange( scen_num, Date) %>%
   mutate(region = ems, new_infections = infected_cumul - lag(infected_cumul) )
 
@@ -70,15 +73,18 @@ method <- "uncertain_si"
 Rt_list <- list()
 si_list <- list()
 count=0
+
 for (scen in unique(tempdat$scen_num)) {
   count = count + 1
+  print(count)
   # scen = unique(dat$scen_num)[1]
   disease_incidence_data <- tempdat %>%
-    filter(region == ems ,   scen_num == scen) %>%
-    rename(I = new_infections) %>%
-    mutate(I = ifelse(I <0,0,I)) %>%
-    select(Date, I ,  infected_cumul) %>%
-    filter(!is.na(I))
+    ungroup() %>%
+    dplyr::filter(region == ems ,   scen_num == scen) %>%
+    dplyr::rename(I = new_infections) %>%
+    dplyr::mutate(I = ifelse(I <0,0,I)) %>%
+    dplyr::select(Date, I ,  infected_cumul) %>%
+    dplyr::filter(!is.na(I))
   
   ## check what si_distr to assume, or calculate from predictions, here using an example from the package
   if(method=="non_parametric_si"){  
@@ -101,7 +107,7 @@ for (scen in unique(tempdat$scen_num)) {
   t_start <- seq(2, nrow(disease_incidence_data)-13)   
   t_end <- t_start + 13  
   
-  if(length(t_start)!=nrow(disease_incidence_data))next
+  #if(length(t_start)!=nrow(disease_incidence_data))next
   
   ## estimate the reproduction number (method "uncertain_si")
   if(method=="uncertain_si"){
@@ -123,20 +129,24 @@ for (scen in unique(tempdat$scen_num)) {
   Rt_tempdat  <- res$R %>% mutate(region = ems)
   Rt_tempdat$scen_num = scen
   
-
-  if(count==1)Rt_tempdat_All  <- Rt_tempdat
-  if(count!=1)Rt_tempdat_All  <- rbind(Rt_tempdat_All,Rt_tempdat)
+  dim(Rt_tempdat)
+  if(!exists("Rt_tempdat_All"))Rt_tempdat_All  <- Rt_tempdat
+  if(exists("Rt_tempdat_All"))Rt_tempdat_All  <- rbind(Rt_tempdat_All,Rt_tempdat)
   
   SI_tempdat  <- res$SI.Moments %>% mutate(region = ems)
   SI_tempdat$scen_num = scen
   
-  if(count==1)SI_tempdat_All  <- SI_tempdat
-  if(count!=1)SI_tempdat_All  <- rbind(SI_tempdat_All,SI_tempdat) 
+  if(!exists("SI_tempdat_All"))SI_tempdat_All  <- SI_tempdat
+  if(exists("SI_tempdat_All"))SI_tempdat_All  <- rbind(SI_tempdat_All,SI_tempdat) 
   
+  
+  dim(Rt_tempdat_All)
   save(Rt_tempdat_All, file=file.path(Rt_dir, paste0(ems,"_temp_Rt.Rdata")))
 
   rm(Rt_tempdat, SI_tempdat)
 }
+
+
 
 save(Rt_tempdat_All, file=file.path(Rt_dir, paste0(ems,"_estimated_Rt.Rdata")))
 
