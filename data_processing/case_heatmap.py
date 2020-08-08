@@ -272,7 +272,7 @@ def plot_ratio_county1() :
     return county_shp, df
 
 
-def plot_ratio_county(CustomBins =False) :
+def plot_ratio_county(selectedchannel= 'Positive_Cases', CustomBins =False) :
 
     ds_shp, df = load_county_map_with_public_data()
     max_date = np.max(df['update_date'])
@@ -281,12 +281,16 @@ def plot_ratio_county(CustomBins =False) :
     vmin, vmax = 0.4, 3
     norm = MidpointNormalize(vmin=vmin, vcenter=1, vmax=vmax)
 
-    def get_ratio(adf, county, w):
+    def get_ratio(adf, county, w, channel='Positive_Cases'):
         cdf = adf[adf['County'] == county.upper()]
         # if len(cdf) == 0 :
         #     return 100
-        cdf['daily_pos'] = np.insert(np.diff(cdf['Positive_Cases']), 0, 0)
-        d = cdf['daily_pos'].values
+        if channel == 'Positive_Cases' :
+            cdf['daily_pos'] = np.insert(np.diff(cdf['Positive_Cases']), 0, 0)
+            d = cdf['daily_pos'].values
+        if channel == 'Positive_Cases':
+            cdf['daily_deaths'] = np.insert(np.diff(cdf['Deaths']), 0, 0)
+            d = cdf['daily_deaths'].values
         if w == 0:
             recent = np.mean(d[-7:])
         else:
@@ -301,7 +305,7 @@ def plot_ratio_county(CustomBins =False) :
     for week in range(6) :
         ax = fig.add_subplot(2,3,6-week)
         format_ax(ax, '%d weeks ago vs %d weeks ago' % (week, week+1))
-        ds_shp['ratio'] = ds_shp['COUNTY_NAM'].apply(lambda x : get_ratio(df, x, week))
+        ds_shp['ratio'] = ds_shp['COUNTY_NAM'].apply(lambda x : get_ratio(df, x, week, channel = selectedchannel))
         ds_shp['ratio_cat'] = ds_shp['ratio'].apply(categorize_ratio)
         ds_shp['ratio_cat'] = pd.Categorical(ds_shp['ratio_cat'], categories=["decrease", "0%-15%", ">15%"], ordered=True)
 
@@ -327,9 +331,9 @@ def plot_ratio_county(CustomBins =False) :
             leg = ax.get_legend()
             leg.set_bbox_to_anchor((0.3,0.3))
 
-    fig.suptitle('week over week ratio of cases\npublic data ending ' + str(max_date))
-    plt.savefig(os.path.join(plot_path, 'county_weekly_case_'+fname+'_%sLL.png' % LL_date))
-    plt.savefig(os.path.join(plot_path, 'county_weekly_case_'+fname+'_%sLL.pdf' % LL_date))
+    fig.suptitle('week over week ratio of '+selectedchannel+'\npublic data ending ' + str(max_date))
+    plt.savefig(os.path.join(plot_path, 'county_weekly_'+selectedchannel+'_'+fname+'_%sLL.png' % LL_date))
+    plt.savefig(os.path.join(plot_path, 'county_weekly_'+selectedchannel+'_'+fname+'_%sLL.pdf' % LL_date))
 
 
 def plot_ratio_region(CustomBins =False) :
