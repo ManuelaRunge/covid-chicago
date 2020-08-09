@@ -12,6 +12,24 @@ regions <- list(
   "Illinois" = c(1:11)
 )
 
+f_valuefct = function(df){
+  
+  df$value_fct <- NA
+  df$value_fct[df$value >= 400] <- ">400"
+  df$value_fct[df$value < 400] <- "<400"
+  df$value_fct[df$value < 300] <- "<300"
+  df$value_fct[df$value < 200] <- "<200"
+  df$value_fct[df$value < 100] <- "<100"
+  df$value_fct[df$value < 50] <- "<50"
+  
+  df$value_fct <- factor(df$value_fct,
+                         levels = c(">400", "<400", "<300", "<200", "<100", "<50"),
+                         labels = c(">400", "<400", "<300", "<200", "<100", "<50")
+  )
+  
+  return(df)
+  
+}
 
 
 f_runHeatmapAnalysis <- function(ems, geography="Region"){
@@ -24,7 +42,7 @@ f_runHeatmapAnalysis <- function(ems, geography="Region"){
     selected_ems <- ems
   }
   
- 
+  
   tempdat <- trajectoriesDat %>%
     filter(time >= as.Date(reopeningdate) - as.Date(max(startdate)) - 30) %>%
     getdata(selected_ems) %>%
@@ -33,8 +51,8 @@ f_runHeatmapAnalysis <- function(ems, geography="Region"){
   
   capacity <- load_capacity(ems) %>% dplyr::rename(capacity = critical)
   if(length(selected_ems)>1){
-  capacity <- load_capacity(tolower(ems)) %>% dplyr::rename(capacity = critical)
-  tempdat$region = regname
+    capacity <- load_capacity(tolower(ems)) %>% dplyr::rename(capacity = critical)
+    tempdat$region = regname
   }
   
   tempdat$capacity <- capacity$capacity
@@ -76,7 +94,7 @@ f_runHeatmapAnalysis <- function(ems, geography="Region"){
   }
   # plotdat %>% filter(Date == plotdat$Date_peak) %>% write.csv(file.path(ems_dir,paste0(ems, "_scatterplot_dat.csv")), row.names = FALSE)
   
-
+  
   fitlist <- list()
   for (grp in unique(peakdat$grpvar)) {
     # grp  <- unique(peakdat$grpvar)[1]
@@ -100,11 +118,11 @@ f_runHeatmapAnalysis <- function(ems, geography="Region"){
     if(showPlot){
       library(plotly)
       fig <- plot_ly(
-      x = temp_fit$detection_success,
-      y = temp_fit$isolation_success,
-      z =  temp_fit$value, 
-      type = "contour"
-       )
+        x = temp_fit$detection_success,
+        y = temp_fit$isolation_success,
+        z =  temp_fit$value, 
+        type = "contour"
+      )
       print(fig)
     }
     
@@ -131,7 +149,7 @@ f_runHeatmapAnalysis <- function(ems, geography="Region"){
     group_by(detection_success, grpvar) %>%
     filter(isolation_success == min(isolation_success)) %>%
     mutate(region = ems)
-    
+  
   ### Plot contour-heatmap plot
   p1 <- ggplot(data = subset(dtfit, !is.na(value_fct)), aes(x = detection_success, y = isolation_success)) +
     theme_minimal() +
@@ -157,7 +175,7 @@ f_runHeatmapAnalysis <- function(ems, geography="Region"){
     aes(x = detection_success, y = isolation_success), size = 1.3
   )
   
- 
+  
   p2_modelfit <- p1 + geom_point(
     data = peakdat, aes(x = detection_success, y = isolation_success, fill = value_fct),
     shape = 21, size = 3, show.legend = FALSE
@@ -220,7 +238,7 @@ if(runinBatchMode){
   print(task_id)
   print(ems)
   #geography = "EMS"
- # ems <- 1
+  # ems <- 1
   geography = "Region"
   emsregions <- names(regions)
   
@@ -239,17 +257,17 @@ if(runinBatchMode){
   exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
   exp_names <- exp_names[grep("reopen_contact",exp_names)]
   
-for(exp_name in exp_names){
- #  exp_name  <-  exp_names[1]
-  source('ct_analysis/loadData_defineParam.R')
-  
-  for(ems in emsregions ){
-  #ems = emsregions[1]
-  ## Run analysis
-  print(ems)
-  f_runHeatmapAnalysis(ems)
-  }
-  
+  for(exp_name in exp_names){
+    #  exp_name  <-  exp_names[1]
+    source('ct_analysis/loadData_defineParam.R')
+    
+    for(ems in emsregions ){
+      #ems = emsregions[1]
+      ## Run analysis
+      print(ems)
+      f_runHeatmapAnalysis(ems)
+    }
+    
   }
   
 } else {
