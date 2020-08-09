@@ -32,7 +32,7 @@ f_valuefct = function(df){
 }
 
 
-f_runHeatmapAnalysis <- function(ems, geography="Region"){
+f_runHeatmapAnalysis <- function(ems, geography="Region", enddate="2021-12-31"){
   
   # ems <- emsregions[1]
   if (geography == "Region") {
@@ -57,43 +57,45 @@ f_runHeatmapAnalysis <- function(ems, geography="Region"){
   
   tempdat$capacity <- capacity$capacity
   
-  ### Identify peak at least 10 days after reopening
-  peakTimes <- tempdat %>%
-    filter(Date > min(Date) + 10) %>%
-    dplyr::group_by(N, Ki, region, isolation_success, detection_success, grpvar, scen_num, sample_num, run_num) %>%
-    dplyr::filter(value == max(value)) %>%
-    dplyr::rename("Date_peak" = Date) %>%
-    dplyr::select(N, Ki, region, Date_peak, outcome, isolation_success, detection_success, grpvar, scen_num, sample_num, run_num)
+  ### Take weekly average before filtering for maximum value
+  library(lubridate)
   
-  ## Add peak date to plotdat
-  tempdat <- tempdat %>%
-    left_join(peakTimes, by = c(
-      "N", "Ki", "region", "outcome", "scen_num", "sample_num",
-      "run_num", "isolation_success", "detection_success", "grpvar"
-    ))
+  subdatWklAvr <- tempdat %>%
+    dplyr::filter(Date >= reopeningdate & Date <= as.Date(enddate)) %>%
+    dplyr::mutate(week = week(Date)) %>%
+    dplyr::group_by(N, Ki, region, week, scen_num, grpvar, detection_success, isolation_success, capacity) %>%
+    dplyr::summarize(
+      value = mean(value),
+      Date = max(Date)
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::group_by(scen_num, grpvar, capacity) %>%
+    dplyr::mutate(peak = max(value)) %>%
+    f_valuefct()
   
-  peakdat <- tempdat %>% filter(Date == tempdat$Date_peak)
+  
+  peakdat <- subset(subdatWklAvr, value == peak & !is.na(value_fct)) 
   
   ### Scatter plot  of outcome variable per CT parameter at peak
   showScatter <- TRUE
   if (showScatter) {
-    scatterplot <- tempdat %>%
-      filter(Date == Date_peak) %>%
-      mutate(
-        belowCapacity = ifelse(value <= capacity, "yes", "no")
-      ) %>%
-      ggplot() +
+    s_plot <-   ggplot(data = peakdat) +
       theme_minimal() +
-      geom_point(aes(x = detection_success, y = isolation_success, fill = value, group = scen_num), size = 3, shape = 21) +
-      scale_fill_viridis(option = "C", discrete = FALSE, direction = -1) +
-      customThemeNoFacet
+      geom_point(aes(x = detection_success, y = isolation_success, fill = value_fct), size = 4, alpha = 1, shape = 21) +
+      scale_fill_viridis(option = "C", discrete = TRUE) +
+      labs(
+        title = "",
+        subtitle = "",
+        x = "Fraction detected",
+        y = "Fraction detected that isolate\n",
+        fill = "Predicted ICU bed demand\nper 1000 population"
+      ) +
+      theme(legend.position = "none")
     
     ggsave(paste0(ems, "_scatterplot.pdf"),
-           plot = scatterplot, path = file.path(ems_dir), width = 5, height = 4, device = "pdf"
+           plot = s_plot, path = file.path(heatmapICUDir), width = 5, height = 4, device = "pdf"
     )
   }
-  # plotdat %>% filter(Date == plotdat$Date_peak) %>% write.csv(file.path(ems_dir,paste0(ems, "_scatterplot_dat.csv")), row.names = FALSE)
-  
   
   fitlist <- list()
   for (grp in unique(peakdat$grpvar)) {
@@ -104,7 +106,7 @@ f_runHeatmapAnalysis <- function(ems, geography="Region"){
     t_matdat <- expand.grid(detection_success = detection_success, isolation_success = isolation_success)
     
     m <- loess(value ~ detection_success * isolation_success,
-               span = 0.8,
+               span = 0.5,
                degree = 2, data = subset(peakdat, grpvar == grp)
     )
     
@@ -137,7 +139,6 @@ f_runHeatmapAnalysis <- function(ems, geography="Region"){
     rm(temp_fit_mat, temp_fit)
   }
   
-  
   dtfit <- bind_rows(fitlist)
   rm(fitlist)
   
@@ -145,10 +146,10 @@ f_runHeatmapAnalysis <- function(ems, geography="Region"){
   
   ### Extract  minimum isolation_success for each detection_success
   thresholdDat <- dtfit %>%
-    filter(value <= capacity$capacity) %>%
-    group_by(detection_success, grpvar) %>%
-    filter(isolation_success == min(isolation_success)) %>%
-    mutate(region = ems)
+    dplyr::filter(value <= capacity$capacity) %>%
+    dplyr::group_by(detection_success, grpvar) %>%
+    dplyr::filter(isolation_success == min(isolation_success)) %>%
+    dplyr::mutate(region = ems)
   
   ### Plot contour-heatmap plot
   p1 <- ggplot(data = subset(dtfit, !is.na(value_fct)), aes(x = detection_success, y = isolation_success)) +
@@ -189,12 +190,12 @@ f_runHeatmapAnalysis <- function(ems, geography="Region"){
   SAVE_png <- TRUE
   if (SAVE_png) {
     ggsave(paste0(plotname_capacity, ".png"),
-           plot = p1_capacity, path = file.path(ems_dir), width = 12, height = 4, device = "png"
+           plot = p1_capacity, path = file.path(heatmapICUDir), width = 12, height = 4, device = "png"
     )
     
     
     ggsave(paste0(plotname_model, ".png"),
-           plot = p2_modelfit, path = file.path(ems_dir), width = 12, height = 4, device = "png"
+           plot = p2_modelfit, path = file.path(heatmapICUDir), width = 12, height = 4, device = "png"
     )
   }
   
@@ -202,20 +203,20 @@ f_runHeatmapAnalysis <- function(ems, geography="Region"){
   SAVE_pdf <- TRUE
   if (SAVE_pdf) {
     ggsave(paste0(plotname_capacity, ".pdf"),
-           plot = p1_capacity, path = file.path(ems_dir), width = 12, height = 4, device = "pdf"
+           plot = p1_capacity, path = file.path(heatmapICUDir), width = 12, height = 4, device = "pdf"
     )
     
     
     
     ggsave(paste0(plotname_model, ".pdf"),
-           plot = p2_modelfit, path = file.path(ems_dir), width = 12, height = 4, device = "pdf"
+           plot = p2_modelfit, path = file.path(heatmapICUDir), width = 12, height = 4, device = "pdf"
     )
   }
   
   
-  write.csv(thresholdDat, file = file.path(ems_dir, paste0(ems, "_loess_ICUcapacity.csv")), row.names = FALSE)
+  write.csv(thresholdDat, file = file.path(heatmapICUDir, paste0(ems, "_loess_ICUcapacity.csv")), row.names = FALSE)
   
-  if(file.exists(file.path(ems_dir, paste0(ems, "_loess_ICUcapacity.csv")))) print("CSVs saved")
+  if(file.exists(file.path(heatmapICUDir, paste0(ems, "_loess_ICUcapacity.csv")))) print("CSVs saved")
   
 }
 
@@ -260,13 +261,16 @@ if(runinBatchMode){
   for(exp_name in exp_names){
     #  exp_name  <-  exp_names[1]
     source('ct_analysis/loadData_defineParam.R')
+    heatmapICUDir <- file.path(exp_dir, "heatmap_ICU")
     
-    for(ems in emsregions ){
-      #ems = emsregions[1]
-      ## Run analysis
-      print(ems)
-      f_runHeatmapAnalysis(ems)
-    }
+    if(!dir.exists(dir.create(heatmapICUDir)))
+      
+      for(ems in emsregions ){
+        #ems = emsregions[1]
+        ## Run analysis
+        print(ems)
+        f_runHeatmapAnalysis(ems)
+      }
     
   }
   
@@ -277,7 +281,6 @@ if(runinBatchMode){
   # emsregions <- "Illinois"
   
   for (ems in emsregions) {
-    
     f_runHeatmapAnalysis(ems)
     
   }
