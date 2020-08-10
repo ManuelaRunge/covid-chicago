@@ -1,14 +1,28 @@
 
+## Load packages
+packages_needed <- c( 'tidyverse') 
+lapply(packages_needed, require, character.only = TRUE) 
+
+## Load directories and custom objects and functions
+setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
+source("load_paths.R")
+source("processing_helpers.R")
+
 #### Combine critical 
-f_combinecapacity <- function(){
+f_combineCSVs <- function(exp_dir,  fname = "ICUcapacity.csv", fnameout="CT_ICU_thresholds.csv"){
   
-  thresholdsfiles <- list.files(file.path(ems_dir), pattern = "ICUcapacity.csv", recursive = TRUE, full.names = TRUE)
-  #lmthresholdsDat <- sapply(thresholdsfiles, read.csv, simplify = FALSE) %>%
-  #  bind_rows(.id = "id")
+  thresholdsfiles <- list.files(file.path(exp_dir),fname, recursive = TRUE, full.names = TRUE)
+  
+  
+  if(length(thresholdsfiles)!=0){
+    print("file found - processing")
+
   datlist <- list()
   for(i in c(1:length(thresholdsfiles))){
     temp <-  read.csv(thresholdsfiles[i])
+    
     if(dim(temp)[1]<1)next
+    
     temp$id <- thresholdsfiles[i]
     temp$region <- as.character(temp$region )
     datlist[[length(datlist)+1]] <- temp 
@@ -17,21 +31,41 @@ f_combinecapacity <- function(){
   }
   
   lmthresholdsDat <- datlist %>% bind_rows()
-  if (dim(lmthresholdsDat)[1] <= 1) next
-  colnames(lmthresholdsDat)[colnames(lmthresholdsDat)=="regin"] <- "region"
-  lmthresholdsDat$id <- gsub(ems_dir, "", lmthresholdsDat$id)
-  lmthresholdsDat$region <- gsub("_loess_ICUcapacity.csv", "", lmthresholdsDat$id)
-  lmthresholdsDat$region <- gsub("[/]", "", lmthresholdsDat$region)
-  table(  lmthresholdsDat$region )
   
-  write.csv(lmthresholdsDat, file.path(exp_dir, "thresholds_loess.csv"), row.names = FALSE)
+  if (dim(lmthresholdsDat)[1] <= 1) next
+  
+  colnames(lmthresholdsDat)[colnames(lmthresholdsDat)=="regin"] <- "region"
+  
+  lmthresholdsDat$id <- gsub(exp_dir, "", lmthresholdsDat$id)
+
+  write.csv(lmthresholdsDat, file.path(exp_dir, fnameout), row.names = FALSE)
+  }
+  if(length(thresholdsfiles)==0){
+    print("file not found")
+  }
+  
 }
 
 
 
+simdate <- "20200731"
 
-f_combinecapacity()
+exp_names <- list.dirs( file.path(simulation_output,'contact_tracing',simdate), recursive = FALSE, full.names = FALSE)
+exp_names <- exp_names[grep("reopen_contact",exp_names)]
 
+for (exp_name in exp_names) {
+  # exp_name = exp_names[1]
+
+  
+  print(exp_name)
+  exp_dir <- file.path(simulation_output,'contact_tracing',simdate, exp_name)
+  
+  f_combineCSVs(exp_dir,  fname = "loess_ICUcapacity.csv", fnameout="CT_ICU_thresholds.csv")
+  
+  f_combineCSVs(exp_dir,  fname = "loess_Rt.csv", fnameout="CT_Rt_thresholds.csv")
+  
+
+}
 
 
 
