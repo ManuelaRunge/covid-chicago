@@ -1,6 +1,9 @@
 ## ============================================================
 ## Combine and plot Rt estimates 
 ## ============================================================
+
+
+
 regions <- list(
   "Northcentral" = c(1, 2),
   "Northeast" = c(7, 8, 9, 10, 11),
@@ -48,12 +51,12 @@ f_combineRtdats <- function(){
   
   
   # #### Combine Rt estimates per region
-  load(file.path(Rt_dir, "1_temp_Rt_tempdat_All.Rdata"))
+  load(file.path(Rt_dir, "1_estimated_Rt.Rdata"))
   Rt_dat <- Rt_tempdat_All
   rm(Rt_tempdat_All)
   
   for (i in c(2:11)) {
-    load(file.path(Rt_dir, paste0(i, "_temp_Rt_tempdat_All.Rdata")))
+    load(file.path(Rt_dir, paste0(i, "_estimated_Rt.Rdata")))
     Rt_dat <- rbind(Rt_dat, Rt_tempdat_All)
     rm(Rt_tempdat_All)
   }
@@ -73,6 +76,7 @@ f_combineRtdats <- function(){
   
 
   write.csv(Rt_dat2, file = file.path(Rt_dir, paste0("EMS_combined_estimated_Rt.csv")), row.names = FALSE)
+  save(Rt_dat2, file = file.path(Rt_dir, paste0("EMS_combined_estimated_Rt.Rata")))
   
   return(Rt_dat2)
 }
@@ -252,6 +256,8 @@ if(!exists("LOCAL")){
 if(runinBatchMode){
   cmd_agrs <- commandArgs()
   length(cmd_agrs)
+  simdate = cmd_agrs[length(cmd_agrs)-1]
+  exp_pattern = cmd_agrs[length(cmd_agrs)]
   
   ## Load packages
   packages_needed <- c( 'tidyverse','reshape', 'cowplot', 'scales', 'readxl', 'viridis', 'stringr', 'broom') 
@@ -263,17 +269,15 @@ if(runinBatchMode){
   source("processing_helpers.R")
   source("ct_analysis/helper_functions_CT.R")
   
-  
-  simdate <- "20200731"
   exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
-  exp_names <- exp_names[grep("reopen_contact",exp_names)]
-  exp_names ="20200731_IL_reopen_contactTracingHS80"
+  exp_names <- exp_names[grep(exp_pattern,exp_names)]
+  #exp_names ="20200731_IL_reopen_counterfactual"
+ }
   
 for(exp_name in exp_names){
 
-
   source('ct_analysis/loadData_defineParam.R')
-  if(!file.exists(file.path(Rt_dir,"11_temp_Rt_tempdat_All.Rdata" ))) next
+  if(!file.exists(file.path(Rt_dir,"11_estimated_Rt.Rdata" ))) next
  
   ### Combine files
   #if(!file.exists(file.path(Rt_dir,"EMS_combined_estimated_Rt.csv" )))
@@ -284,8 +288,6 @@ f_Rt_descriptive_plots(Rt_dat2=Rt_dat2)
 
 }
 
-
-}
 
 
 
