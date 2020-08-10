@@ -1,8 +1,10 @@
-
+##===================================
+### Rscript to combine Rt and prediction dataset across different scenatios
+#===================================
 
 ## Load packages
-packages_needed <- c( 'tidyverse') 
-lapply(packages_needed, require, character.only = TRUE) 
+library('tidyverse')
+library('ggplot2')
 
 ## Load directories and custom objects and functions
 setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
@@ -78,39 +80,45 @@ f_combineDat <- function(simdir, exp_name, Rt = FALSE) {
 }
 
 
-exp_names <- c(
-  "20200801_IL_reopen_TD", "20200731_IL_reopen_counterfactual",
-  "20200801_IL_reopen_HS40TD", "20200801_IL_reopen_HS40",
-  "20200801_IL_reopen_HS80TD", "20200801_IL_reopen_HS80"
-)
+simdate <- "20200731"
+exp_names <- list.dirs( file.path(simulation_output,'contact_tracing',simdate), recursive = FALSE, full.names = FALSE)
+exp_names <- exp_names[grep("reopen",exp_names)]
 
 
+#### Combine Rt dat
 RtList <- list()
-predList <- list()
-
 for (exp_name in exp_names) {
   # exp_name = exp_names[1]
-  
   print(exp_name)
-
   simdir <- file.path(simulation_output, "contact_tracing/20200731/")
-  
   Rtdf <- f_combineDat(simdir, exp_name, Rt = TRUE)
   RtList[[length(RtList) + 1]] <- Rtdf
-  
+
+  rm(Rtdf )
+}
+
+RtDat <- RtList %>% bind_rows()
+save(RtDat, file = file.path(simulation_output, "contact_tracing/20200731/combined_RtDat.Rdata"))
+
+
+#### Combine trajectories Dat
+predList <- list()
+for (exp_name in exp_names) {
+  # exp_name = exp_names[1]
+  print(exp_name)
+  simdir <- file.path(simulation_output, "contact_tracing/20200731/")
   preddf <- f_combineDat(simdir, exp_name, Rt = FALSE)
   predList[[length(predList) + 1]] <- preddf
-  
-  rm(Rtdf, preddf )
+  rm(preddf )
 }
 
 
 predDat <- predList %>% bind_rows()
-RtDat <- RtList %>% bind_rows()
 
 
 save(predDat, file = file.path(simulation_output, "contact_tracing/20200731/combined_predDat.Rdata"))
-save(RtDat, file = file.path(simulation_output, "contact_tracing/20200731/combined_RtDat.Rdata"))
+
+
 
 
 
