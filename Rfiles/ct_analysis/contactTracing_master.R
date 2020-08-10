@@ -13,6 +13,7 @@ lapply(packages_needed, require, character.only = TRUE)
 
 ## Load directories and custom objects and functions
 source("load_paths.R")
+source("setup.R")
 source("processing_helpers.R")
 source("ct_analysis/helper_functions_CT.R")
 
