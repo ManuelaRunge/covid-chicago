@@ -10,6 +10,18 @@ regions <- list(
   "Illinois" = c(1:11)
 )
 
+f_addRestoreRegion <- function(dat){
+  
+  dat$restore_region <- NA
+  dat$restore_region[dat$region %in%  regions$Northcentral ] <- "Northcentral"
+  dat$restore_region[dat$region %in%  regions$Northeast ] <- "Northeast"
+  dat$restore_region[dat$region %in%  regions$Central ] <- "Central"
+  dat$restore_region[dat$region %in%  regions$Southern ] <- "Southern"
+  
+  
+  return(dat)
+  
+}
 
 combineDat <- function(filelist, namelist){
   
