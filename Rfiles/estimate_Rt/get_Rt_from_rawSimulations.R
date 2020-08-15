@@ -8,32 +8,32 @@
 library(tidyverse)
 library(EpiEstim)
 
-runinBatchMode = TRUE
+runinBatchMode = F
 
 
 if(runinBatchMode){
   cmd_agrs <- commandArgs()
   length(cmd_agrs)
-  ems <- cmd_agrs[length(cmd_agrs)]
+  ems <- cmd_agrs[length(cmd_agrs)-1]
+  exp_name = cmd_agrs[length(cmd_agrs)]
   
   task_id <- Sys.getenv("SLURM_ARRAY_TASK_ID")
   print(task_id)
   ems <- task_id
+  setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
 } else {
-  ems <- "11"
+  ems <- c(1:11)
+  exp_name = "20200812_IL_MR_baseline"
 }
 
 
 print(ems)
 
-setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
 
 source("load_paths.R")
 source("processing_helpers.R")
 source("estimate_Rt/getRt_function.R")
 
-
-exp_name = "20200731_IL_reopen_contactTracing"
 exp_dir <- file.path(simulation_output, exp_name)
 
 Rt_dir <- file.path(simulation_output, exp_name, "estimatedRt")
@@ -41,7 +41,11 @@ if (!dir.exists(Rt_dir)) dir.create(Rt_dir)
 
 
 ### Load simulation outputs
-tempdat <- read.csv(file.path(exp_dir, "trajectoriesDat.csv")) %>% 
+fname =  "trajectoriesDat.csv"
+if(!exists("useTrim"))useTrim=TRUE
+if(useTrim) fname == "trajectoriesDat_trim.csv"
+
+tempdat <- read.csv(file.path(exp_dir, fname)) %>% 
   dplyr::mutate(
   startdate = as.Date(startdate),
   Date = as.Date(time + startdate)
@@ -67,6 +71,9 @@ weekwindow=13
 Rt_list <- list()
 si_list <- list()
 count=0
+for (i in ems) {
+  
+
 for (scen in unique(tempdat$scen_num)) {
   count = count + 1
   # scen = unique(dat$scen_num)[1]
@@ -77,17 +84,15 @@ for (scen in unique(tempdat$scen_num)) {
     dplyr::select(Date, I ,  infected_cumul) %>%
     dplyr::filter(!is.na(I))
   
-  
   res <- getRt(disease_incidence_data, method=method, weekwindow=weekwindow)
   
-
-  Rt_tempdat  <- res$R %>% mutate(region = ems, weekwindow=weekwindow )
+  Rt_tempdat  <- res$R %>% mutate(region = i, weekwindow=weekwindow )
   Rt_tempdat$scen_num = scen
   
   if(count==1)Rt_tempdat_All  <- Rt_tempdat
   if(count!=1)Rt_tempdat_All  <- rbind(Rt_tempdat_All,Rt_tempdat)
   
-  SI_tempdat  <- res$SI.Moments %>% mutate(region = ems, weekwindow=weekwindow )
+  SI_tempdat  <- res$SI.Moments %>% mutate(region = i, weekwindow=weekwindow )
   SI_tempdat$scen_num = scen
   
   if(count==1)SI_tempdat_All  <- SI_tempdat
@@ -95,8 +100,9 @@ for (scen in unique(tempdat$scen_num)) {
   
   rm(Rt_tempdat, SI_tempdat)
 }
-
-save(Rt_tempdat_All, file=file.path(Rt_dir, paste0(ems,"_temp_Rt_tempdat_All.Rdata")))
-
-
+    
+  save(Rt_tempdat_All, file=file.path(Rt_dir, paste0(i,"_estimated_Rt.Rdata")))
+  
+  
+}
 
