@@ -3,6 +3,7 @@
 user_path =  Sys.getenv("USERNAME")
 
 
+if(!exists("Location"))Location="LOCAL"
 if(Location=="NUCLUSTER"){
   user_path = '/projects/p30781/covidproject/'
   home_path = file.path(user_path, 'projects')
