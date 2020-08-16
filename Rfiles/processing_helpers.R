@@ -1,5 +1,54 @@
 
 #source("load_paths.R")
+library(dplyr)
+
+## Define functions
+
+### Load data
+f_loadData <- function(data_path) {
+  
+  emresource <- read.csv(file.path(data_path, "covid_IDPH/Corona virus reports/emresource_by_region.csv")) %>%
+    dplyr::mutate(
+      date_of_extract = as.Date(date_of_extract),
+      suspected_and_confirmed_covid_icu = suspected_covid_icu + confirmed_covid_icu
+    ) %>%
+    dplyr::rename(
+      Date = date_of_extract,
+      region = covid_region,
+    ) %>%
+    f_addRestoreRegion() %>%
+    mutate(restore_region = tolower(restore_region)) %>%
+    filter(!is.na(restore_region)) %>%
+    dplyr::select(
+      Date, restore_region, region, suspected_and_confirmed_covid_icu,
+      confirmed_covid_deaths_prev_24h, confirmed_covid_icu, covid_non_icu
+    )
+  
+  
+  ref_df <- read.csv(file.path(data_path, "covid_IDPH/Cleaned Data", "200811_jg_aggregated_covidregion.csv"))
+  
+  ref_df <- ref_df %>%
+    dplyr::rename(
+      Date = date,
+      region = covid_region,
+      LL_deaths = deaths,
+      LL_cases = cases,
+      LL_admissions = admissions
+    ) %>%
+    f_addRestoreRegion() %>%
+    mutate(restore_region = tolower(restore_region))
+  
+  
+  ref_df$Date <- as.Date(ref_df$Date)
+  emresource$Date <- as.Date(emresource$Date)
+  
+  
+  out <- left_join(emresource, ref_df, by = c("Date", "restore_region", "region"))
+  
+  return(out)
+}
+
+
 
 
 regions <- list(
