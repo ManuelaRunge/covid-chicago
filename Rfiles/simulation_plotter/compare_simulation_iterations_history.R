@@ -8,11 +8,11 @@ require(cowplot)
 require(scales)
 require(lubridate)
 
-Location <- "LOCAL"
+
 source("load_paths.R")
 source("processing_helpers.R")
 
-theme_set(theme_minimal())
+theme_set(theme_cowplot())
 
 
 customThemeNoFacet <- theme(
@@ -31,94 +31,8 @@ customThemeNoFacet <- theme(
 )
 
 ### ----------------------------------------
-## Define functions
 
-### Load data
-f_loadData <- function() {
-  emresource <- read.csv("C:/Users/mrm9534/Box/NU-malaria-team/data/covid_IDPH/Corona virus reports/emresource_by_region.csv") %>%
-    dplyr::mutate(
-      date_of_extract = as.Date(date_of_extract),
-      suspected_and_confirmed_covid_icu = suspected_covid_icu + confirmed_covid_icu
-    ) %>%
-    dplyr::rename(
-      Date = date_of_extract,
-      region = covid_region,
-    ) %>%
-    f_addRestoreRegion() %>%
-    mutate(restore_region = tolower(restore_region)) %>%
-    filter(!is.na(restore_region)) %>%
-    dplyr::select(
-      Date, restore_region, region, suspected_and_confirmed_covid_icu,
-      confirmed_covid_deaths_prev_24h, confirmed_covid_icu, covid_non_icu
-    )
-
-
-  ref_df <- read.csv(file.path("C:/Users/mrm9534/Box/NU-malaria-team/data/covid_IDPH/Cleaned Data", "200811_jg_aggregated_covidregion.csv"))
-
-  ref_df <- ref_df %>%
-    dplyr::rename(
-      Date = date,
-      region = covid_region,
-      LL_deaths = deaths,
-      LL_cases = cases,
-      LL_admissions = admissions
-    ) %>%
-    f_addRestoreRegion() %>%
-    mutate(restore_region = tolower(restore_region))
-
-
-  ref_df$Date <- as.Date(ref_df$Date)
-  emresource$Date <- as.Date(emresource$Date)
-
-
-  out <- left_join(emresource, ref_df, by = c("Date", "restore_region", "region"))
-
-  return(out)
-}
-
-### Load simulations
-
-f_combineSimulations2 <- function(NUCivisDir = file.path(project_path, "NU_civis_outputs"), SAVE = FALSE) {
-  simdates <- list.dirs(NUCivisDir, recursive = FALSE, full.names = FALSE)
-  simdates <- as.numeric(simdates)
-  # simdates <- simdates[simdates > 20200603 & !is.na(simdates)]
-  simdates <- simdates[!is.na(simdates)]
-  
-  scenario <- "baseline"
-  
-  
-  datList <- list()
-  for (simdate in simdates) {
-    
-    fname <- list.files(file.path(NUCivisDir,simdate,"trajectories"), recursive = TRUE, pattern="baseline", full.names = TRUE)
-    fname <- fname[!grepl("trimmed_",fname)]
-    fname <- fname[!grepl("_old_",fname)]
-    if (is_empty(fname)) next
-    
-    df <- read.csv(fname) %>% mutate(simdate = simdate)
-    datList[[length(datList) + 1]] <- df
-  }
-  
-  
-  dat <- datList %>%
-    bind_rows() %>%
-    as.data.frame()
-
-  dat$Date <-  dat$time +  as.Date("2020-02-13")
-  summary(dat$simdate)
-  summary(dat$Date)
-  
-  
-  dat$simdate <- as.Date(as.character(dat$simdate), format = "%Y%m%d")
-  
-  
-  if (SAVE) write.csv(dat, "combinedTrajectoriesDat_AprilAug2020.csv", row.names = FALSE)
-  return(dat)
-}
-
-
-
-f_combineSimulations <- function(NUCivisDir = file.path(project_path, "NU_civis_outputs"), SAVE = FALSE) {
+f_combine_civis_outputs <- function(NUCivisDir = file.path(project_path, "NU_civis_outputs"), SAVE = FALSE) {
   simdates <- list.dirs(NUCivisDir, recursive = FALSE, full.names = FALSE)
   simdates <- as.numeric(simdates)
   # simdates <- simdates[simdates > 20200603 & !is.na(simdates)]
@@ -360,7 +274,7 @@ if (processData) {
   coviddat$geography_modeled <- factor(coviddat$geography_modeled, labels = geographyLevels, levels = geographyLevels)
   
   
-  dat <- f_combineSimulations() %>%
+  dat <- f_combine_civis_outputs() %>%
     group_by(geography_modeled, simdate) %>%
     mutate(postsimdays = as.numeric(Date - simdate))
   
