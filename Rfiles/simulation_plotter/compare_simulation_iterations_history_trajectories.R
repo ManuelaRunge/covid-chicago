@@ -33,6 +33,35 @@ customThemeNoFacet <- theme(
 
 ### ----------------------------------------
 
+f_defineVariablesPerChannel <- function(df, channel = "ICU") {
+  df <- as.data.frame(df)
+  if (channel == "ICU") {
+    df$ylabel <- "ICU census"
+    df$simvar <- df$critical_det
+    df$datvar <- df$confirmed_covid_icu
+    df$datvarLL <- NA
+    df$capacity <- df$icu_available
+  }
+  
+  if (channel == "deaths") {
+    df$ylabel <- "deaths"
+    df$simvar <- df$deaths_det
+    df$datvar <- df$confirmed_covid_deaths_prev_24h
+    df$datvarLL <- df$LL_deaths
+    df$capacity <- NA
+  }
+  if (channel == "hospitalizations") {
+    df$ylabel <- "non-ICU inpatient census"
+    df$simvar <- df$hospitalized_det
+    df$datvar <- df$covid_non_icu
+    df$datvarLL <- df$LL_admissions
+    df$capacity <- df$medsurg_available
+  }
+  
+  return(df)
+}
+
+
 ### Load simulations
 f_loadTrajectories <- function(fname, simdate, outcomes=NULL) {
 
@@ -86,7 +115,7 @@ simdates <- simdates[!is.na(simdates)]
 datList <- list()
 for (simdate in simdates[-1]) {
   
-  fname <- list.files(file.path(NUCivisDir,simdate,"trajectories"), recursive = TRUE, pattern=scenario, full.names = TRUE)
+  fname <- list.files(file.path(NUCivisDir,simdate,"trajectories"), recursive = TRUE, pattern='baseline', full.names = TRUE)
   fname <- fname[!grepl("trimmed_",fname)]
   fname <- fname[!grepl("_old_",fname)]
   
@@ -96,87 +125,67 @@ for (simdate in simdates[-1]) {
   datList[[length(datList) + 1]] <- df
     
 }
-dat <- datList %>%   bind_rows() %>%  as.data.frame()
-#dat <- f_loadData(data_path)
-
-
-
-df %>% group_by(simdate, region) %>%
-  filter(postsimdays<=30) %>%
-  f_aggrDat( groupVars= c('Date','time','simdate', 'region'),valueVar="critical") %>% 
-  
-  ggplot() +
-  geom_ribbon(aes(
-    x = Date,
-    ymin = q2.5,
-    ymax = q97.5,
-    fill = as.factor(simdate),
-    group = simdate
-  ), alpha = 0.3) +
-  scale_fill_viridis_d() +
-  scale_color_viridis_d() +
-  scale_x_date(date_breaks = "30 days", date_labels = "%d\n%b") +
-  theme_cowplot() +
-  background_grid()  +
-  facet_wrap(~region, scales="free_y") +
-  customThemeNoFacet +
-  theme(legend.position = "none") +
-  geom_hline(yintercept = c(-Inf, Inf)) +
-  geom_vline(xintercept = c(-Inf, Inf))
+dat1 <- datList[c(2:8)] %>%   bind_rows() %>%  as.data.frame()
+dat2 <- datList[c(9:13)] %>%   bind_rows() %>%  as.data.frame()
+dat <- dat2
 
 
 
 ### Timeline plots per geography and outcome
-f_timelinePlot <- function(df, reg = "illinois", channel = "ICU", logscale = TRUE, 
-                           showLegend = TRUE, addData = TRUE, showCapacity=FALSE,
-                           datasource = "EMResource", SAVE = TRUE,
+f_timelinePlot <- function(df, reg = c(1), 
+                           channel = "ICU", 
+                           logscale = TRUE, 
+                           showLegend = TRUE, addData = TRUE, 
+                           showCapacity=FALSE,
+                           datasource = "EMResource", 
+                           SAVE = TRUE,
                            SAVEPDF=FALSE, savedir = getwd()) {
-  # if (!(reg %in% c("illinois", "northcentral", "northeast", "central", "southern"))) ptitle <- paste0("Covid region ", reg)
-  #if (reg == "illinois") ptitle <- "Illinois"
-  # if (reg %in% c("northcentral", "northeast", "central", "southern")) ptitle <- paste0(str_to_title(reg), " restore region")
+
+  #dfAggr <- df %>% f_addRestoreRegion()  %>% filter(restore_region==reg)
   
-  df <- subset(df, geography_modeled %in% reg & Date <= as.Date("2020-08-31"))
-  
+  capacities <- load_capacity() %>% rename(region = geography_name) %>% filter(region %in% c(1:11)) %>% mutate(region=as.numeric(region))
+  df <- df %>% left_join(capacities, by="region")
   
   df <- f_defineVariablesPerChannel(df, channel = channel)
   ylabel <- unique(df$ylabel)
   
-  pplot <- ggplot(data = df) +
+  pplot <- 
+    df  %>% group_by(simdate, region) %>%
+    filter(postsimdays>=0 & postsimdays<=30) %>%
+    f_aggrDat( groupVars= c('Date','time','simdate', 'region'),valueVar=simvar) %>%
+    ggplot() +
     geom_ribbon(aes(
       x = Date,
-      ymin = simvar_lo,
-      ymax = simvar_up,
+      ymin = q2.5,
+      ymax = q97.5,
       fill = as.factor(simdate),
       group = simdate
     ), alpha = 0.3) +
-    geom_line(aes(x = Date, y = simvar, col = as.factor(simdate)), size = 1.3) +
-    labs(
-      #title = ptitle,
-      subtitle = "",
-      caption = paste0("Data source: ", datasource, " data (points)"),
-      y = paste0("Total " , ylabel),
-      x="",
-      color = "simdate",
-      fill = "simdate"
-    ) +
+    geom_line(aes(
+      x = Date, y=median.val,
+      col = as.factor(simdate),
+      group = simdate
+    ), alpha = 1, size=1.1) +
     scale_fill_viridis_d() +
     scale_color_viridis_d() +
     scale_x_date(date_breaks = "30 days", date_labels = "%d\n%b") +
     theme_cowplot() +
     background_grid()  +
-    facet_wrap(~geography_modeled, scales="free_y") +
+    facet_wrap(~region, scales="free_y") +
     customThemeNoFacet +
     theme(legend.position = "none") +
     geom_hline(yintercept = c(-Inf, Inf)) +
-    geom_vline(xintercept = c(-Inf, Inf))
+    geom_vline(xintercept = c(-Inf, Inf)) 
+  
   
   if(showCapacity){
-    if(channel !="deaths") pplot <- pplot+ geom_hline(aes(yintercept = capacity), linetype="dashed", size=1, color="darkred")
+    if(channel !="deaths") pplot <- pplot+ geom_hline(data=df, aes(yintercept = capacity), linetype="dashed", size=1, color="darkred")
   }
   
   if (addData) {
-    if (datasource == "EMResource") pplot <- pplot + geom_point(data = df, aes(x = Date, y = datvar), size = 3)
-    if (datasource == "Linelist") pplot <- pplot + geom_point(data = df, aes(x = Date, y = datvarLL), size = 3)
+    coviddat <- f_loadData(data_path) %>% mutate(Date=as.Date(as.character(Date))) %>% as.data.frame()
+    if (datasource == "EMResource") pplot <- pplot + geom_point(data = coviddat, aes(x = Date, y = datvar), size = 3)
+    if (datasource == "Linelist") pplot <- pplot + geom_point(data = coviddat, aes(x = Date, y = datvarLL), size = 3)
   }
   
   
