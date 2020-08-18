@@ -19,12 +19,12 @@ f_loadAndCombine <- function(filedir, filename, identfier ){
 
 
 ## Load directories and custom objects and functions
-Location = "NUCLUSTER"
-if(Location = "NUCLUSTER")) setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
+if(!exists("Location"))Location = "LOCAL"
+if(Location == "NUCLUSTER") setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
 source("load_paths.R")
 
-exp_name ="20200803_IL_baseline_reopeningScenarios"
-fname = "_Rt_aggregated_scen_num"
+if(!exists("exp_name"))exp_name ="20200816_IL_testbaseline"
+fname = "_temp_Rt_tempdat_All"
    
 Rt_dir <- file.path(simulation_output, exp_name,  "estimatedRt")
 
