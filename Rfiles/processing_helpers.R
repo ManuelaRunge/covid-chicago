@@ -1,4 +1,3 @@
-
 #source("load_paths.R")
 
 
@@ -9,6 +8,21 @@ regions <- list(
   "Southern" = c(4, 5),
   "Illinois" = c(1:11)
 )
+
+
+f_addRestoreRegion <- function(dat){
+  
+  dat$restore_region <- NA
+  dat$restore_region[dat$region %in%  regions$Northcentral ] <- "Northcentral"
+  dat$restore_region[dat$region %in%  regions$Northeast ] <- "Northeast"
+  dat$restore_region[dat$region %in%  regions$Central ] <- "Central"
+  dat$restore_region[dat$region %in%  regions$Southern ] <- "Southern"
+  
+  
+  return(dat)
+  
+}
+
 
 
 combineDat <- function(filelist, namelist){
@@ -25,24 +39,16 @@ combineDat <- function(filelist, namelist){
 }
 
 
-
 load_capacity <- function(selected_ems=NULL) {
-  df <- read.csv(file.path(data_path, "covid_IDPH/Corona virus reports/capacity_by_covid_region.csv"))
-  
-  ## Take mean of last 2 weeks
-   filterDate <- max(as.Date(df$date))-14
-    
-   df = df %>%  filter(date ==filterDate & geography_name !="chicago") %>%
+  df <- read.csv(file.path(data_path, "covid_IDPH/Corona virus reports/capacity_by_covid_region.csv"))  %>%
+    filter(date == max(date) & geography_name !="chicago") %>%
     mutate(
       geography_name = gsub("restore_","",geography_name),
-      medsurg_available = medsurg_total - medsurg_noncovid,
-      icu_available = icu_total - icu_noncovid,
-      vents_available = vent_total -vent_noncovid
+      hospitalized = medsurg_total,
+      critical = icu_total,
+      ventilators = vent_total
     ) %>%
-    group_by(geography_name) %>%
-    summarize(icu_available=mean(icu_available),
-              medsurg_available = mean(medsurg_available),
-              vents_available = mean(vents_available)) 
+    dplyr::select(geography_name,hospitalized, critical, ventilators)
   
   if(!(is.null(selected_ems))) df <-  df %>% filter(geography_name %in% selected_ems)
   
@@ -133,7 +139,7 @@ f_weighted.aggrDat <- function(dataframe, groupVars, valueVar, weightVar, WideTo
       max.val	= max(tempvar, na.rm = TRUE),
       mean.val 	= weighted.mean(tempvar, w),
       median.val	= weighted.median(tempvar, w),
-	  sd.val		= sqrt(sum(w * (tempvar - mean.val)^2)),
+      sd.val		= sqrt(sum(w * (tempvar - mean.val)^2)),
       n.val 		= n(),										 
       q25		= weighted.quantile(tempvar,w, probs=0.25),
       q75		= weighted.quantile(tempvar,w, probs=0.75),
