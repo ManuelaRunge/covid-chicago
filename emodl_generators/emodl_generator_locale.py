@@ -85,7 +85,7 @@ def write_observe(grp, expandModel=None):
 (observe susceptible_{grpout} S::{grp})
 (observe exposed_{grpout} E::{grp})
 (observe asymptomatic_{grpout} asymptomatic_{grp})
-(observe presymptomatic_{grpout} P_det::{grp})
+(observe presymptomatic_{grpout} presymptomatic_{grp})
 (observe symptomatic_mild_{grpout} symptomatic_mild_{grp})
 (observe symptomatic_severe_{grpout} symptomatic_severe_{grp})
 (observe hospitalized_{grpout} hospitalized_{grp})
@@ -94,7 +94,7 @@ def write_observe(grp, expandModel=None):
 (observe recovered_{grpout} recovered_{grp})
 
 (observe asymptomatic_det_{grpout} asymptomatic_det_{grp})
-(observe presymptomatic_det{grpout} P_det::{grp} )
+(observe presymptomatic_det{grpout} presymptomatic_det_{grp} )
 (observe symptomatic_mild_det_{grpout} symptomatic_mild_det_{grp})
 (observe symptomatic_severe_det_{grpout} symptomatic_severe_det_{grp})
 (observe hospitalized_det_{grpout} hospitalized_det_{grp})
@@ -368,11 +368,12 @@ def write_travel_reaction(grp, travelspeciesList=None):
 
 def write_Ki_timevents(grp):
     grp = str(grp)
+    grpout = sub(grp)
     params_str = """
 (param Ki_{grp} @Ki_{grp}@)
-(observe Ki_t_{grp} Ki_{grp})
+(observe Ki_t_{grpout} Ki_{grp})
 (time-event time_infection_import @time_infection_import_{grp}@ ((As::{grp} @initialAs_{grp}@) (S::{grp} (- S::{grp} @initialAs_{grp}@))))
-""".format(grp=grp)
+""".format(grpout=grpout,grp=grp)
     params_str = params_str.replace("  ", " ")
 
     return (params_str)
@@ -797,22 +798,23 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
     rollbacktriggered_str = ""
     for grp in grpList:
         temp_str = """
-(state-event rollbacktrigger_{grp} (> {channel}_{grp} (* @trigger_{grp}@ @capacity_multiplier@)) ((Ki_{grp} Ki_red4_{grp})))
+(state-event rollbacktrigger_{grp} (and (> time @triggertime@) (> {channel}_{grp} (* @trigger_{grp}@ @capacity_multiplier@)) ) ((Ki_{grp} Ki_red4_{grp})))
                     """.format(channel=trigger_channel,grp=grp)
         rollbacktriggered_str = rollbacktriggered_str + temp_str
 
     d_Sym_change_str = ""
     for grp in grpList:
+        grpout = sub(grp)
         temp_str = """
 (param d_Sym_{grp} @d_Sym_{grp}@)
-(observe d_Sym_t_{grp} d_Sym_{grp})
+(observe d_Sym_t_{grpout} d_Sym_{grp})
 
 (time-event d_Sym_change1 @d_Sym_change_time_1@ ((d_Sym_{grp} @d_Sym_change1_{grp}@)))
 (time-event d_Sym_change2 @d_Sym_change_time_2@ ((d_Sym_{grp} @d_Sym_change2_{grp}@)))
 (time-event d_Sym_change3 @d_Sym_change_time_3@ ((d_Sym_{grp} @d_Sym_change3_{grp}@)))
 (time-event d_Sym_change4 @d_Sym_change_time_4@ ((d_Sym_{grp} @d_Sym_change4_{grp}@)))
 (time-event d_Sym_change5 @d_Sym_change_time_5@ ((d_Sym_{grp} @d_Sym_change5_{grp}@)))
-            """.format(grp=grp)
+            """.format(grpout=grpout,grp=grp)
         d_Sym_change_str = d_Sym_change_str + temp_str
         
     interventionSTOP_str = ""

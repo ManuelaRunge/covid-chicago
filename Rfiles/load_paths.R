@@ -2,6 +2,7 @@
 
 user_path =  Sys.getenv("USERNAME")
 
+if(!exists('Location'))Location="LOCAL"
 
 if(!exists("Location"))Location="LOCAL"
 if(Location=="NUCLUSTER"){
