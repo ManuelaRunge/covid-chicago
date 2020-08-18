@@ -799,9 +799,10 @@ if (combineScenarioDats) {
   if (SAVE) save(RtDatHS, file = file.path(simulation_output, "contact_tracing/20200731/RtDatHS.Rdata"))
 }
 
-capacity <- load_capacity(selected_ems = tolower(unique(predDatHS$restore_region)))
 
 load(file.path(simulation_output, "contact_tracing/20200731/predDatHS.Rdata"))
+capacity <- load_capacity(selected_ems = tolower(unique(predDatHS$restore_region)))
+
 predDatHS <- predDatHS %>%
   mutate(date = as.character(date)) %>%
   mutate(date = as.Date(date))
@@ -830,7 +831,7 @@ predplotDat <- predDatHS %>%
     reopening_multiplier_4 %in% reopen) %>%
   group_by(date, param, scenario, scenario_fct, reopening_multiplier_4) %>%
   summarize(
-    critical = sum(critical),
+    icu_available = sum(icu_available),
     mean.val = sum(mean.val)
   )
 
@@ -839,7 +840,7 @@ predplot <- predplotDat %>%
   theme_cowplot() +
   # geom_ribbon(aes(x=date , ymin=lower.ci.val , ymax=  upper.ci.val , fill=restore_region , group=reopening_multiplier_4),size=1, alpha=0.3) +
   geom_line(aes(x = date, y = mean.val, col = scenario_fct, group = scenario), size = 1.3) +
-  geom_hline(aes(yintercept = critical), linetype = "dashed", col = "black", size = 0.7) +
+  geom_hline(aes(yintercept = icu_available), linetype = "dashed", col = "black", size = 0.7) +
   geom_hline(aes(yintercept = 0)) +
   facet_grid(~reopening_multiplier_4, scales = "free") +
   customTheme +
@@ -1779,11 +1780,14 @@ if(combineDat){
   save(predDat, file = file.path(simulation_output, "contact_tracing/20200731/", "reopen_contactTracingAll.Rdata"))
   
 }
+
+expDIR <- file.path(simulation_output, "contact_tracing/20200731")
+
 load( file.path(simulation_output, "contact_tracing/20200731/", "reopen_contactTracingAll.Rdata"))
 
 
 f_linePlotIL <- function() {
-  ppredDat <- predDat %>%
+  ppred <- predDat %>%
     dplyr::mutate(geography_name = tolower(restore_region)) %>%
     dplyr::left_join(capacity, by = "geography_name") %>%
     dplyr::filter(param %in% c("hospitalized") &
@@ -1796,7 +1800,7 @@ f_linePlotIL <- function() {
     dplyr::group_by(date, reopening_multiplier_4, scenario, d_AsP_ct1_grp, scenario3) %>%
     dplyr::summarize(
       mean.val = sum(mean.val),
-      hospitalized = sum(hospitalized)
+      medsurg_available = sum(medsurg_available)
     ) %>%
     ggplot() +
     theme_cowplot() +
@@ -1807,7 +1811,7 @@ f_linePlotIL <- function() {
       col = as.factor(d_AsP_ct1_grp),
       group = interaction(d_AsP_ct1_grp, reopening_multiplier_4)
     ), size = 1.3) +
-    geom_hline(aes(yintercept = hospitalized),
+    geom_hline(aes(yintercept = medsurg_available),
       linetype = "dashed", col = "grey", size = 1.7
     ) +
     facet_wrap(reopening_multiplier_4 ~ scenario, scales = "free_y", nrow = 4) +
@@ -1914,7 +1918,7 @@ ppredDat <- predDat %>%
   dplyr::group_by(HSgrp, reopening_multiplier_4, d_AsP_ct1_grp, scenario, scenario2, scenario3) %>%
   dplyr::summarize(
     mean.val = sum(mean.val),
-    hospitalized = sum(hospitalized)
+    medsurg_available = sum(medsurg_available)
   )
 
 
@@ -1941,8 +1945,7 @@ ggsave(paste0("CT_scenarios_allReopen", ".pdf"),
 
 
 p0 <- ppredDat %>%
-  filter(reopening_multiplier_4 == 0 &
-    scenario2) %>%
+  filter(reopening_multiplier_4 == 0 ) %>%
   ggplot() +
   theme_cowplot() +
   geom_bar(aes(
@@ -1982,24 +1985,30 @@ if (overTime) {
       scenario3 = gsub("HS40", "", gsub("HS80", "", scenario2))
     ) %>%
     dplyr::group_by(HSgrp, reopening_multiplier_4, d_AsP_ct1_grp, scenario, scenario2, scenario3) %>%
-    dplyr::summarize(mean.val = sum(mean.val), hospitalized = sum(hospitalized))
+    dplyr::summarize(mean.val = sum(mean.val), medsurg_available = sum(medsurg_available))
 
 
   ppredDat %>%
     ggplot() +
     theme_cowplot() +
     geom_line(aes(
-      x = reorder(as.factor(scenario), mean.val, desc = FALSE),
+      x = date,
       y = mean.val,
       fill = d_AsP_ct1_grp,
       group = scenario3
     ),
     position = position_dodge(width = 0.9), col = "darkgrey", stat = "identity", size = 1.3
     ) +
-    facet_wrap(~reopening_multiplier_4, scales = "free") +
+    facet_wrap(scenario3~reopening_multiplier_4, scales = "free") +
     scale_y_continuous(label = comma, expand = c(0, 0)) +
     scale_fill_brewer(palette = "greens") +
     customThemeNoFacet +
     labs(y = "hospitalized", x = "") +
     theme(legend.position = "right")
+  
 }
+
+
+
+
+
