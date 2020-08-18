@@ -8,7 +8,7 @@
 library(tidyverse)
 library(EpiEstim)
 
-runinBatchMode = TRUE
+runinBatchMode = FALSE
 
 
 if(runinBatchMode){
@@ -19,21 +19,20 @@ if(runinBatchMode){
   task_id <- Sys.getenv("SLURM_ARRAY_TASK_ID")
   print(task_id)
   ems <- task_id
+  setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
 } else {
-  ems <- "11"
+  ems <- c(1:11)
 }
 
 
 print(ems)
-
-setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
 
 source("load_paths.R")
 source("processing_helpers.R")
 source("estimate_Rt/getRt_function.R")
 
 
-exp_name = "20200731_IL_reopen_contactTracing"
+exp_name = "20200816_IL_testbaseline"
 exp_dir <- file.path(simulation_output, exp_name)
 
 Rt_dir <- file.path(simulation_output, exp_name, "estimatedRt")
@@ -41,6 +40,9 @@ if (!dir.exists(Rt_dir)) dir.create(Rt_dir)
 
 
 ### Load simulation outputs
+for(i in ems){
+  print(i)
+  
 tempdat <- read.csv(file.path(exp_dir, "trajectoriesDat.csv")) %>% 
   dplyr::mutate(
   startdate = as.Date(startdate),
@@ -48,55 +50,61 @@ tempdat <- read.csv(file.path(exp_dir, "trajectoriesDat.csv")) %>%
 )
 
 
-colnames(tempdat)[colnames(tempdat)== paste0( "infected_cumul_EMS.",ems)]  = "infected_cumul"
-colnames(tempdat)[colnames(tempdat)== paste0( "infected_cumul_EMS-",ems)]  = "infected_cumul"
-colnames(tempdat)
 
-tempdat <- tempdat %>% 
-  dplyr::mutate(
-    startdate = as.Date(startdate),
-    Date = as.Date(time + startdate),
-  ) %>%
-  dplyr::group_by(scen_num) %>%
-  dplyr::arrange(scen_num, Date) %>%
-  dplyr::mutate(new_infections = infected_cumul - lag(infected_cumul) )
+  
+  colnames(tempdat)[colnames(tempdat)== paste0( "infected_cumul_EMS.",i)]  = "infected_cumul"
+  colnames(tempdat)[colnames(tempdat)== paste0( "infected_cumul_EMS-",i)]  = "infected_cumul"
+  colnames(tempdat)
+  
+  tempdat <- tempdat %>% 
+    dplyr::mutate(
+      startdate = as.Date(startdate),
+      Date = as.Date(time + startdate),
+    ) %>%
+    dplyr::group_by(scen_num) %>%
+    dplyr::arrange(scen_num, Date) %>%
+    dplyr::mutate(new_infections = infected_cumul - lag(infected_cumul) )
+  
+  
+  method <- "uncertain_si"
+  weekwindow=13
+  Rt_list <- list()
+  si_list <- list()
+  count=0
+  for (scen in unique(tempdat$scen_num)) {
+    count = count + 1
+    # scen = unique(dat$scen_num)[1]
+    disease_incidence_data <- tempdat %>%
+      dplyr::filter(scen_num == scen) %>%
+      dplyr::rename(I = new_infections) %>%
+      dplyr::mutate(I = ifelse(I <0,0,I)) %>%
+      dplyr::select(Date, I ,  infected_cumul) %>%
+      dplyr::filter(!is.na(I))
+    
+    
+    res <- getRt(disease_incidence_data, method=method, weekwindow=weekwindow)
+    
+    
+    Rt_tempdat  <- res$R %>% mutate(region = i, weekwindow=weekwindow )
+    Rt_tempdat$scen_num = scen
+    
+    if(count==1)Rt_tempdat_All  <- Rt_tempdat
+    if(count!=1)Rt_tempdat_All  <- rbind(Rt_tempdat_All,Rt_tempdat)
+    
+    SI_tempdat  <- res$SI.Moments %>% mutate(region = i, weekwindow=weekwindow )
+    SI_tempdat$scen_num = scen
+    
+    if(count==1)SI_tempdat_All  <- SI_tempdat
+    if(count!=1)SI_tempdat_All  <- rbind(SI_tempdat_All,SI_tempdat) 
+    
+    rm(Rt_tempdat, SI_tempdat)
+  }
+  
+  save(Rt_tempdat_All, file=file.path(Rt_dir, paste0(i,"_temp_Rt_tempdat_All.Rdata")))
+  rm(Rt_tempdat_All)
 
-
-method <- "uncertain_si"
-weekwindow=13
-Rt_list <- list()
-si_list <- list()
-count=0
-for (scen in unique(tempdat$scen_num)) {
-  count = count + 1
-  # scen = unique(dat$scen_num)[1]
-  disease_incidence_data <- tempdat %>%
-    dplyr::filter(scen_num == scen) %>%
-    dplyr::rename(I = new_infections) %>%
-    dplyr::mutate(I = ifelse(I <0,0,I)) %>%
-    dplyr::select(Date, I ,  infected_cumul) %>%
-    dplyr::filter(!is.na(I))
   
-  
-  res <- getRt(disease_incidence_data, method=method, weekwindow=weekwindow)
-  
-
-  Rt_tempdat  <- res$R %>% mutate(region = ems, weekwindow=weekwindow )
-  Rt_tempdat$scen_num = scen
-  
-  if(count==1)Rt_tempdat_All  <- Rt_tempdat
-  if(count!=1)Rt_tempdat_All  <- rbind(Rt_tempdat_All,Rt_tempdat)
-  
-  SI_tempdat  <- res$SI.Moments %>% mutate(region = ems, weekwindow=weekwindow )
-  SI_tempdat$scen_num = scen
-  
-  if(count==1)SI_tempdat_All  <- SI_tempdat
-  if(count!=1)SI_tempdat_All  <- rbind(SI_tempdat_All,SI_tempdat) 
-  
-  rm(Rt_tempdat, SI_tempdat)
 }
 
-save(Rt_tempdat_All, file=file.path(Rt_dir, paste0(ems,"_temp_Rt_tempdat_All.Rdata")))
-
-
+if(length(ems)==11) source("combine_Rt.R")
 
