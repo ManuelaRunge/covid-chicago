@@ -1139,10 +1139,15 @@ if (additionalPlotsExplored) {
       select(date, mean.valAverted, reopening_multiplier_4, scenario, param, restore_region) %>%
       pivot_wider(names_from = "scenario", values_from = "mean.valAverted")
 
+    
+    popdat <- load_population() %>% rename(region=geography_name) 
+    
     #### FILLED AREA PLOT< ALSO FOR RT
     predDatHS_wide %>%
       filter(param %in% c("critical") & reopening_multiplier_4 == 0 &
         date >= as.Date("2020-07-01") & date <= as.Date("2020-12-01")) %>%
+      #left_join(popdat, by="region") %>%
+      #mutate() %>%
       ggplot() +
       theme_cowplot() +
       geom_ribbon(aes(x = date, ymin = counterfactual, ymax = HS40), fill = "blue", size = 1, alpha = 0.3) +
@@ -1156,6 +1161,7 @@ if (additionalPlotsExplored) {
       # geom_hline(aes(yintercept = 0)) +
       facet_grid(restore_region ~ reopening_multiplier_4, scales = "free") +
       scale_y_continuous(labels = function(x) x / 1000, expand = c(0, 0)) +
+      #scale_y_continuous(expand = c(0, 0)) +
       scale_color_brewer(palette = "Dark2") +
       customThemeNoFacet +
       labs(
@@ -1782,7 +1788,6 @@ if(combineDat){
 }
 
 expDIR <- file.path(simulation_output, "contact_tracing/20200731")
-
 load( file.path(simulation_output, "contact_tracing/20200731/", "reopen_contactTracingAll.Rdata"))
 
 
@@ -2010,5 +2015,257 @@ if (overTime) {
 
 
 
+
+####### 
+if(capacityScatterPlot){
+  
+  ## ================================================
+  ###  HS scenarios with contact tracing
+  ## ================================================
+  f_getPredDat <- function(expDIR) {
+    
+    #trajectoriesDat <- read.csv(file.path(expDIR, "trajectoriesDat.csv"))
+    trajectoriesDat <- read_csv(file.path(expDIR, "trajectoriesDat.csv"), 
+                       col_types = cols_only(time = col_guess(), 
+                                             startdate = col_guess(),
+                                             scen_num = col_guess(),
+                                             d_AsP_ct1 = col_guess(),
+                                             reduced_inf_of_det_cases_ct1 = col_guess(),
+                                             reopening_multiplier_4 = col_guess(),
+                                             hosp_cumul_All = col_guess(),
+                                             hospitalized_det_All = col_guess(),
+                                             hospitalized_All = col_guess(),
+                                             critical_All = col_guess(),
+                                             critical_det_All = col_guess(),
+                                             crit_cumul_All = col_guess()))
+
+
+    trajectoriesDat$d_AsP_ct1_grp <- NA
+    trajectoriesDat$d_AsP_ct1_grp[trajectoriesDat$d_AsP_ct1 <= 0.05] <- "<0.05"
+    trajectoriesDat$d_AsP_ct1_grp[trajectoriesDat$d_AsP_ct1 >= 0.05 & trajectoriesDat$d_AsP_ct1 <= 0.1] <- "<0.1"
+    trajectoriesDat$d_AsP_ct1_grp[trajectoriesDat$d_AsP_ct1 >= 0.1 & trajectoriesDat$d_AsP_ct1 <= 0.2] <- "0.1-0.2"
+    trajectoriesDat$d_AsP_ct1_grp[trajectoriesDat$d_AsP_ct1 >= 0.2 & trajectoriesDat$d_AsP_ct1 <= 0.3] <- "0.2-0.3"
+    trajectoriesDat$d_AsP_ct1_grp[trajectoriesDat$d_AsP_ct1 >= 0.4 & trajectoriesDat$d_AsP_ct1 <= 0.4] <- "0.3-0.4"
+    trajectoriesDat$d_AsP_ct1_grp[trajectoriesDat$d_AsP_ct1 >= 0.5] <- ">0.5"
+    
+    
+    predDat <- trajectoriesDat %>%
+      dplyr::group_by(time, startdate, reopening_multiplier_4,d_AsP_ct1, d_AsP_ct1_grp,scen_num) %>%
+      dplyr::filter(reduced_inf_of_det_cases_ct1 == max(reduced_inf_of_det_cases_ct1)) %>%
+      dplyr::mutate(date = as.Date(startdate) + time) %>%
+      dplyr::filter(date <= as.Date("2020-12-31")) %>%
+      pivot_longer(cols = -c("time", "date", "startdate", "reopening_multiplier_4","reduced_inf_of_det_cases_ct1", "d_AsP_ct1", "d_AsP_ct1_grp","scen_num"), names_to = "name") %>%
+      dplyr::mutate(
+        name = gsub("_cumul_", ".cumul_", name),
+        name = gsub("_det_", ".det_", name)
+      ) %>%
+      separate(name, into = c("param", "region"), sep = "_") %>%
+      dplyr::mutate(
+        param = gsub("[.]", "_", param)
+      ) %>%
+      dplyr::mutate(
+        exp_name = exp_name
+      ) %>%
+      dplyr::group_by(date, region, param, exp_name, reopening_multiplier_4,d_AsP_ct1, d_AsP_ct1_grp) %>%
+      dplyr::summarize(
+        median.val = median(value, na.rm = TRUE),
+        q25		= quantile(value, probs=0.25, na.rm = TRUE),
+        q75		= quantile(value, probs=0.75, na.rm = TRUE),
+        q2.5		= quantile(value, probs=0.025, na.rm = TRUE),
+        q97.5  	= quantile(value, probs=0.975, na.rm = TRUE),
+        n.val = n()
+      ) 
+    
+    return(predDat)
+  }
+  
+  combineDat=FALSE
+  if(combineDat){
+    source("load_paths.R")
+    exp_name <- "20200731_IL_reopen_contactTracing"
+    expDIR <- file.path(simulation_output, "contact_tracing/20200731/", exp_name)
+    predDat_CT <- f_getPredDat(expDIR) %>% mutate(scenario = "CTonly")
+    
+    exp_name <- "20200731_IL_reopen_contactTracingHS40"
+    expDIR <- file.path(simulation_output, "contact_tracing/20200731/", exp_name)
+    predDat_HS40 <- f_getPredDat(expDIR) %>% mutate(scenario = "HS40")
+    
+    exp_name <- "20200731_IL_reopen_contactTracingHS40TD"
+    expDIR <- file.path(simulation_output, "contact_tracing/20200731/", exp_name)
+    predDat_HS40TD <- f_getPredDat(expDIR) %>% mutate(scenario = "HS40TD")
+    
+    exp_name <- "20200731_IL_reopen_contactTracingHS80"
+    expDIR <- file.path(simulation_output, "contact_tracing/20200731/", exp_name)
+    predDat_HS80 <- f_getPredDat(expDIR) %>% mutate(scenario = "HS80")
+    
+    
+    exp_name <- "20200731_IL_reopen_contactTracingHS80TD"
+    expDIR <- file.path(simulation_output, "contact_tracing/20200731/", exp_name)
+    predDat_HS80TD <- f_getPredDat(expDIR) %>% mutate(scenario = "HS80TD")
+    
+    
+    predDat <- rbind(predDat_HS40, predDat_HS40TD, predDat_HS80, predDat_HS80TD)
+    
+    table(predDat$restore_region, predDat$scenario)
+    tapply(predDat$date, predDat$scenario, summary)
+    
+    table(predDat$d_AsP_ct1_grp, predDat$scenario)
+    table(predDat$reopening_multiplier_4, predDat$scenario)
+    tapply(predDat$mean.val, predDat$scenario, summary)
+    
+    
+    
+    save(predDat, file = file.path(simulation_output, "contact_tracing/20200731/", "reopen_contactTracingAll.Rdata"))
+    
+  }
+  
+  expDIR <- file.path(simulation_output, "contact_tracing/20200731")
+  load( file.path(simulation_output, "contact_tracing/20200731/", "reopen_contactTracingAll.Rdata"))
+  
+  ###===========================================
+  ###  Plot minimum detection of As and P per Rt
+  ###===========================================
+  
+  f_combineRtdat <- function(exp_name ="20200731_IL_reopen_contactTracing"){
+    EMS_combined_estimated_Rt  <- read.csv(file.path(simdir, exp_name , "estimatedRt/EMS_combined_estimated_Rt.csv"))
+    
+    baselineRt <- EMS_combined_estimated_Rt %>% 
+      filter(Date ==as.Date("2020-03-01")) %>% 
+      dplyr::group_by(region, grpvar) %>% 
+      dplyr::summarize(baselineRt=mean(Mean))
+    
+    currentRt <- EMS_combined_estimated_Rt %>% 
+      filter(Date ==as.Date("2020-07-20")) %>% 
+      dplyr::group_by(region, grpvar) %>% 
+      dplyr::summarize(currentRt=mean(Mean))
+    
+    
+    Rtbelow1 <- EMS_combined_estimated_Rt %>% 
+      filter(Date == as.Date("2020-09-01")) %>% 
+      filter(Mean < 1.0) %>%
+      dplyr::group_by(region, grpvar) %>% 
+      dplyr::summarize(Rtbelow1=mean(Mean),
+                       detection_success =min(detection_success)) %>%
+      left_join(baselineRt, by=c("region","grpvar")) %>%
+      left_join(currentRt, by=c("region","grpvar")) %>%
+      mutate(exp_name = exp_name)
+    
+    
+    return(Rtbelow1)
+  }
+  
+  
+
+  customTheme <- f_getCustomTheme()
+  
+
+  pplot <- predDat %>%
+    filter(param =="hospitalized") %>%
+    left_join(capacity, by="geography_name") %>%
+    filter(mean.val  ,= ) %>%  
+    ggplot(data=subset(Rtbelow1))+ 
+    geom_point(aes(x=currentRt , y= detection_success, fill=scenario_fct),col="azure4",shape=21, size=3) +
+    geom_smooth(aes(x=currentRt , y= detection_success,col=scenario_fct,fill=scenario_fct), method="lm", alpha=0.3) +
+    scale_y_continuous(lim=c(0,1), labels = function(x) x * 100 , expand=c(0,0)) +
+    labs(x= expr(italic(R[t]) * " before contact tracing start"),
+         y="Minimum required detection of \n a - and pre-symptomatic infections (%) ",
+         color="Testing improvements for mild symptoms",
+         fill="Testing improvements for mild symptoms") +
+    scale_color_brewer(palette = "Dark2")+
+    scale_fill_brewer(palette = "Dark2") +
+    customTheme +
+    theme(legend.position = "bottom")+
+    guides(fill=guide_legend(ncol=2))+
+    guides(color=guide_legend(ncol=2))
+  
+  
+  ggsave(paste0("RTLE1_contactTracing_scatterPlot.pdf"),
+         plot = pplot, path = file.path(pdfdir), width = 9.5, height =7,  device = "pdf"
+  )
+  
+
+}
+
+
+####------------------------------------------
+#### HEATMAP
+####------------------------------------------
+
+if(heatmaps){
+  
+ 
+f_getHeatmap_IL <- function(exp_name="20200731_IL_reopen_contactTracing", grpValues=c(0, 0.05, 0.1), showlegend=FALSE){
+  
+  load(file.path(simulation_output, "contact_tracing/20200731/",exp_name,"/heatmap_ICU/Illinois_dtfit.Rdata"))
+  # thresholdDat <- read_csv("C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/cms_sim/simulation_output/contact_tracing/20200731/20200731_IL_reopen_contactTracing/heatmap_ICU/Illinois_loess_ICUcapacity.csv")
+  capacity <- load_capacity('illinois') %>% rename(capacity=critical)  %>% rename(region=geography_name) 
+  popdat <- load_population() %>% rename(region=geography_name) 
+  
+  
+  
+  dtfit <- dtfit %>%  
+    filter(!is.na(value) & grpvar %in% grpValues) %>%
+    dplyr::mutate(region = 'illinois') %>%
+    left_join(popdat, by="region") %>%
+    left_join(capacity, by="region") %>%
+    mutate(belowCapacity = ifelse(value <= capacity, 1,0)) %>%
+    mutate(value=as.numeric(value),
+           pop = as.numeric(pop),
+           value_pop1000 = (value /pop )*1000,
+           capacity_pop1000 = (capacity /pop )*1000) %>%
+    f_valuefct_cap("value") %>%
+    f_valuefct_cap("value_pop1000")
+  
+  thresholdDat <- dtfit %>%
+    dplyr::filter(value <= capacity) %>%
+    dplyr::group_by(detection_success, grpvar,capacity, pop) %>%
+    dplyr::filter(isolation_success == min(isolation_success)) 
+  
+
+  p1 <- ggplot(data = subset(dtfit,  !is.na(value_fct)), aes(x = detection_success, y = isolation_success)) +
+    theme_minimal() +
+    geom_tile(aes(fill = value_fct), alpha = 0.8) +
+    scale_fill_viridis(option = "C", discrete = T) +
+    labs(
+      x = "detections (%)",
+      y = "isolation success (%)",
+      col = "",
+      fill = "Critical",
+      shape = "",
+      linetype = ""
+    ) +
+    scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
+    scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
+    facet_wrap(~grpvar, nrow=1) +
+    customThemeNoFacet +
+    theme(panel.spacing = unit(1.5, "lines"))
+    theme(legend.position = "right")
+  
+    if(showlegend==FALSE) p1 <- p1 + theme(legend.position = "none")
+  
+  pcounterfctual <- p1 +
+    #geom_point(
+    #data = peakdat, aes(x = detection_success, y = isolation_success, fill = value_fct),
+    #shape = 21, size = 3, show.legend = FALSE)+ 
+    geom_line(
+      data = subset(thresholdDat, isolation_success != min(isolation_success)),
+      aes(x = detection_success, y = isolation_success), size = 1.3
+    )
+  
+  return(pcounterfctual)
+}
+  
+  
+legend <- get_legend(f_getHeatmap_IL(exp_name="20200731_IL_reopen_contactTracing", showlegend=TRUE))
+p1 <- f_getHeatmap_IL(exp_name="20200731_IL_reopen_contactTracing")
+p2 <- f_getHeatmap_IL(exp_name="20200731_IL_reopen_contactTracingHS40")
+p3 <- f_getHeatmap_IL(exp_name="20200731_IL_reopen_contactTracingHS80")
+
+ggsave(paste0("CT_scenarios_baseline", ".pdf"),
+       plot = p0, path = file.path(pdfdir), width = 12, height = 7, device = "pdf"
+)
+
+  
+}
 
 
