@@ -27,9 +27,8 @@ theme_set(theme_cowplot())
 
 #### Load data
 f_loadDat <- function(exp_name) {
-  
   capacitiesDat <- load_capacity() %>% mutate(region = ifelse(geography_name == "illinois", "All", geography_name))
-  
+
   trajectoriesDat <- read.csv(file.path(simulation_output, exp_name, "trajectoriesDat.csv"))
 
   colnames(trajectoriesDat) <- gsub("[.]", "-", colnames(trajectoriesDat))
@@ -52,13 +51,13 @@ f_loadDat <- function(exp_name) {
     ) %>%
     pivot_wider(names_from = "outcome", values_from = "value") %>%
     left_join(capacitiesDat, by = "region")
-  
-  
+
+
   dat <- dat %>%
     dplyr::select(time, region, date, scen_num, critical, critical_det, hospitalized, hospitalized_det, capacity_multiplier, Ki_t) %>%
     filter(date > as.Date("2020-08-17") & date <= as.Date("2020-12-31")) %>%
-    left_join(capacitiesDat, by = "region") 
-  
+    left_join(capacitiesDat, by = "region")
+
   dat$region <- factor(dat$region, levels = c("All", c(1:11)), labels = c("illinois", c(1:11)))
 
   return(dat)
@@ -144,9 +143,7 @@ f_processDat <- function(df) {
 }
 
 
-f_thresholdScatterPlot <- function(channel = "critical", expDir=expDir, savePDF = FALSE, showDet = TRUE) {
-  
-  
+f_thresholdScatterPlot <- function(channel = "critical", expDir = expDir, savePDF = FALSE, showDet = TRUE) {
   if (channel == "critical") {
     df_crit <- f_processDat(df.exp)[[1]]
 
@@ -172,24 +169,24 @@ f_thresholdScatterPlot <- function(channel = "critical", expDir=expDir, savePDF 
       pplot <- pplot + geom_rect(mapping = aes(xmin = minCapacity, xmax = 0.75, ymin = -Inf, ymax = Inf), fill = "red", alpha = 0.03) +
         geom_errorbar(aes(x = capacity_multiplier, ymin = q2.5.critical, ymax = q97.5.critical), width = 0.05, alpha = 0.7) +
         geom_point(aes(x = capacity_multiplier, y = median.critical, col = as.factor(critical_BelowCapacity)), size = 2, alpha = 0.7) +
-        labs(caption=fname)
+        labs(caption = fname)
     }
     if (showDet) {
       fname <- "ICU_det"
       pplot <- pplot + geom_rect(mapping = aes(xmin = minCapacity_det, xmax = 0.75, ymin = -Inf, ymax = Inf), fill = "red", alpha = 0.03) +
         geom_errorbar(aes(x = capacity_multiplier, ymin = q2.5.critical_det, ymax = q97.5.critical_det), width = 0.05) +
         geom_point(aes(x = capacity_multiplier, y = median.critical_det, col = as.factor(critical_det_BelowCapacity)), size = 2) +
-        labs(caption=fname)
+        labs(caption = fname)
     }
   }
-  
+
 
 
   if (channel == "hospitalized") {
     df_hosp <- f_processDat(df.exp)[[2]]
 
     pplot <- df_hosp %>%
-     # filter(region %in% c(2, 3, 4)) %>%
+      # filter(region %in% c(2, 3, 4)) %>%
       # filter(!(region %in% c("All", c(2,3,4)))) %>%
       filter(region %in% c(1:11)) %>%
       ggplot() +
@@ -213,14 +210,14 @@ f_thresholdScatterPlot <- function(channel = "critical", expDir=expDir, savePDF 
       pplot <- pplot + geom_rect(mapping = aes(xmin = minCapacity, xmax = 0.75, ymin = -Inf, ymax = Inf), fill = "red", alpha = 0.03) +
         geom_errorbar(aes(x = capacity_multiplier, ymin = q2.5.hospitalized, ymax = q97.5.hospitalized), width = 0.05, alpha = 0.7) +
         geom_point(aes(x = capacity_multiplier, y = median.hospitalized, col = as.factor(hospitalized_BelowCapacity)), size = 2, alpha = 0.7) +
-        labs(caption=fname)
+        labs(caption = fname)
     }
     if (showDet) {
       fname <- "nonICU_det"
       pplot <- pplot + geom_rect(mapping = aes(xmin = minCapacity_det, xmax = 0.75, ymin = -Inf, ymax = Inf), fill = "red", alpha = 0.03) +
         geom_errorbar(aes(x = capacity_multiplier, ymin = q2.5.hospitalized_det, ymax = q97.5.hospitalized_det), width = 0.05) +
         geom_point(aes(x = capacity_multiplier, y = median.hospitalized_det, col = as.factor(hospitalized_det_BelowCapacity)), size = 2) +
-        labs(caption=fname)
+        labs(caption = fname)
     }
   }
 
@@ -241,7 +238,7 @@ f_thresholdScatterPlot <- function(channel = "critical", expDir=expDir, savePDF 
 
 
 ## ----------------------
-### Generate plots 
+### Generate plots
 ## ----------------------
 
 #  "20200812_IL_MR_baseline",
@@ -253,19 +250,17 @@ exp_names <- c(
 
 
 
-for(exp_name in exp_names){
-  #exp_name <- exp_names[4]
+for (exp_name in exp_names) {
+  # exp_name <- exp_names[4]
   print(exp_name)
   exp_dir <- file.path(file.path(simulation_output, exp_name))
-  
-  df.exp <- f_loadDat(exp_name) 
-  
-  f_thresholdScatterPlot(channel = "critical", expDir=expDir, savePDF = FALSE, showDet = T)
-  f_thresholdScatterPlot(channel = "hospitalized", expDir=expDir, savePDF = FALSE, showDet = T)  
-  
-  f_thresholdScatterPlot(channel = "critical", expDir=expDir, savePDF = FALSE, showDet = F)
-  f_thresholdScatterPlot(channel = "hospitalized", expDir=expDir, savePDF = FALSE, showDet = F)  
+
+  df.exp <- f_loadDat(exp_name)
+
+  f_thresholdScatterPlot(channel = "critical", expDir = expDir, savePDF = FALSE, showDet = T)
+  f_thresholdScatterPlot(channel = "hospitalized", expDir = expDir, savePDF = FALSE, showDet = T)
+
+  f_thresholdScatterPlot(channel = "critical", expDir = expDir, savePDF = FALSE, showDet = F)
+  f_thresholdScatterPlot(channel = "hospitalized", expDir = expDir, savePDF = FALSE, showDet = F)
   rm(exp_name)
 }
-
-
