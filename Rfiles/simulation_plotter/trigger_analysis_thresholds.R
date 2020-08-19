@@ -143,7 +143,7 @@ f_processDat <- function(df) {
 }
 
 
-f_thresholdScatterPlot <- function(channel = "critical", expDir = expDir, savePDF = FALSE, showDet = TRUE) {
+f_thresholdScatterPlot <- function(channel = "critical", expDir = expDir, savePDF = FALSE, showDet = TRUE,expLabel=expLabel) {
   if (channel == "critical") {
     df_crit <- f_processDat(df.exp)[[1]]
 
@@ -222,12 +222,12 @@ f_thresholdScatterPlot <- function(channel = "critical", expDir = expDir, savePD
   }
 
 
-  ggsave(paste0(fname, ".png"),
+  ggsave(paste0(expLabel, "_" ,fname, ".png"),
     plot = pplot, path = exp_dir, width = 12, height = 8, device = "png"
   )
 
   if (savePDF) {
-    ggsave(paste0(fname, ".pdf"),
+    ggsave(paste0(expLabel, "_" ,fname, ".pdf"),
       plot = pplot, path = exp_dir, width = 12, height = 8, device = "pdf"
     )
   }
@@ -254,13 +254,15 @@ for (exp_name in exp_names) {
   # exp_name <- exp_names[4]
   print(exp_name)
   exp_dir <- file.path(file.path(simulation_output, exp_name))
+  expLabel = gsub("20200817_IL_","",exp_name)
+  expLabel = gsub("_vary0to1_triggeredrollback","",expLabel)
 
   df.exp <- f_loadDat(exp_name)
 
-  f_thresholdScatterPlot(channel = "critical", expDir = expDir, savePDF = FALSE, showDet = T)
-  f_thresholdScatterPlot(channel = "hospitalized", expDir = expDir, savePDF = FALSE, showDet = T)
+  f_thresholdScatterPlot(channel = "critical", expDir = expDir, savePDF = FALSE, showDet = T,expLabel=expLabel)
+  f_thresholdScatterPlot(channel = "hospitalized", expDir = expDir, savePDF = FALSE, showDet = T,expLabel=expLabel)
 
-  f_thresholdScatterPlot(channel = "critical", expDir = expDir, savePDF = FALSE, showDet = F)
-  f_thresholdScatterPlot(channel = "hospitalized", expDir = expDir, savePDF = FALSE, showDet = F)
+  f_thresholdScatterPlot(channel = "critical", expDir = expDir, savePDF = FALSE, showDet = F,expLabel=expLabel)
+  f_thresholdScatterPlot(channel = "hospitalized", expDir = expDir, savePDF = FALSE, showDet = F,expLabel=expLabel)
   rm(exp_name)
 }
