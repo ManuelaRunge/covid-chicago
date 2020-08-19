@@ -4,7 +4,8 @@ packages_needed <- c( 'tidyverse')
 lapply(packages_needed, require, character.only = TRUE) 
 
 ## Load directories and custom objects and functions
-setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
+if(!exists("Location"))Location="LOCAL"
+if(Location=="NUCLUSTER")setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
 source("load_paths.R")
 source("processing_helpers.R")
 
