@@ -46,24 +46,74 @@ f_valuefct2 = function(df){
 }
 
 
-f_valuefct_cap = function(df, valueVar="value"){
+f_valuefct_cap = function(df, valueVar="value", fewerClasses=FALSE){
   
   df= as.data.frame(df)
   colnames(df)[colnames(df)==paste0(valueVar, "_fct")] <- paste0(valueVar, "_fct_old")
   capacity = unique(df$capacity)
   
   qLT2.5 <- capacity - (capacity * 0.025)
-  qLT5 <-capacity - (capacity * 0.05)
-  qLT15 <- capacity - (capacity * 0.15)
+  qLT5 <- capacity- (capacity* 0.05)
+  qLT10 <-capacity - (capacity* 0.10)
+  qLT15 <-capacity - (capacity* 0.15)
+  qLT20 <-capacity - (capacity* 0.20)
+  qLT30 <-capacity - (capacity* 0.30)
+  qLT40 <-capacity - (capacity* 0.40)
+  qLT50 <-capacity - (capacity* 0.50)
+  qLT60 <-capacity - (capacity* 0.60)
   
   qGT2.5 <- capacity + (capacity * 0.025)
   qGT5 <- capacity+ (capacity* 0.05)
+  qGT10 <-capacity + (capacity* 0.10)
   qGT15 <-capacity + (capacity* 0.15)
+  qGT20 <-capacity + (capacity* 0.20)
+  qGT30 <-capacity + (capacity* 0.30)
+  qGT40 <-capacity + (capacity* 0.40)
+  qGT50 <-capacity + (capacity* 0.50)
+  qGT60 <-capacity + (capacity* 0.60)
   
-  cuts <- c(-Inf,qLT15,qLT5 ,qLT2.5, capacity, qGT2.5, qGT5, qGT15, Inf)
+  if(fewerClasses){
+    
+    cuts <- c(-Inf,qLT15,qLT5 ,qLT2.5,  capacity, qGT2.5, qGT5, qGT15, Inf)
+    df$tempVar <- cut(df[,colnames(df)==valueVar] , breaks = cuts,   labels = c("- >15%","-15%","-5%","-2.5%","+2.5%","+5%", "+15%", "+ >15%"))
+
+    }
   
+if(fewerClasses==FALSE){
+  cuts <- c(-Inf,
+            qLT50,
+            qLT40,
+            qLT30,
+            qLT20,
+            qLT10,
+            qLT5, 
+            capacity,
+            qGT5,
+            qGT10,
+            qGT20,
+            qGT30,
+            qGT40,
+            qGT50, 
+            Inf)
+
   df$tempVar <- cut(df[,colnames(df)==valueVar] , breaks = cuts, 
-                      labels = c("- >15%","-15%","-5%","-2.5%","+2.5","+5%", "+15%", "+ >15%"))
+                    labels = c("- >50%",
+                               "-50%",
+                               "-40%",
+                               "-30%",
+                               "-20%",
+                               "-10%",
+                               "-5%",
+                               "+5%",
+                               "+10%", 
+                               "+20%", 
+                               "+30%", 
+                               "+40%",
+                               "+50%", 
+                               "+ >50%"
+                               ))
+  
+}
   
   colnames(df)[colnames(df)=="tempVar"] <- paste0(valueVar, "_fct")
   #tapply(df$value, df$value_fct, summary)
