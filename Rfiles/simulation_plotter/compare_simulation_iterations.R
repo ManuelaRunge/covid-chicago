@@ -5,13 +5,13 @@
 
 require(tidyverse)
 require(cowplot)
-
+require(scales)
 
 source("load_paths.R")
 source("processing_helpers.R")
 
 
-simdates <- c("20200722", "20200729", "20200805")
+simdates <- c( "20200805", "20200812","20200819")
 scenario <- "baseline" # june1partial10  , june1partial30
 
 dat1 <- read.csv(file.path(project_path, paste0("NU_civis_outputs/", simdates[1], "/csv/nu_il_", scenario, "_", simdates[1], ".csv")))
