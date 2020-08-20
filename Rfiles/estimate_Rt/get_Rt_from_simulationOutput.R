@@ -11,42 +11,34 @@ library(EpiEstim)
 
 runViaSource = TRUE
 
-if(runViaSource){
-  
-  setwd("C:/Users/mrm9534/gitrepos/covid-chicago/Rfiles/")
-  
-  ## simdate and  exp_scenario  defined in NUcivis_filecopy.R
-
-}else{
-  
-  simdate = "20200805"
-  exp_scenario = "baseline"
-}
-
+simdate = gsub("-","",Sys.Date())
+exp_scenario="baseline"
 
 source("load_paths.R")
 source("processing_helpers.R")
 source("estimate_Rt/getRt_function.R")
 
-outdir <- file.path("estimate_Rt/from_simulations")
-
 
 ### Load simulation outputs
-#dat <- read.csv(file.path(project_path, "NU_civis_outputs",simdate,paste0("csv/nu_il_", exp_scenario ,"_",simdate,".csv")))
-Rt_dat <- read.csv(file.path(simulation_output, exp_name, 'estimatedRt', 'combined_temp_Rt_tempdat_All.csv'))
-
+exp_name ="20200818_IL_RR_baseline_0"
+#Rt_dat <- read.csv(file.path(simulation_output, exp_name, 'estimatedRt', 'combined_estimated_Rt.csv'))
+load(file.path(simulation_output, exp_name, 'estimatedRt', 'combined_estimated_Rt.Rdata'))
 
 ### Combine list to dataframe 
-Rt_dat <- Rt_dat %>%  mutate( time =  t_end ) %>%
+Rt_dat <- Rt_dat %>%  
+  mutate( time =  t_end ) %>%
           f_addRestoreRegion() %>%
-          select(time,scen_num, restore_region, region, Mean.R.  ,Median.R.) %>%
-          rename(meanRt =Mean.R.  ,medianRt=Median.R. )
+          select(time,scen_num, restore_region, region, `Mean(R)`  ,`Median(R)`) %>%
+          rename(meanRt =`Mean(R)`  ,medianRt=`Median(R)` )
 
 Rt_datRR <- Rt_dat %>%  group_by(restore_region, time, scen_num) %>% summarize(meanRt=mean(meanRt),medianRt=mean(medianRt) )  %>% rename(geography_modeled=restore_region)
 Rt_datIL <- Rt_dat %>%  group_by( time, scen_num) %>% summarize(meanRt=mean(meanRt),medianRt=mean(medianRt) )  %>% mutate(geography_modeled="illinois")
 
 
-Rt_dat <- Rt_dat %>% rename(geography_modeled=region) %>% select(-restore_region)%>% rbind(Rt_datRR)%>% rbind(Rt_datIL)
+Rt_dat <- Rt_dat %>% rename(geography_modeled=region) %>% 
+  select(-restore_region)%>% rbind(Rt_datRR)%>% 
+  rbind(Rt_datIL)
+
 table(Rt_dat$geography_modeled)
 
 
@@ -77,25 +69,30 @@ if(saveInExpDir){
     write.csv(file.path(simulation_output, exp_name, 'estimatedRt', fname), row.names = FALSE)
 
   
+  RtdatCOmbined$region <- factor(RtdatCOmbined$geography_modeled, levels=as.character(c(1:11)), labels=c(1:11))
   
   pplot <-  RtdatCOmbined %>% 
-    filter(Date>= "2020-04-01" & Date<= "2020-09-01") %>%
+    filter(Date>= "2020-04-01" & Date<= "2020-11-01") %>%
     filter(geography_modeled %in% as.character(c(1:11))) %>%
     ggplot() + 
-    theme_minimal() +
+    theme_cowplot() +
+    geom_rect(xmin=-Inf, xmax=as.Date(Sys.Date()), ymin=-Inf, ymax=Inf, fill="lightgrey",alpha=0.02)+
     geom_ribbon(aes(x=Date, ymin=Lower.error.bound.of.covid.19.Rt, ymax=Upper.error.bound.of.covid.19.Rt), fill="deepskyblue3", alpha=0.3) +
     geom_line(aes(x=Date, y=Median.of.covid.19.Rt), col="deepskyblue3") +
+    facet_wrap(~geography_modeled)+
+   # background_grid() +
+   # geom_hline(yintercept = seq(0.6, 1.4, 0.2), col="grey", size=0.7)+
     geom_hline(yintercept = 1) +
-    facet_wrap(~geography_modeled)
+    geom_hline(yintercept = c(-Inf, Inf))+ geom_vline(xintercept = c(-Inf, Inf))
   
   ggsave(paste0("estimatedRt_overtime.png"),
-         plot = pplot, path =file.path(simulation_output, exp_name, 'estimatedRt'), width =8, height = 6, device = "png"
+         plot = pplot, path =file.path(simulation_output, exp_name, 'estimatedRt'), width =12, height = 6, device = "png"
   )
   rm(pplot)
   
   
  pplot <-  RtdatCOmbined %>% 
-    filter(Date>= "2020-08-16" & Date< "2020-08-17") %>%
+    filter(Date>= "2020-08-18" & Date< "2020-08-19") %>%
     filter(geography_modeled %in% as.character(c(1:11))) %>%
   ggplot() + 
     theme_cowplot() +
@@ -103,10 +100,50 @@ if(saveInExpDir){
     geom_point(aes(x=reorder(geography_modeled, Median.of.covid.19.Rt), y=Median.of.covid.19.Rt), col="deepskyblue3",size=2.5) +
     geom_hline(yintercept = 1)
   
-  ggsave(paste0("estimatedRt_20200818.png"),
+  ggsave(paste0("estimatedRt_20200819.png"),
          plot = pplot,path =file.path(simulation_output, exp_name, 'estimatedRt'), width = 8, height =5, device = "png"
   )
   
+  
+  compareWithOverflow=F
+  if(compareWithOverflow){
+    nu_hospitaloverflow_20200818 <- read.csv("C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/NU_civis_outputs/20200819/csv/nu_hospitaloverflow_20200818.csv")
+    
+    
+    dt <- nu_hospitaloverflow_20200818 %>% mutate(date_window_upper_bound=as.Date(date_window_upper_bound),geography_modeled=gsub("covidregion_","",geography_modeled))
+    
+    
+    
+    dt$region <- factor(dt$geography_modeled, levels=c(1:11), labels=c(1:11))
+    
+    RtdatCOmbined$region <- factor(RtdatCOmbined$geography_modeled, levels=c(1:11), labels=c(1:11))
+    
+    pplot <-  RtdatCOmbined %>% 
+      filter(Date>= "2020-07-01" & Date<= "2020-11-01") %>%
+      filter(region %in% as.character(c(1:11))) %>%
+      ggplot() + 
+      theme_cowplot() +
+      geom_rect(xmin=-Inf, xmax=as.Date(Sys.Date()), ymin=-Inf, ymax=Inf, fill="lightgrey",alpha=0.02)+
+      geom_ribbon(aes(x=Date, ymin=Lower.error.bound.of.covid.19.Rt, ymax=Upper.error.bound.of.covid.19.Rt), fill="deepskyblue3", alpha=0.4) +
+      geom_line(aes(x=Date, y=Median.of.covid.19.Rt), col="deepskyblue3") +
+      geom_hline(yintercept = 1) +
+      geom_line(data=subset(dt  ),
+                aes(x=date_window_upper_bound, y=percent_of_simulations_that_exceed+1,
+                    col=as.factor(overflow_threshold_percent),linetype=resource_type,
+                    group=interaction(resource_type, overflow_threshold_percent)),size=1) +
+      facet_wrap(~region, nrow=3) +
+      scale_y_continuous(expr(italic(R[t])), sec.axis = sec_axis(~ . -1, name=" overflow\nprobability"))+
+      labs(x="", color="overflow threshold (%)", linetype="resource type")+
+      geom_hline(yintercept = c(-Inf, Inf))+ geom_vline(xintercept = c(-Inf, Inf))+
+      scale_color_manual(values=c("lightcoral","firebrick4"))+
+      customThemeNoFacet
+    
+    ggsave(paste0("estimatedRt_overtime_withOverflow.png"),
+           plot = pplot, path =file.path(simulation_output, exp_name, 'estimatedRt'), width =12, height = 6, device = "png"
+    )
+    
+    
+  }
 }
 
 
