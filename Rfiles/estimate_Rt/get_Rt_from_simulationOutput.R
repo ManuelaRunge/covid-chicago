@@ -7,7 +7,7 @@
 # install_github("annecori/EpiEstim", force = TRUE)
 library(tidyverse)
 library(EpiEstim)
-
+library(readr)
 
 runViaSource = TRUE
 
@@ -49,9 +49,11 @@ RtdatCombined <- Rt_dat %>%
             Lower.error.bound.of.covid.19.Rt=  quantile(medianRt, probs=0.025, na.rm = TRUE),
             Upper.error.bound.of.covid.19.Rt = quantile(medianRt, probs=0.975, na.rm = TRUE)) %>%
   dplyr::mutate(Date = as.Date('2020-02-13') + time) %>%
-dplyr::arrange(Date, geography_modeled) %>%
+  dplyr::arrange(Date, geography_modeled) %>%
   filter(Date <= "2020-12-01") %>%
-  mutate(geography_modeled = paste0("covidregion_",geography_modeled))
+  mutate(geography_modeled = paste0("covidregion_",geography_modeled)) %>% 
+  ungroup() %>%
+  dplyr::select(-time)
 
 RtdatCombined$geography_modeled  <- gsub("covidregion_Central","Central", RtdatCombined$geography_modeled)
 RtdatCombined$geography_modeled  <- gsub("covidregion_illinois","illinois", RtdatCombined$geography_modeled)
@@ -63,19 +65,23 @@ RtdatCombined$geography_modeled <- tolower(RtdatCombined$geography_modeled)
 
 saveForCivis=FALSE
 if(saveForCivis){
-  fname =  paste0("nu_il_", exp_scenario ,"_estimated_Rt_","20200819",".csv")
-  RtdatCombined %>% 
-    dplyr::select(Date, geography_modeled, Median.of.covid.19.Rt, Lower.error.bound.of.covid.19.Rt, Upper.error.bound.of.covid.19.Rt) %>%
-    write.csv(file.path(project_path, "NU_civis_outputs" ,"20200819", 'csv',fname), row.names = FALSE)
-  
-}
-if(saveInExpDir){
-  fname =  paste0("estimated_Rt.csv")
-  RtdatCombined %>% 
-    dplyr::select(Date, geography_modeled, Median.of.covid.19.Rt, Lower.error.bound.of.covid.19.Rt, Upper.error.bound.of.covid.19.Rt) %>%
-    write.csv(file.path(simulation_output, exp_name, 'estimatedRt', fname), row.names = FALSE)
+  fname =  paste0("nu_il_", exp_scenario ,simdate,".csv")
 
+  ## Combine to baseline csv file
+  bsl <- read_csv(file.path(project_path, "NU_civis_outputs" ,simdate, 'csv',fname))
+
+  mergevars <- colnames(bsl)[colnames(bsl) %in% colnames(RtdatCombined)]
+  dat <- merge(bsl, RtdatCombined, by=mergevars , all.x=TRUE)
   
+  if(dim(bsl)[1]==dim(dat)[1]) {
+    write.csv(dat, file=file.path(project_path, "NU_civis_outputs" ,simdate, 'csv',fname), row.names = FALSE)
+    write.csv(dat, file=file.path(simulation_output,exp_name,fname), row.names = FALSE)
+  }
+}
+
+generatePlots=F
+if(generatePlots){
+
   RtdatCombined$region <- factor(RtdatCombined$geography_modeled, levels=as.character(c(1:11)), labels=c(1:11))
   
   pplot <-  RtdatCombined %>% 
