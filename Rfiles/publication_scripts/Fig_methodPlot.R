@@ -462,8 +462,8 @@ if (methodPlot) {
     
     
     #### Do loess regression
-    detection_success <- seq(0, 1, 0.01)
-    isolation_success <- seq(0, 1, 0.01)
+    detection_success <- seq(0, 1, 0.002)
+    isolation_success <- seq(0, 1, 0.002)
     t_matdat <- expand.grid(detection_success = detection_success, isolation_success = isolation_success)
     
     m <- loess(value ~ detection_success * isolation_success,
@@ -501,8 +501,8 @@ if (methodPlot) {
         shape = "",
         linetype = ""
       ) +
-      scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.01), labels = seq(0, 1, 0.1), expand = c(0, 0)) +
-      scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.01), labels = seq(0, 1, 0.1), expand = c(0, 0)) +
+      scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1), expand = c(0, 0)) +
+      scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1), expand = c(0, 0)) +
       customThemeNoFacet +
       theme(panel.spacing = unit(1.5, "lines")) +
       theme(legend.position = "none")
@@ -529,12 +529,12 @@ if (methodPlot) {
       theme(panel.spacing = unit(1.5, "lines")) +
       theme(legend.position = "none")
     
-    ggsave("ICUcapacity_heatmap_loess_Rt.png",
+    ggsave("capacity_heatmap_loess_Rt.png",
            plot = p1, path = file.path(pdfdir), width = 6, height = 5.5, device = "png"
     )
     
     
-    ggsave("ICUcapacity_heatmap_loess_Rt_layers.pdf",
+    ggsave("capacity_heatmap_loess_Rt_layers.pdf",
            plot = p1_withPoints, path = file.path(pdfdir), width = 6, height = 5.5, device = "pdf"
     )
   }
