@@ -3,10 +3,11 @@
 ##=========================================
 
 #### R 
-simdate = '20200805'
-simulation_outputs <- file.path("C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/cms_sim/simulation_output/")
-project_dir <- 'C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/'
-NUcivis_dir <- file.path(project_dir,'NU_civis_outputs')
+simdate = Sys.Date()
+source("load_paths.R")
+
+simulation_outputs <- file.path(file.path(project_path, "cms_sim/simulation_output/")
+NUcivis_dir <- file.path(project_path,'NU_civis_outputs')
 
 ##make dir
 if(!dir.exists(file.path(NUcivis_dir,simdate))){dir.create(file.path(NUcivis_dir,simdate))
@@ -52,18 +53,5 @@ for(expname in expnames){
 }
 
 
-
-###===============================================
-### Run r-script for Rt estimation 
-###===============================================
-exp_scenarios =c("baseline","Aug15","Aug30","Sep15","Sep30")
-
-for(exp_scenario in exp_scenarios){
-  
-  Location="LOCAL"
-  source(file.path("C:/Users/mrm9534/gitrepos/covid-chicago/Rfiles/estimate_Rt/get_Rt_from_simulationOutput.R"))
-
-}
-
-
-##source(file.path("C:/Users/mrm9534/gitrepos/covid-chicago/Rfiles/estimate_Rt/Rt_plots_civis_results"))
+#### Rt estimation
+source("get_Rt_from_simulationOutput.R")
