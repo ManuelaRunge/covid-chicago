@@ -87,6 +87,41 @@ combineDat <- function(filelist, namelist){
 
 
 
+load_new_capacity <- function(selected_ems=NULL) {
+  
+  df <- read.csv(file.path(data_path, "covid_IDPH/Corona virus reports/hospital_capacity_thresholds_template/capacity_weekday_average.csv"))
+  
+
+  df = df %>% 
+    filter(overflow_threshold_percent==1 & date_window_upper_bound =="2020-08-22") %>%
+    select(geography_modeled, resource_type, avg_resource_available_prev2weeks) %>%
+    pivot_wider(names_from = "resource_type", values_from="avg_resource_available_prev2weeks") %>%
+    mutate(geography_name = gsub("covidregion_","",geography_modeled)) %>%
+    select(geography_name, icu_availforcovid ,hb_availforcovid)
+    
+  dfAggr <- df %>% rename(region=geography_name) %>% 
+              f_addRestoreRegion() %>% group_by(restore_region) %>% 
+             summarize(icu_availforcovid=sum(icu_availforcovid),
+                       hb_availforcovid=sum(hb_availforcovid)) %>%
+              mutate(geography_name= tolower(restore_region)) %>%
+             select(geography_name, icu_availforcovid ,hb_availforcovid)
+
+  dfAggr1 <- df %>% summarize(icu_availforcovid=sum(icu_availforcovid),
+              hb_availforcovid=sum(hb_availforcovid)) %>%
+              mutate(geography_name="illinois") %>%
+              select(geography_name, icu_availforcovid ,hb_availforcovid)
+  
+  
+  df <-  rbind(df,dfAggr,dfAggr1 ) %>% as.data.frame() %>% 
+        rename(icu_available= icu_availforcovid ,
+               medsurg_available= hb_availforcovid)
+  
+  if(!(is.null(selected_ems))) df <-  df %>% filter(geography_name %in% selected_ems)
+  
+  return(df)
+}
+
+
 load_capacity <- function(selected_ems=NULL) {
   df <- read.csv(file.path(data_path, "covid_IDPH/Corona virus reports/capacity_by_covid_region.csv"))
   
