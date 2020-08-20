@@ -27,19 +27,28 @@ theme_set(theme_cowplot())
 
 #### Load data
 f_loadDat <- function(exp_name) {
-  capacitiesDat <- load_capacity() %>% mutate(region = ifelse(geography_name == "illinois", "All", geography_name))
+  
+  #capacitiesDat <- load_capacity() %>% mutate(region = ifelse(geography_name == "illinois", "All", geography_name))
+  capacitiesDat <- load_new_capacity() %>% mutate(region = ifelse(geography_name == "illinois", "All", geography_name))
+  
+  
 
-  trajectoriesDat <- read.csv(file.path(simulation_output, exp_name, "trajectoriesDat.csv"))
+  # trajectories_fname="trajectoriesDat.csv"
+  trajectories_fname="trajectoriesDat_trim.csv"
+  trajectoriesDat <- read_csv(file.path(simulation_output, exp_name, trajectories_fname))
 
   colnames(trajectoriesDat) <- gsub("[.]", "-", colnames(trajectoriesDat))
   outvars <- colnames(trajectoriesDat)[c(grep("_EMS-", colnames(trajectoriesDat)), grep("_All", colnames(trajectoriesDat)))]
-  paramVars <- colnames(trajectoriesDat)[grep("Ki_t_", colnames(trajectoriesDat))]
+  outvars <- outvars[ c(grep("Ki", outvars),grep("crit", outvars), grep("hosp", outvars))]
+  
+  paramVars <- colnames(trajectoriesDat)[grep("Ki_t ", colnames(trajectoriesDat))]
   keepvars <- c("time", "startdate", "scen_num", "capacity_multiplier", outvars, paramVars)
 
 
   dat <- trajectoriesDat %>%
     dplyr::select(keepvars) %>%
     dplyr::mutate(date = as.Date(startdate) + time) %>%
+    filter(date > as.Date("2020-08-17") & date <= as.Date("2020-12-31")) %>%
     pivot_longer(cols = -c("time", "date", "startdate", "scen_num", "capacity_multiplier"), names_to = "region") %>%
     dplyr::mutate(
       region = gsub("_All", "_EMS-All", region),
@@ -54,8 +63,7 @@ f_loadDat <- function(exp_name) {
 
 
   dat <- dat %>%
-    dplyr::select(time, region, date, scen_num, critical, critical_det, hospitalized, hospitalized_det, capacity_multiplier, Ki_t) %>%
-    filter(date > as.Date("2020-08-17") & date <= as.Date("2020-12-31")) %>%
+    dplyr::select(time, region, date, scen_num, critical, critical_det, hospitalized, hospitalized_det, capacity_multiplier) %>%
     left_join(capacitiesDat, by = "region")
 
   dat$region <- factor(dat$region, levels = c("All", c(1:11)), labels = c("illinois", c(1:11)))
@@ -65,8 +73,18 @@ f_loadDat <- function(exp_name) {
 
 
 f_processDat <- function(df) {
+  
+  
+  aggregateByWeek=F
+  if(aggregateByWeek){
+    library(lubridate)
+    df <- mutate(week = week(Date)) %>% 
+        group_by(week, region, capacity_multiplier) %>% 
+      summarize(critical=mean(critical))
+  }
+  
   dfAggr_crit <- df %>%
-    dplyr::group_by(region, capacity_multiplier) %>%
+    dplyr::group_by(region, capacity_multiplier, scen_num) %>%
     filter(critical == max(critical)) %>%
     dplyr::group_by(region, capacity_multiplier, icu_available, medsurg_available) %>%
     dplyr::summarize(
@@ -102,7 +120,7 @@ f_processDat <- function(df) {
 
   ### Hospitalized
   dfAggr_hosp <- df %>%
-    dplyr::group_by(region, capacity_multiplier) %>%
+    dplyr::group_by(region, capacity_multiplier, scen_num) %>%
     filter(hospitalized == max(hospitalized)) %>%
     dplyr::group_by(region, capacity_multiplier, icu_available, medsurg_available) %>%
     dplyr::summarize(
@@ -144,6 +162,7 @@ f_processDat <- function(df) {
 
 
 f_thresholdScatterPlot <- function(channel = "critical", expDir = expDir, savePDF = FALSE, showDet = TRUE,expLabel=expLabel) {
+  
   if (channel == "critical") {
     df_crit <- f_processDat(df.exp)[[1]]
 
@@ -243,17 +262,28 @@ f_thresholdScatterPlot <- function(channel = "critical", expDir = expDir, savePD
 
 #  "20200812_IL_MR_baseline",
 exp_names <- c(
+  "20200819_IL_criticaldet_triggeredrollback",
+  "20200819_IL_critical_triggeredrollback",
+  "20200819_IL_hospdet_triggeredrollback",
+  "20200819_IL_hosp_triggeredrollback"
+)
+
+
+exp_names2 <- c(
+  "20200817_IL_criticaldet_vary0to1_triggeredrollback",
   "20200817_IL_criticalhospdet_vary0to1_triggeredrollback",
-  "20200817_IL_hospdet_vary0to1_triggeredrollback",
-  "20200817_IL_criticaldet_vary0to1_triggeredrollback"
+  "20200817_IL_hospdet_vary0to1_triggeredrollback"
 )
 
 
 
 for (exp_name in exp_names) {
-  # exp_name <- exp_names[4]
+  # exp_name <- exp_names[2]
   print(exp_name)
   exp_dir <- file.path(file.path(simulation_output, exp_name))
+  expLabel = gsub("20200819_IL_","",exp_name)
+  expLabel = gsub("_triggeredrollback","",expLabel)
+  
   expLabel = gsub("20200817_IL_","",exp_name)
   expLabel = gsub("_vary0to1_triggeredrollback","",expLabel)
 
