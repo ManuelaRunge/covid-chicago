@@ -43,35 +43,42 @@ table(Rt_dat$geography_modeled)
 
 
 
-RtdatCOmbined <- Rt_dat %>%
+RtdatCombined <- Rt_dat %>%
   dplyr::group_by(time,geography_modeled ) %>%
   dplyr::summarize(Median.of.covid.19.Rt= median(medianRt),
             Lower.error.bound.of.covid.19.Rt=  quantile(medianRt, probs=0.025, na.rm = TRUE),
             Upper.error.bound.of.covid.19.Rt = quantile(medianRt, probs=0.975, na.rm = TRUE)) %>%
   dplyr::mutate(Date = as.Date('2020-02-13') + time) %>%
 dplyr::arrange(Date, geography_modeled) %>%
-  filter(Date <= "2020-12-01") 
+  filter(Date <= "2020-12-01") %>%
+  mutate(geography_modeled = paste0("covidregion_",geography_modeled))
 
+RtdatCombined$geography_modeled  <- gsub("covidregion_Central","Central", RtdatCombined$geography_modeled)
+RtdatCombined$geography_modeled  <- gsub("covidregion_illinois","illinois", RtdatCombined$geography_modeled)
+RtdatCombined$geography_modeled  <- gsub("covidregion_Northcentral","Northcentral", RtdatCombined$geography_modeled)
+RtdatCombined$geography_modeled  <- gsub("covidregion_Northeast","Northeast", RtdatCombined$geography_modeled)
+RtdatCombined$geography_modeled  <- gsub("covidregion_Southern","Southern", RtdatCombined$geography_modeled)
+RtdatCombined$geography_modeled <- tolower(RtdatCombined$geography_modeled)
 
 
 saveForCivis=FALSE
 if(saveForCivis){
-  fname =  paste0("nu_il_", exp_scenario ,"_estimated_Rt_",simdate,".csv")
-  RtdatCOmbined %>% 
+  fname =  paste0("nu_il_", exp_scenario ,"_estimated_Rt_","20200819",".csv")
+  RtdatCombined %>% 
     dplyr::select(Date, geography_modeled, Median.of.covid.19.Rt, Lower.error.bound.of.covid.19.Rt, Upper.error.bound.of.covid.19.Rt) %>%
-    write.csv(file.path(project_path, "NU_civis_outputs" ,simdate, 'csv',fname), row.names = FALSE)
+    write.csv(file.path(project_path, "NU_civis_outputs" ,"20200819", 'csv',fname), row.names = FALSE)
   
 }
 if(saveInExpDir){
   fname =  paste0("estimated_Rt.csv")
-  RtdatCOmbined %>% 
+  RtdatCombined %>% 
     dplyr::select(Date, geography_modeled, Median.of.covid.19.Rt, Lower.error.bound.of.covid.19.Rt, Upper.error.bound.of.covid.19.Rt) %>%
     write.csv(file.path(simulation_output, exp_name, 'estimatedRt', fname), row.names = FALSE)
 
   
-  RtdatCOmbined$region <- factor(RtdatCOmbined$geography_modeled, levels=as.character(c(1:11)), labels=c(1:11))
+  RtdatCombined$region <- factor(RtdatCombined$geography_modeled, levels=as.character(c(1:11)), labels=c(1:11))
   
-  pplot <-  RtdatCOmbined %>% 
+  pplot <-  RtdatCombined %>% 
     filter(Date>= "2020-04-01" & Date<= "2020-11-01") %>%
     filter(geography_modeled %in% as.character(c(1:11))) %>%
     ggplot() + 
@@ -91,7 +98,7 @@ if(saveInExpDir){
   rm(pplot)
   
   
- pplot <-  RtdatCOmbined %>% 
+ pplot <-  RtdatCombined %>% 
     filter(Date>= "2020-08-18" & Date< "2020-08-19") %>%
     filter(geography_modeled %in% as.character(c(1:11))) %>%
   ggplot() + 
@@ -116,9 +123,9 @@ if(saveInExpDir){
     
     dt$region <- factor(dt$geography_modeled, levels=c(1:11), labels=c(1:11))
     
-    RtdatCOmbined$region <- factor(RtdatCOmbined$geography_modeled, levels=c(1:11), labels=c(1:11))
+    RtdatCombined$region <- factor(RtdatCombined$geography_modeled, levels=c(1:11), labels=c(1:11))
     
-    pplot <-  RtdatCOmbined %>% 
+    pplot <-  RtdatCombined %>% 
       filter(Date>= "2020-07-01" & Date<= "2020-11-01") %>%
       filter(region %in% as.character(c(1:11))) %>%
       ggplot() + 
