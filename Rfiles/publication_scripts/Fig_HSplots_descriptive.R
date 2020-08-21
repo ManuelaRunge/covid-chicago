@@ -179,6 +179,26 @@ popdat <- load_population() %>%
   summarize(pop=sum(as.numeric(pop))) %>%
   mutate(geography_name = tolower(restore_region))
 
+
+#### ---------------------------
+capacity_long <- capacity %>% pivot_longer(cols = -c("geography_name"), names_to = "param", values_to = "capacity") %>%
+  filter(param != "vents_available") %>%
+  mutate(param = case_when(
+    param == "icu_available" ~ "critical",
+    param == "medsurg_available" ~ "hospitalized"
+  )) 
+
+capacity_long <- capacity_long %>%
+  filter(param != "vents_available") %>%
+  mutate(param = case_when(
+    param == "hospitalized" ~ "hosp_cumul",
+    param == "critical" ~ "crit_cumul"
+  )) %>%
+  rbind(capacity_long) %>%
+  group_by(param) %>%
+  summarize(capacity=sum(capacity))
+
+
 load(file.path(simulation_output, "contact_tracing/20200731/predDatHS.Rdata"))
 predDatHS <- predDatHS %>%
   mutate(date = as.character(date)) %>%
@@ -202,19 +222,23 @@ predDatHS$scenario_fct <- factor(predDatHS$scenario,
 #### Sum per IL 
 predplotDat <- predDatHS %>%
   mutate(geography_name = tolower(restore_region)) %>%
-  left_join(capacity, by = "geography_name") %>%
-  left_join(popdat, by = "geography_name") %>%
   filter(param %in% c("critical",  "prevalence", "seroprevalence", "recovered") &
            date >= as.Date(startdate) & date <= as.Date(stopdate) &
            reopening_multiplier_4 %in% reopen) %>%
-  group_by(date, param, scenario, scenario_fct, reopening_multiplier_4) %>%
-  summarize(
-    pop=sum(pop),
-    icu_available = sum(icu_available),
-    mean.val = sum(mean.val)
+  select(-c('sd.val', 'n.val', 'se.val', 'lower.ci.val', 'upper.ci.val')) %>% 
+  pivot_wider(names_from = "param", values_from="mean.val") %>%
+  group_by(date,  scenario, scenario_fct, reopening_multiplier_4) %>%
+  dplyr::summarize(
+    recovered = sum(recovered),
+    critical = sum(critical),
+    seroprevalence = mean(seroprevalence)*100,
+    prevalence = mean(prevalence)*100
   ) %>%
+  pivot_longer(cols=-c(date,  scenario, scenario_fct, reopening_multiplier_4), names_to="param", values_to="mean.val") %>%
+  mutate(pop=sum(popdat$pop),
+         icu_available =8287) %>%
   mutate(icu_available_per1000pop = (icu_available/pop)*1000,
-         mean.val_per1000pop = (mean.val/pop)*1000)
+         mean.val_per1000pop = (mean.val/pop)*1000) 
 
 predplot <- predplotDat %>%
   filter(param %in% c("critical")) %>%
@@ -263,7 +287,7 @@ predplot2 <- predplotDat %>%
     color = ""
   ) +
   theme(legend.position = "bottom") +
-  scale_y_continuous(expand = c(0, 0)) 
+  scale_y_continuous(expand = c(0, 0), limits=c(0,30)) 
 
 
 
