@@ -279,8 +279,10 @@ exp_names2 <- c(
 
 
 exp_names3 <- c(
+  "20200821_IL_critdet_reopen0perc_TriggeredRollback",
   "20200820_IL_critdet_reopen5perc_TriggeredRollback",
   "20200820_IL_critdet_reopen10perc_TriggeredRollback",
+  "20200821_IL_hospdet_reopen0perc_TriggeredRollback",
   "20200820_IL_hospdet_reopen5perc_TriggeredRollback",
   "20200820_IL_hospdet_reopen10perc_TriggeredRollback"
 )
@@ -298,6 +300,7 @@ for (exp_name in exp_names3) {
 
   
   expLabel = gsub("20200820_IL_","",exp_name)
+  expLabel = gsub("20200821_IL_","",exp_name)
   expLabel = gsub("_reopen5perc_TriggeredRollback","",expLabel)
   expLabel = gsub("_reopen10perc_TriggeredRollback","",expLabel)
   
@@ -310,3 +313,5 @@ for (exp_name in exp_names3) {
   f_thresholdScatterPlot(channel = "hospitalized", expDir = expDir, savePDF = FALSE, showDet = F,expLabel=expLabel)
   rm(exp_name)
 }
+
+
