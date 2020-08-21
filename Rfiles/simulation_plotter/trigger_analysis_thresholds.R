@@ -169,7 +169,7 @@ f_thresholdScatterPlot <- function(channel = "critical", expDir = expDir, savePD
     pplot <- df_crit %>%
       filter(region %in% c(1:11)) %>%
       ggplot() +
-      annotate(geom = "rect", xmin = 0.75, xmax = Inf, ymin = -Inf, ymax = Inf, fill = "azure4", alpha = 0.3) +
+     # annotate(geom = "rect", xmin = 0.75, xmax = Inf, ymin = -Inf, ymax = Inf, fill = "azure4", alpha = 0.3) +
       geom_hline(aes(yintercept = icu_available), linetype = "dashed") +
       facet_wrap(~region, scales = "free") +
       scale_color_manual(values = c("red", "deepskyblue3")) +
@@ -185,14 +185,16 @@ f_thresholdScatterPlot <- function(channel = "critical", expDir = expDir, savePD
 
     if (showDet == FALSE) {
       fname <- "ICU_all"
-      pplot <- pplot + geom_rect(mapping = aes(xmin = minCapacity, xmax = 0.75, ymin = -Inf, ymax = Inf), fill = "red", alpha = 0.03) +
+      pplot <- pplot +
+        #geom_rect(mapping = aes(xmin = minCapacity, xmax = 0.75, ymin = -Inf, ymax = Inf), fill = "red", alpha = 0.03) +
         geom_errorbar(aes(x = capacity_multiplier, ymin = q2.5.critical, ymax = q97.5.critical), width = 0.05, alpha = 0.7) +
         geom_point(aes(x = capacity_multiplier, y = median.critical, col = as.factor(critical_BelowCapacity)), size = 2, alpha = 0.7) +
         labs(caption = fname)
     }
     if (showDet) {
       fname <- "ICU_det"
-      pplot <- pplot + geom_rect(mapping = aes(xmin = minCapacity_det, xmax = 0.75, ymin = -Inf, ymax = Inf), fill = "red", alpha = 0.03) +
+      pplot <- pplot +
+        #geom_rect(mapping = aes(xmin = minCapacity_det, xmax = 0.75, ymin = -Inf, ymax = Inf), fill = "red", alpha = 0.03) +
         geom_errorbar(aes(x = capacity_multiplier, ymin = q2.5.critical_det, ymax = q97.5.critical_det), width = 0.05) +
         geom_point(aes(x = capacity_multiplier, y = median.critical_det, col = as.factor(critical_det_BelowCapacity)), size = 2) +
         labs(caption = fname)
@@ -276,8 +278,15 @@ exp_names2 <- c(
 )
 
 
+exp_names3 <- c(
+  "20200820_IL_critdet_reopen5perc_TriggeredRollback",
+  "20200820_IL_critdet_reopen10perc_TriggeredRollback",
+  "20200820_IL_hospdet_reopen5perc_TriggeredRollback",
+  "20200820_IL_hospdet_reopen10perc_TriggeredRollback"
+)
 
-for (exp_name in exp_names) {
+
+for (exp_name in exp_names3) {
   # exp_name <- exp_names[2]
   print(exp_name)
   exp_dir <- file.path(file.path(simulation_output, exp_name))
@@ -287,6 +296,11 @@ for (exp_name in exp_names) {
   expLabel = gsub("20200817_IL_","",exp_name)
   expLabel = gsub("_vary0to1_triggeredrollback","",expLabel)
 
+  
+  expLabel = gsub("20200820_IL_","",exp_name)
+  expLabel = gsub("_reopen5perc_TriggeredRollback","",expLabel)
+  expLabel = gsub("_reopen10perc_TriggeredRollback","",expLabel)
+  
   df.exp <- f_loadDat(exp_name)
 
   f_thresholdScatterPlot(channel = "critical", expDir = expDir, savePDF = FALSE, showDet = T,expLabel=expLabel)
