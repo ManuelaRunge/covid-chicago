@@ -32,7 +32,11 @@ ct_startdate <- as.Date("2020-07-30")
 ## ================================================
 
 if (combineScenarioDats) {
+  
+  
+  
   f_getPredDat <- function(expDIR) {
+    
     trajectoriesDat <- read.csv(file.path(expDIR, "trajectoriesDat_trim.csv"))
     unique(trajectoriesDat$reopening_multiplier_4)
     unique(trajectoriesDat$fraction_critical)
@@ -51,6 +55,8 @@ if (combineScenarioDats) {
       paste0("infected_", region_names),
       paste0("deaths_det_", region_names),
       paste0("prevalence_", region_names),
+      paste0("seroprevalence_", region_names),
+      paste0("recovered_", region_names),
       paste0("critical_", region_names),
       paste0("crit_cumul_", region_names)
     )
@@ -104,19 +110,25 @@ if (combineScenarioDats) {
   
   
   exp_names <- c(
-    "20200801_IL_reopen_TD", "20200731_IL_reopen_counterfactual",
-    "20200801_IL_reopen_HS40TD", "20200801_IL_reopen_HS40",
-    "20200801_IL_reopen_HS80TD", "20200801_IL_reopen_HS80"
+    "20200801_IL_reopen_TD", 
+    "20200731_IL_reopen_counterfactual",
+    "20200801_IL_reopen_HS40TD", 
+    "20200801_IL_reopen_HS40",
+    "20200801_IL_reopen_HS80TD", 
+    "20200801_IL_reopen_HS80"
   )
+  
+  
   dfList <- list()
   for (exp_name in exp_names) {
+    
     print(exp_name)
     scenname <- gsub("20200801_IL_reopen_", "", exp_name)
     scenname <- gsub("20200731_IL_reopen_", "", exp_name)
     expDIR <- file.path(simulation_output, "contact_tracing/20200731/", exp_name)
     
     df <- f_combineDat(expDIR, scenname, Rt = TRUE)
-    dfList[[length(dfList + 1)]] <- df
+    dfList[[length(dfList) + 1]] <- df
   }
   
   source("load_paths.R")
@@ -151,6 +163,7 @@ if (combineScenarioDats) {
   RtDatHS <- rbind(RtDat_counterfactual, RtDat_TD, RtDat_HS40, RtDat_HS40TD, RtDat_HS80, RtDat_HS80TD)
   
   table(predDatHS$scenario)
+  table(predDatHS$param)
   table(RtDatHS$scenario)
   
   if (SAVE) save(predDatHS, file = file.path(simulation_output, "contact_tracing/20200731/predDatHS.Rdata"))
@@ -158,6 +171,13 @@ if (combineScenarioDats) {
 }
 
 capacity <- load_capacity(selected_ems = tolower(unique(predDatHS$restore_region)))
+popdat <- load_population() %>% 
+  mutate(region =as.character(geography_name) ) %>% 
+  filter(region !="illinois") %>%
+  f_addRestoreRegion() %>% 
+  group_by(restore_region) %>%
+  summarize(pop=sum(as.numeric(pop))) %>%
+  mutate(geography_name = tolower(restore_region))
 
 load(file.path(simulation_output, "contact_tracing/20200731/predDatHS.Rdata"))
 predDatHS <- predDatHS %>%
@@ -168,51 +188,98 @@ predDatHS <- predDatHS %>%
 customTheme <- f_getCustomTheme()
 
 predDatHS$scenario_fct <- factor(predDatHS$scenario,
-                                 levels = c("counterfactual", "HS40", "HS80", "TDonly", "HS40TD", "HS80TD"),
+                                 levels = c("counterfactual", "HS40", "TDonly","HS80", "HS40TD", "HS80TD"),
                                  labels = c(
                                    "current trend (comparison)",
-                                   "increase detections of mild symptoms to 40%",
+                                   "increase detections to 40%",
                                    "faster testing and isolation",
-                                   "increase detections of mild symptoms to 80%",
-                                   "increase detections of mild symptoms to 40%\n& faster testing and isolation",
-                                   "increase detections of mild symptoms to 80%\n& faster testing and isolation"
-                                 )
-)
+                                   "increase detections to 80%",
+                                   "increase detections to 40%\n& faster testing and isolation",
+                                   "increase detections to 80%\n& faster testing and isolation"
+                                 ))
 
 
+#### Sum per IL 
 predplotDat <- predDatHS %>%
   mutate(geography_name = tolower(restore_region)) %>%
   left_join(capacity, by = "geography_name") %>%
-  filter(param %in% c("critical") &
+  left_join(popdat, by = "geography_name") %>%
+  filter(param %in% c("critical",  "prevalence", "seroprevalence", "recovered") &
            date >= as.Date(startdate) & date <= as.Date(stopdate) &
            reopening_multiplier_4 %in% reopen) %>%
   group_by(date, param, scenario, scenario_fct, reopening_multiplier_4) %>%
   summarize(
-    critical = sum(critical),
+    pop=sum(pop),
+    icu_available = sum(icu_available),
     mean.val = sum(mean.val)
-  )
+  ) %>%
+  mutate(icu_available_per1000pop = (icu_available/pop)*1000,
+         mean.val_per1000pop = (mean.val/pop)*1000)
 
 predplot <- predplotDat %>%
+  filter(param %in% c("critical")) %>%
   ggplot() +
   theme_cowplot() +
   # geom_ribbon(aes(x=date , ymin=lower.ci.val , ymax=  upper.ci.val , fill=restore_region , group=reopening_multiplier_4),size=1, alpha=0.3) +
-  geom_line(aes(x = date, y = mean.val, col = scenario_fct, group = scenario), size = 1.3) +
-  geom_hline(aes(yintercept = critical), linetype = "dashed", col = "black", size = 0.7) +
-  geom_hline(aes(yintercept = 0)) +
+  geom_line(aes(x = date, y = mean.val_per1000pop, col = scenario_fct, group = scenario), size = 1.3) +
+  geom_hline(aes(yintercept = icu_available_per1000pop), linetype = "dashed", col = "black", size = 0.7) +
+  geom_hline(yintercept = c(-Inf, Inf)) +
+  geom_vline(xintercept = c(-Inf, Inf)) +
   facet_grid(~reopening_multiplier_4, scales = "free") +
   customTheme +
-  scale_color_brewer(palette = "Dark2") +
+  scale_color_brewer(palette = "Dark2", drop=F) +
   labs(
     x = "",
-    y = "Cases requiring ICU beds\n per 1000 population",
+    y = "Critical cases per 1000 population",
     color = ""
   ) +
   theme(legend.position = "bottom") +
-  scale_y_continuous(labels = function(x) x / 1000, expand = c(0, 0)) +
-  scale_x_date(breaks = "30 days", labels = date_format("%b"), expand = c(0, 0))
+  scale_y_continuous(expand = c(0, 0), limits=c(0, 1)) +
+  scale_x_date(breaks = "30 days", labels = date_format("%b"), expand = c(0, 0)) 
 
 
 
+
+predplot2 <- predplotDat %>%
+  ungroup() %>% 
+  filter(param %in% c("prevalence")) %>%
+  group_by(reopening_multiplier_4,scenario_fct,param) %>%
+  filter(mean.val_per1000pop== max(mean.val_per1000pop)) %>%
+  ggplot() +
+  geom_hline(yintercept = c(-Inf, Inf)) +
+  geom_hline(yintercept = c( 0.5), col="grey") +
+  theme_cowplot() +
+  # geom_ribbon(aes(x=date , ymin=lower.ci.val , ymax=  upper.ci.val , fill=restore_region , group=reopening_multiplier_4),size=1, alpha=0.3) +
+  geom_bar(aes(x = scenario_fct, y = mean.val, fill = scenario_fct,
+                 group = interaction(param,reopening_multiplier_4, scenario)), position=position_dodge(width=0.5) ,col="azure4",stat="identity", size = 1.3) +
+  geom_vline(xintercept = c(-Inf, Inf)) +
+  #facet_wrap(~reopening_multiplier_4) + 
+  customTheme +
+  scale_color_brewer(palette = "Dark2", drop=F) +
+  scale_fill_brewer(palette = "Dark2", drop=F) +
+  labs(
+    x = "",
+    y = "Prevalence",
+    color = ""
+  ) +
+  theme(legend.position = "bottom") +
+  scale_y_continuous(expand = c(0, 0)) 
+
+
+
+if(SAVE){
+  ggsave(paste0("HS_scenarios_timeline.pdf"),
+         plot = predplot, path = file.path(pdfdir), width = 12, height =5,  device = "pdf"
+  )
+}
+
+
+
+if(SAVE){
+  ggsave(paste0("HS_scenarios_prevalence.pdf"),
+         plot = predplot2, path = file.path(pdfdir), width = 9.5, height =7,  device = "pdf"
+  )
+}
 
 #### For RT
 load(file.path(simulation_output, "contact_tracing/20200731/RtDatHS.Rdata"))
@@ -252,21 +319,23 @@ rtplot <- rtplotdat %>%
   geom_hline(aes(yintercept = 1), linetype = "dashed", col = "black", size = 0.7) +
   facet_grid(~reopening_multiplier_4, scales = "free") +
   customTheme +
-  scale_color_brewer(palette = "Dark2") +
+  scale_color_brewer(palette = "Dark2", drop=F) +
   labs(
     x = "",
     y = expr(italic(R[t])),
     color = ""
   ) +
   theme(legend.position = "bottom") +
-  scale_y_continuous(expand = c(0, 0)) +
-  scale_x_date(breaks = "30 days", labels = date_format("%b"), expand = c(0, 0))
+  scale_y_continuous(expand = c(0, 0), lim=c(0.8, 1.3)) +
+  scale_x_date(breaks = "30 days", labels = date_format("%b"), expand = c(0, 0))+
+  geom_hline(yintercept = c(-Inf, Inf)) +
+  geom_vline(xintercept = c(-Inf, Inf)) 
 
 
 
 predplot <- predplot + theme(legend.position = "none")
 rtplot <- rtplot + theme(strip.text.x = element_text(color = "white"))
-pplot <- plot_grid(predplot, rtplot, ncol = 1, rel_heights = c(1, 1.3))
+pplot <- plot_grid(predplot, rtplot, ncol = 1, rel_heights = c(1, 1.3), align="v")
 
 
 ggsave(paste0("HS_scenarios_IL", ".pdf"),
@@ -278,6 +347,7 @@ ggsave(paste0("HS_scenarios_IL", ".pdf"),
 
 ## ------------------------------------------------
 ### Relative reduction barchart
+## ------------------------------------------------
 
 ### Relative reduction
 ### Relative reduction barchart
