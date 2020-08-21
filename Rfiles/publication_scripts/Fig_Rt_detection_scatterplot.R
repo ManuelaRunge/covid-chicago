@@ -2,8 +2,43 @@
 ###  Plot minimum detection of As and P per Rt
 ###===========================================
 
+SAVE = F
+
+#### Plots edited for publication
+library(tidyverse)
+library(cowplot)
+library(scales)
+library(viridis)
+library(readr)
+library(data.table)
+
+theme_set(theme_cowplot())
+
+# setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
+source("load_paths.R")
+source("setup.R")
+source("processing_helpers.R")
+source("ct_analysis/helper_functions_CT.R")
+
+pdfdir <- "C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/project_notes/publications/covid_model_IL/pdfs_ais/"
+ct_dir <- file.path(simulation_output, "contact_tracing")
+
+# region_cols <- c()
+restoreRegion_cols <- c("Central" = "red2", "Northcentral" = "dodgerblue3", "Northeast" = "chartreuse4", "Southern" = "orchid4")
+
+simdate ="20200731"
+startdate <- "2020-06-15"
+stopdate <- "2020-12-30"
+reopen <- c(0, 0.05, 0.1)
+customTheme <- f_getCustomTheme()
+ct_startdate <- as.Date("2020-07-30")
+
+reopeningdate = as.Date("2020-07-22")
+
+
+
 f_combineRtdat <- function(exp_name ="20200731_IL_reopen_contactTracing"){
-EMS_combined_estimated_Rt  <- read.csv(file.path(simdir, exp_name , "estimatedRt/EMS_combined_estimated_Rt.csv"))
+EMS_combined_estimated_Rt  <- read_csv(file.path(simdir, exp_name , "estimatedRt/EMS_combined_estimated_Rt.csv"))
 
 baselineRt <- EMS_combined_estimated_Rt %>% 
               filter(Date ==as.Date("2020-03-01")) %>% 
@@ -36,6 +71,9 @@ pdfdir = file.path("C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/
 
 exp_names <- list.dirs(simdir, recursive = FALSE, full.names = FALSE)
 exp_names <- exp_names[grep("reopen_contactTracing",exp_names)]
+exp_names <- exp_names[exp_names != "20200731_IL_reopen_contactTracing_TD"]
+
+
 
 RtDatList <- list()
 for(exp_name in exp_names){
@@ -78,45 +116,41 @@ pplot <- ggplot(data=subset(Rtbelow1))+
   guides(color=guide_legend(ncol=2))
 
 
-ggsave(paste0("RTLE1_contactTracing_scatterPlot.pdf"),
-       plot = pplot, path = file.path(pdfdir), width = 9.5, height =7,  device = "pdf"
-)
-
-
-
-
-
-##### Apply for critical 
-
+if(SAVE){
+  ggsave(paste0("RTLE1_contactTracing_scatterPlot.pdf"),
+         plot = pplot, path = file.path(pdfdir), width = 9.5, height =7,  device = "pdf"
+  )
+}
+pplotRt <- pplot
+rm(pplot)
 
 
 ###===========================================
-###  Plot minimum detection of As and P per Rt
+###  Plot minimum detection of As and P per Rt FOR CRITICAL
 ###===========================================
 
-f_addRt_toICU_thresholds <- function(exp_name ="20200731_IL_reopen_contactTracing"){
+
   
+  dat_ct <- read.csv(file.path(ct_dir, "20200731/20200731_IL_reopen_contactTracing/CT_ICU_thresholds.csv")) %>% mutate(scenario="counterfactual" , region = as.character(region))
+  dat_ctTDonly <- read.csv(file.path(ct_dir, "20200731/20200731_IL_reopen_contactTracing_TD/CT_ICU_thresholds.csv")) %>% mutate(scenario="TDonly", region = as.character(region))
+  dat_ctHS40 <- read.csv(file.path(ct_dir, "20200731/20200731_IL_reopen_contactTracingHS40/CT_ICU_thresholds.csv")) %>% mutate(scenario="HS40", region = as.character(region))
+  dat_ctHS80 <- read.csv(file.path(ct_dir, "20200731/20200731_IL_reopen_contactTracingHS80/CT_ICU_thresholds.csv")) %>% mutate(scenario="HS80", region = as.character(region))
+  dat_ctHS40TD <- read.csv(file.path(ct_dir, "20200731/20200731_IL_reopen_contactTracingHS40TD/CT_ICU_thresholds.csv")) %>% mutate(scenario="HS40TD", region = as.character(region))
+  dat_ctHS80TD <- read.csv(file.path(ct_dir, "20200731/20200731_IL_reopen_contactTracingHS80TD/CT_ICU_thresholds.csv")) %>% mutate(scenario="HS80TD", region = as.character(region))
   
-  dat_ct <- read.csv(file.path(ct_dir, "20200731/20200731_IL_reopen_contactTracing/CT_ICU_thresholds.csv")) %>% mutate(scenario="counterfactual")
-  dat_ctTDonly <- read.csv(file.path(ct_dir, "20200731/20200731_IL_reopen_contactTracing_TD/CT_ICU_thresholds.csv")) %>% mutate(scenario="TDonly")
-  dat_ctHS40 <- read.csv(file.path(ct_dir, "20200731/20200731_IL_reopen_contactTracingHS40/CT_ICU_thresholds.csv")) %>% mutate(scenario="HS40")
-  dat_ctHS80 <- read.csv(file.path(ct_dir, "20200731/20200731_IL_reopen_contactTracingHS80/CT_ICU_thresholds.csv")) %>% mutate(scenario="HS80")
-  dat_ctHS40TD <- read.csv(file.path(ct_dir, "20200731/20200731_IL_reopen_contactTracingHS40TD/CT_ICU_thresholds.csv")) %>% mutate(scenario="HS40TD")
-  dat_ctHS80TD <- read.csv(file.path(ct_dir, "20200731/20200731_IL_reopen_contactTracingHS80TD/CT_ICU_thresholds.csv")) %>% mutate(scenario="HS80TD")
-  
-  dat <- rbind(dat_ct, dat_ctHS40, dat_ctHS80, dat_ctHS40TD, dat_ctHS80TD)
+  dat <- rbind(dat_ct, dat_ctHS40, dat_ctHS80,dat_ctTDonly,  dat_ctHS40TD, dat_ctHS80TD)
   popdat <- load_population() %>% rename(region =geography_name ) 
   #popdatCentral <- popdat
   
   dat <- dat %>%
-    left_join(popdat, by = "region") %>%
-    group_by(region, grpvar, scenario) %>%
-    mutate(fitmax = max(isolation_success, na.rm = TRUE))
+    dplyr::left_join(popdat, by = "region") %>%
+    dplyr::group_by(region, grpvar, scenario) %>%
+    dplyr::mutate(fitmax = max(isolation_success, na.rm = TRUE))
   
   
-  
-  
-  EMS_combined_estimated_Rt  <- read.csv(file.path(ct_dir, simdate, exp_name , "estimatedRt/EMS_combined_estimated_Rt.csv"))
+  dat$region <- as.character(dat$region)
+  #### Ideally add Rt from for each of the experiments!!!
+  EMS_combined_estimated_Rt  <- read.csv(file.path(ct_dir, simdate, "20200731_IL_reopen_contactTracing" , "estimatedRt/EMS_combined_estimated_Rt.csv"))
   
   baselineRt <- EMS_combined_estimated_Rt %>% 
     filter(Date ==as.Date("2020-03-01")) %>% 
@@ -139,7 +173,7 @@ f_addRt_toICU_thresholds <- function(exp_name ="20200731_IL_reopen_contactTracin
   customTheme <- f_getCustomTheme()
   
   datWithRt$scenario_fct <- factor(datWithRt$scenario,
-                                  levels = c("counterfactual", "HS40", "HS80", "TDonly", "HS40TD", "HS80TD"),
+                                  levels = c("counterfactual", "HS40", "TDonly","HS80", "HS40TD", "HS80TD"),
                                   labels = c(
                                     "current trend (comparison)",
                                     "increase detections to 40%",
@@ -151,7 +185,7 @@ f_addRt_toICU_thresholds <- function(exp_name ="20200731_IL_reopen_contactTracin
   
   
   pplot <- datWithRt %>% 
-    filter(isolation_success==fitmax & !is.na(scenario_fct) & region %in% c(1:11) ) %>% 
+    filter(isolation_success==fitmax &  region %in% as.character(c(1:11)) ) %>% 
     group_by(region, currentRt, scenario, scenario_fct) %>% 
     summarize(detection_success=min(detection_success)) %>% 
     ggplot()+ 
@@ -162,25 +196,66 @@ f_addRt_toICU_thresholds <- function(exp_name ="20200731_IL_reopen_contactTracin
          y="Minimum required detection of \n a - and pre-symptomatic infections (%) ",
          color="Testing improvements for mild symptoms",
          fill="Testing improvements for mild symptoms") +
-    scale_color_brewer(palette = "Dark2")+
-    scale_fill_brewer(palette = "Dark2") +
+    scale_color_brewer(palette = "Dark2", drop=F)+
+    scale_fill_brewer(palette = "Dark2", drop=F) +
     customTheme +
     theme(legend.position = "bottom")+
     guides(fill=guide_legend(ncol=2))+
     guides(color=guide_legend(ncol=2))
   
   
+if(SAVE){
   ggsave(paste0("ICUcap_contactTracing_scatterPlot.pdf"),
          plot = pplot, path = file.path(pdfdir), width = 9.5, height =7,  device = "pdf"
   )
-  
-  
-  
-  
-  
-  
-  return(Rtbelow1)
 }
+  
+  pplotICU <- pplot
+  rm(pplot)
 
 
-
+  
+  
+##### combined plot
+  
+  subdat1 <- Rtbelow1 %>% 
+              filter( !is.na(scenario_fct) & region %in% c(1:11) )  %>% 
+    select(grpvar, detection_success, currentRt,  scenario, scenario_fct) %>% 
+    mutate(type="Rt", region=as.character(region)) 
+  
+  table(subdat1$region, subdat1$scenario_fct)
+  
+  dat <- datWithRt  %>%
+    filter(isolation_success==fitmax & !is.na(scenario_fct) & region %in% c(1:11) )  %>% 
+    select(grpvar, detection_success, currentRt,  scenario, scenario_fct)  %>% 
+    mutate(type="ICU", region=as.character(region))   %>% 
+    rbind(subdat1) %>% 
+    group_by(region, currentRt, scenario, scenario_fct, type) %>% 
+    summarize(detection_success=min(detection_success)) 
+  
+  pplot <- dat%>% 
+    ggplot()+ 
+    geom_point(aes(x=currentRt , y= detection_success, fill=scenario_fct),col="azure4",shape=21, size=3) +
+    geom_smooth(aes(x=currentRt , y= detection_success,col=scenario_fct,fill=scenario_fct), method="lm", alpha=0.3) +
+    scale_y_continuous(lim=c(0,1), labels = function(x) x * 100 , expand=c(0,0)) +
+    labs(x= expr(italic(R[t]) * " before contact tracing start"),
+         y="Minimum required detection of \n a - and pre-symptomatic infections (%) ",
+         color="Testing improvements for mild symptoms",
+         fill="Testing improvements for mild symptoms",
+         caption="Each point shows a region (n=11) for different reopening scenarios (n=4)") +
+    scale_color_brewer(palette = "Dark2", drop=F)+
+    scale_fill_brewer(palette = "Dark2", drop=F )+
+    customTheme +
+    background_grid() + 
+    theme(legend.position = "bottom")+
+    guides(fill=guide_legend(ncol=2))+
+    guides(color=guide_legend(ncol=2)) +
+    facet_wrap(~type, scales="free_y")
+  
+  
+  if(SAVE){
+    ggsave(paste0("contactTracing_scatterPlot.pdf"),
+           plot = pplot, path = file.path(pdfdir), width = 14, height =7,  device = "pdf"
+    )
+  }
+  
