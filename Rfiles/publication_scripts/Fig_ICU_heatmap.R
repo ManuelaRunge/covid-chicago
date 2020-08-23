@@ -12,7 +12,9 @@ theme_set(theme_cowplot())
 source("load_paths.R")
 source("setup.R")
 source("processing_helpers.R")
-source("ct_analysis/helper_functions_CT.R")
+#source("ct_analysis/helper_functions_CT.R")
+source("publication_scripts/helper_functions_CT.R")
+
 
 pdfdir <- "C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/project_notes/publications/covid_model_IL/pdfs_ais/"
 ct_dir <- file.path(simulation_output, "contact_tracing")
@@ -40,7 +42,7 @@ if(heatmaps){
     
     load(file.path(simulation_output, "contact_tracing/20200731/",exp_name,"/heatmap_ICU/Illinois_dtfit.Rdata"))
     # thresholdDat <- read_csv("C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/cms_sim/simulation_output/contact_tracing/20200731/20200731_IL_reopen_contactTracing/heatmap_ICU/Illinois_loess_ICUcapacity.csv")
-    capacity <- load_capacity('illinois') %>% rename(capacity=critical)  %>% rename(region=geography_name) 
+    capacity <- load_capacity('illinois') %>% rename(capacity=icu_available)  %>% rename(region=geography_name) 
     popdat <- load_population() %>% rename(region=geography_name) 
     
     
@@ -151,9 +153,121 @@ if(heatmapCombined){
     group_by(region, grpvar, scenario) %>%
     mutate(fitmax = max(isolation_success, na.rm = TRUE))
   
+  
+  
+  dat$scenario_fct <- factor(dat$scenario,
+                                  levels = c("CT", "CTHS40","CTTDonly",  "CTHS80",  "CTHS40TD", "CTHS80TD"),
+                                  labels = c(
+                                    "CT + current trend",
+                                    "CT + increase detections to 40%",
+                                    "CT + faster testing and isolation",
+                                    "CT + increase detections to 80%",
+                                    "CT + increase detections to 40%\n& faster testing and isolation",
+                                    "CT + increase detections to 80%\n& faster testing and isolation"
+                                  ))
+  
+  customTheme <- f_getCustomTheme(fontscl=3)
+  grpValues=c(0.00, 0.05, 0.1)
+  pplot <-  dat %>%
+    group_by(region, scenario_fct,  grpvar) %>%
+    filter(grpvar %in% grpValues, isolation_success == fitmax & detection_success == min(detection_success) ) %>%
+    filter(region %in% c(1:11) ) %>%
+    dplyr::group_by( scenario_fct, region, grpvar) %>%
+    dplyr::summarize(mean.val = mean(detection_success)) %>%
+    ggplot() + 
+    geom_boxplot(aes(x = reorder(as.factor(grpvar), mean.val), y = mean.val, col = scenario_fct, group = interaction(grpvar,scenario_fct)),
+                 size = 1,width=0.4, position = position_dodge(0.8),outlier.shape = NA
+    ) +
+    geom_point(aes(x = reorder(as.factor(grpvar), mean.val), y = mean.val, fill = scenario_fct, group = interaction(region,scenario_fct)),
+               size = 2.5, position = position_dodge(0.8), shape=21, col="azure4"
+    ) +
+    labs(
+      title = "",
+      subtitle = "",
+      x = "\nPartial reopening scenario",
+      y = "Minimum detection of a- and presymptomatics\nto prevent exceeding ICU capacities\n",
+      col = "",
+      fill = "",
+      shape = "",
+      caption= "Each point shows one covid region"
+    ) +
+    scale_color_brewer(palette="Dark2", drop=F) +
+    scale_fill_brewer(palette="Dark2", drop=F) +
+    customTheme +
+    scale_y_continuous(lim = c(0, 0.7), breaks = seq(0, 0.7, 0.10), labels = seq(0, 70, 10), expand=c(0,0)) +
+    background_grid()+
+    theme(legend.position="bottom",
+          panel.grid.major.x = element_blank()) 
 
+    ggsave(paste0("IL_CT_thresholds_boxplot", ".pdf"),
+           plot = pplot, path = file.path(pdfdir), width = 9, height =7, device = "pdf"
+    ) 
+    
+    
+   # customTheme <- f_getCustomTheme(fontscl=0)
+    plotdat <- dat %>% 
+      filter( region %in% c("Illinois") & grpvar %in% grpValues) %>%
+      group_by(grpvar, scenario,scenario_fct, detection_success) %>%
+      summarize(isolation_success=min(isolation_success))
+    
+   pplot <-  ggplot(data=plotdat) +
+      theme_minimal() +
+     geom_ribbon(data=subset(plotdat, scenario=="CTHS80"), aes(
+       x = detection_success,
+       xmin = detection_success, xmax = Inf,
+       ymin = isolation_success, ymax = Inf, fill = as.factor(scenario_fct), group = scenario_fct
+     ), alpha = 0.8) +
+     geom_ribbon(data=subset(plotdat, scenario=="CTHS40"), aes(
+       x = detection_success,
+       xmin = detection_success, xmax = Inf,
+       ymin = isolation_success, ymax = Inf,  group = scenario_fct
+     ), alpha = 1, fill="white") +
+     geom_ribbon(data=subset(plotdat, scenario=="CTHS40"), aes(
+       x = detection_success,
+       xmin = detection_success, xmax = Inf,
+       ymin = isolation_success, ymax = Inf, fill = as.factor(scenario_fct), group = scenario_fct
+     ), alpha = 0.8) +
+     geom_ribbon(data=subset(plotdat, scenario=="CT"), aes(
+       x = detection_success,
+       xmin = detection_success, xmax = Inf,
+       ymin = isolation_success, ymax = Inf,  group = scenario_fct
+     ), alpha = 1, fill="white") +
+     geom_ribbon(data=subset(plotdat, scenario=="CT"), aes(
+       x = detection_success,
+       xmin = detection_success, xmax = Inf,
+       ymin = isolation_success, ymax = Inf, fill = as.factor(scenario_fct), group = scenario_fct
+     ), alpha = 0.8) +
+      geom_line(aes(x = detection_success, y = isolation_success, col = as.factor(scenario_fct), group = scenario_fct), size = 1) +
+      #facet_wrap(restore_region~region) +
+      facet_wrap(~grpvar) +
+      scale_color_brewer(palette= "Dark2",  drop=F) +
+      scale_fill_brewer(palette= "Dark2",  drop=F) +
+      customTheme +
+      scale_x_continuous(lim = c(0, 0.7), breaks = seq(0, 0.7, 0.1), labels = seq(0, 0.7, 0.1) * 100, expand = c(0, 0)) +
+      scale_y_continuous(lim = c(0, 0.7), breaks = seq(0, 0.7, 0.1), labels = seq(0, 0.7, 0.1) * 100, expand = c(0, 0)) +
+      theme(panel.spacing = unit(1, "lines"))+
+      geom_hline(yintercept = c(-Inf, Inf)) +
+      geom_vline(xintercept = c(-Inf, Inf))+
+     labs(
+       title = "",
+       subtitle = "",
+       x = "Detection success (%)",
+       y = "Isolation success (%)",
+       col = "",
+       fill = "",
+       shape = "",
+       caption= "all IL"
+     ) 
+    
+
+    
+
+    ggsave(paste0("IL_CT_thresholds_area", ".pdf"),
+           plot = pplot, path = file.path(pdfdir), width = 12, height =4, device = "pdf"
+    ) 
+    
   ### show different regions and ranges in thresholds  
-if(boxplotVariations){
+if(boxplotVariations_supplement){
   
   pplot <-  dat %>%
     group_by(region, scenario,  grpvar, pop) %>%
@@ -257,8 +371,7 @@ if(boxplotVariations){
     theme(panel.grid.major.x = element_blank()) 
   
   
-  
-  
+
   pplot <-  dat %>%
     group_by(region, scenario,  grpvar) %>%
     filter(grpvar %in% grpValues, isolation_success == fitmax & detection_success == min(detection_success) ) %>%
@@ -291,7 +404,7 @@ if(boxplotVariations){
   
 if(combinedHeatmap){
   
-  
+
   
   
   
@@ -312,17 +425,11 @@ if(combinedHeatmap){
     geom_line(aes(x = detection_success, y = isolation_success, col = as.factor(grpvar), group = grpvar), size = 1) +
     #facet_wrap(restore_region~region) +
     facet_wrap(~restore_region) +
-    scale_color_viridis(option = "viridis", discrete = TRUE) +
-    scale_fill_viridis(option = "viridis", discrete = TRUE) +
+    scale_color_viridis(option = "C", discrete = TRUE, drop=F) +
+    scale_fill_viridis(option = "C", discrete = TRUE, drop=F) +
     customThemeNoFacet +
     scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
     scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
-    labs(
-      x = detectionVar_label,
-      y = isolationVar_label,
-      fill = groupVar_label,
-      col = groupVar_label
-    ) +
     theme(panel.spacing = unit(1, "lines"))+
     geom_hline(yintercept = c(-Inf, Inf)) +
     geom_vline(xintercept = c(-Inf, Inf))
