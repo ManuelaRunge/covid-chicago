@@ -87,7 +87,7 @@ if(heatmaps){
     pplot <- ggplot(data = subset(dtfit,  !is.na(value_fct)), aes(x = detection_success, y = isolation_success)) +
       theme_minimal() +
       geom_tile(aes(fill = as.factor(value_cut)), alpha = 0.8) +
-      scale_fill_viridis(option = "C", discrete = T, direction=-1) +
+      scale_fill_viridis(option = "C", discrete = T, drop=F) +
       geom_line(    data = subset(thresholdDat, isolation_success != min(isolation_success)),
                     aes(x = detection_success, y = isolation_success), size = 1.3
       ) +
@@ -99,17 +99,15 @@ if(heatmaps){
         shape = "",
         linetype = ""
       ) +
-      scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
-      scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.1), labels = seq(0, 1, 0.1) * 100, expand = c(0, 0)) +
+      scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
+      scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
       facet_wrap(~grpvar, nrow=1) +
-      customThemeNoFacet +
+      customTheme +
       theme(panel.spacing = unit(1.5, "lines")) +
-      theme(legend.position = "right")+
-      theme(strip.text.x = element_text(size = 12, face = "bold", color="white"),
-            axis.text.y = element_blank(),
-            axis.ticks.x = element_blank(),
+      theme(legend.position = "right") +
+      theme(plot.margin = margin(l = 1) ,
             axis.title.x = element_blank(),
-            plot.margin = margin(l = 1)  )
+            axis.title.y = element_blank())
     
     if(showlegend==FALSE) pplot <- pplot + theme(legend.position = "none")
     
@@ -123,15 +121,11 @@ if(heatmaps){
   p2 <- f_getHeatmap_IL(exp_name="20200731_IL_reopen_contactTracingHS40")
   p3 <- f_getHeatmap_IL(exp_name="20200731_IL_reopen_contactTracingHS80")
   
+
+  p123 <- cowplot::plot_grid(p3, p2, p1,
+                             nrow = 3,   align = "hv")
   
-  p123 <- cowplot::plot_grid(p3 + theme(strip.text.x = element_text(size = 12, face = "bold", color="black"), 
-                                        p2, 
-                                        p1  ),
-                             nrow = 3,
-                             labels = "auto",
-                             align = "hv")
-  
-  ggsave(paste0("IL_heatmap", ".png"),
+  ggsave(paste0("IL_heatmap_3", ".png"),
          plot = p123, path = file.path(pdfdir), width = 8, height = 8, device = "png"
   )
   
@@ -243,8 +237,8 @@ if(heatmapCombined){
       scale_color_brewer(palette= "Dark2",  drop=F) +
       scale_fill_brewer(palette= "Dark2",  drop=F) +
       customTheme +
-      scale_x_continuous(lim = c(0, 0.7), breaks = seq(0, 0.7, 0.1), labels = seq(0, 0.7, 0.1) * 100, expand = c(0, 0)) +
-      scale_y_continuous(lim = c(0, 0.7), breaks = seq(0, 0.7, 0.1), labels = seq(0, 0.7, 0.1) * 100, expand = c(0, 0)) +
+      scale_x_continuous(lim = c(0, 0.7), breaks = seq(0, 0.7, 0.2), labels = seq(0, 0.7, 0.2) * 100, expand = c(0, 0)) +
+      scale_y_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.2), labels = seq(0, 1, 0.2) * 100, expand = c(0, 0)) +
       theme(panel.spacing = unit(1, "lines"))+
       geom_hline(yintercept = c(-Inf, Inf)) +
       geom_vline(xintercept = c(-Inf, Inf))+
@@ -263,7 +257,7 @@ if(heatmapCombined){
     
 
     ggsave(paste0("IL_CT_thresholds_area", ".pdf"),
-           plot = pplot, path = file.path(pdfdir), width = 12, height =4, device = "pdf"
+           plot = pplot, path = file.path(pdfdir), width = 13, height =4.5, device = "pdf"
     ) 
     
   ### show different regions and ranges in thresholds  
