@@ -209,7 +209,7 @@ def write_functions(grp, expandModel=None):
 (func infectious_det_{grp} (+ As_det1_{grp} P_det_{grp} Sym_det2a_{grp} Sym_det2b_{grp} Sys_det3a_{grp} Sys_det3b_{grp}))
 
 (func infectious_det_symp_{grp} (+ Sym_det2a_{grp} Sym_det2b_{grp} Sys_det3a_{grp} Sys_det3b_{grp} ))
-(func infectious_det_AsP_{grp} (+ As_det1::{grp} P_det::{grp}))
+(func infectious_det_AsP_{grp} (+ As_det1_{grp} P_det_{grp}))
 """.format(grp=grp)
 
 
@@ -289,11 +289,11 @@ def write_params(expandModel=None):
 (param Kc (/ 1 time_to_critical))
 (param Km (/ 1 time_to_death))
 
-(time-event detection1 @detection_time_1@ ((d_Sys @d_Sys_incr1@) (d_Sym @d_Sym_incr1@) ))  
-(time-event detection2 @detection_time_2@ ((d_Sys @d_Sys_incr2@) (d_Sym @d_Sym_incr2@) ))
-(time-event detection3 @detection_time_3@ ((d_Sys @d_Sys_incr3@) (d_Sym @d_Sym_incr3@) )) 
-(time-event detection4 @detection_time_4@ ((d_Sys @d_Sys_incr4@) (d_Sym @d_Sym_incr4@) )) 
-(time-event detection5 @detection_time_5@ ((d_Sys @d_Sys_incr5@) (d_Sym @d_Sym_incr5@) )) 
+(time-event detection1 @detection_time_1@ ((d_Sys @d_Sys_incr1@)))  
+(time-event detection2 @detection_time_2@ ((d_Sys @d_Sys_incr2@)))
+(time-event detection3 @detection_time_3@ ((d_Sys @d_Sys_incr3@))) 
+(time-event detection4 @detection_time_4@ ((d_Sys @d_Sys_incr4@))) 
+(time-event detection5 @detection_time_5@ ((d_Sys @d_Sys_incr5@))) 
 """
 
 
@@ -414,12 +414,6 @@ def write_age_specific_param(grp, expandModel):
 
     return params_str
 
-def write_observed_param(grpList):
-    observed_param_str = """  
-(observe Ki_t Ki)
-(observe d_Sym_t d_Sym)
-(observe d_Sys_t d_Sys)
-"""
 
 ## If age specific parameters would change over time and should be tracked
     observed_ageparam_str=""
@@ -691,19 +685,147 @@ def write_reactions(grp, expandModel=None):
     reaction_str = reaction_str.replace("  ", " ")
 
     return (reaction_str)
-   
+  
+def define_change_detection_and_isolation(grpList=None,
+                                          reduced_inf_of_det_cases=True,
+                                          d_As=True,
+                                          d_P=True,
+                                          d_Sym_ct=True,
+                                          d_Sym_grp=False,
+                                          d_Sym_grp_option=None):
+
+    """ Write the emodl chunk for changing detection rates and reduced infectiousness
+    to approximate contact tracing or improved health system interventions.
+    Helper function called by write_interventions
+
+    Parameters
+    ----------
+    grpList: list
+        List that contains the groupnames for which parameters are repeated
+    reduced_inf_of_det_cases : boolean
+        Boolean to add a change in infectiousness of As and P detected cases if set to True
+    d_As : boolean
+        Boolean to add a change in detection of asymptomatic cases if set to True
+    d_P : boolean
+        Boolean to add a change in detection of presymptomatic cases if set to True
+    d_Sym_ct : boolean
+        Boolean to add a change in detection of symptomatic cases if set to True
+    d_Sym_grp : boolean
+        Boolean to denote whether dSym is group specific or generic
+    d_Sym_grp_option : character
+        Chracter used to flag which increase option to select, possible characters are:
+        increase_to_grp_target (select for each group a specific target to reach),
+        increase_to_common_target (use same target for all groups),
+        common_increase (rather than replacing the old detection level, increase by a specified percentage),
+        grp_specific_increase (define a group specific increase, i.e. group 1 by 10%, group 2 by 50%).
+        Default is increase_to_common_target
+    """
+
+    observe_str = """
+(observe d_As_t d_As)
+(observe d_P_t d_P)
+"""
+
+    reduced_inf_of_det_cases_str = ""
+    d_As_str = ""
+    d_P_str = ""
+    d_Sym_ct_param_str = ""
+    d_Sym_ct_str = ""
+
+    if reduced_inf_of_det_cases:
+        reduced_inf_of_det_cases_str = """(reduced_inf_of_det_cases_ct @reduced_inf_of_det_cases_ct1@ )"""
+    if d_As:
+        d_As_str = """(d_As @d_AsP_ct1@)"""
+    if d_P:
+        d_P_str = """(d_P @d_AsP_ct1@)"""
+
+    if d_Sym_ct:
+
+        ### Simple, not group specific
+        if d_Sym_ct and not d_Sym_grp:
+            d_Sym_ct_str = """(d_Sym @d_Sym_ct1@)"""
+
+        ### Group specific
+        if d_Sym_grp:
+
+            for grp in grpList:
+
+                if d_Sym_grp_option == 'increase_to_grp_target':
+                    d_Sym_ct_param_str = d_Sym_ct_param_str + """(param d_Sym_ct1_{grp} @d_Sym_ct1_{grp}@)""".format(
+                        grp=grp)
+
+                if d_Sym_grp_option == 'increase_to_common_target':
+                    d_Sym_ct_param_str = d_Sym_ct_param_str + "\n" + """(param d_Sym_ct1_{grp} @d_Sym_ct1@)""".format(
+                        grp=grp)
+
+                if d_Sym_grp_option == 'common_increase':
+                    d_Sym_ct_param_str = d_Sym_ct_param_str + "\n" + """(param d_Sym_ct1_{grp} (+ @d_Sym_change5_{grp}@ (* @d_Sym_change5_{grp}@ @d_Sym_ct1@ )))""".format(
+                        grp=grp)
+
+                if d_Sym_grp_option == 'grp_specific_increase':
+                    d_Sym_ct_param_str = d_Sym_ct_param_str + "\n" + """(param d_Sym_ct1_{grp} (+ @d_Sym_change5_{grp}@ (* @d_Sym_change5_{grp}@ @d_Sym_ct1_{grp}@ )))""".format(
+                        grp=grp)
+
+                d_Sym_ct_str = d_Sym_ct_str + """(d_Sym_{grp} d_Sym_ct1_{grp})""".format(grp=grp)
+
+    observe_str = observe_str + "\n" + d_Sym_ct_param_str
+    change_param_str = reduced_inf_of_det_cases_str + d_As_str + d_P_str + d_Sym_ct_str
+    time_event_str = """(time-event contact_tracing_start @contact_tracing_start_1@ ( {change_param} ))""".format(change_param=change_param_str)
+
+    contactTracing_str = observe_str + "\n" + time_event_str
+
+    return (contactTracing_str)  
+  
 def write_interventions(total_string, scenarioName) :
 
-    continuedSIP_str =  """
+    param_change_str = """
+;(observe d_Sys_t d_Sys)
+(time-event detection1 @detection_time_1@ ((d_Sys @d_Sys_incr1@)))
+(time-event detection2 @detection_time_2@ ((d_Sys @d_Sys_incr2@)))
+(time-event detection3 @detection_time_3@ ((d_Sys @d_Sys_incr3@)))
+(time-event detection4 @detection_time_4@ ((d_Sys @d_Sys_incr4@)))
+(time-event detection5 @detection_time_5@ ((d_Sys @d_Sys_incr5@)))
+(time-event detection6 @detection_time_6@ ((d_Sys @d_Sys_incr6@)))
+(time-event detection5 @detection_time_7@ ((d_Sys @d_Sys_incr7@)))
+"""
+
+
+    socialDistance_change_str =  """
+(observe Ki_t Ki)
 (param Ki_red1 (* Ki @social_multiplier_1@))
 (param Ki_red2 (* Ki @social_multiplier_2@))
 (param Ki_red3 (* Ki @social_multiplier_3@))
 (param Ki_red4 (* Ki @social_multiplier_4@))
+(param Ki_red5 (* Ki @social_multiplier_5@))
+(param Ki_red6 (* Ki @social_multiplier_6@))
 
 (time-event socialDistance_no_large_events_start @socialDistance_time1@ ((Ki Ki_red1)))
 (time-event socialDistance_school_closure_start @socialDistance_time2@ ((Ki Ki_red2)))
 (time-event socialDistance_start @socialDistance_time3@ ((Ki Ki_red3)))
 (time-event socialDistance_change @socialDistance_time4@ ((Ki Ki_red4)))
+(time-event socialDistance_change_2 @socialDistance_time5@ ((Ki Ki_red5)))
+(time-event socialDistance_change_3 @socialDistance_time6@ ((Ki Ki_red6)))
+
+"""
+
+
+    rollback_str =  """
+(time-event socialDistance_change_rollback @socialDistance_rollback_time@ ((Ki Ki_red4)))
+"""
+
+    rollbacktriggered_str = """
+(state-event rollbacktrigger_{grp} (and (> time @triggertime@) (> {channel}_{grp} (* @trigger_{grp}@ @capacity_multiplier@)) ) ((Ki_{grp} Ki_red4_{grp})))
+"""
+
+    d_Sym_change_str = """
+(param d_Sym @d_Sym@)
+(observe d_Sym_t d_Sym)
+
+(time-event d_Sym_change1 @d_Sym_change_time_1@ ((d_Sym @d_Sym_change1@)))
+(time-event d_Sym_change2 @d_Sym_change_time_2@ ((d_Sym @d_Sym_change2@)))
+(time-event d_Sym_change3 @d_Sym_change_time_3@ ((d_Sym @d_Sym_change3@)))
+(time-event d_Sym_change4 @d_Sym_change_time_4@ ((d_Sym @d_Sym_change4@)))
+(time-event d_Sym_change5 @d_Sym_change_time_5@ ((d_Sym @d_Sym_change5@)))
 """
 
     interventionSTOP_str = """
@@ -716,39 +838,117 @@ def write_interventions(total_string, scenarioName) :
 (time-event stopInterventions @socialDistanceSTOP_time@ ((Ki Ki_back)))
 """
 
+
+# % change from current transmission level - immediate
+# starting point is current level of transmission  Ki_red5
+    interventionSTOP_adj2_str = """
+(param Ki_back (+ Ki_red6 (* @backtonormal_multiplier@ (- Ki Ki_red6))))
+(time-event stopInterventions @socialDistanceSTOP_time@ ((Ki Ki_back)))
+"""
+
     gradual_reopening_str = """
-(param Ki_back1 (+ Ki_red4 (* @reopening_multiplier_1@ (- Ki Ki_red4))))
-(param Ki_back2 (+ Ki_red4 (* @reopening_multiplier_2@ (- Ki Ki_red4))))
-(param Ki_back3 (+ Ki_red4 (* @reopening_multiplier_3@ (- Ki Ki_red4))))
-(param Ki_back4 (+ Ki_red4 (* @reopening_multiplier_4@ (- Ki Ki_red4))))
+(param backtonormal_multiplier_1_adj  (- @backtonormal_multiplier@ backtonormal_multiplier_1 ))
+(observe backtonormal_multiplier_1_adj  backtonormal_multiplier_1_adj)
+
+(param Ki_back2 (+ Ki_red5 (* backtonormal_multiplier_1_adj 0.3333 (- Ki Ki_red4))))
+(param Ki_back3 (+ Ki_red5 (* backtonormal_multiplier_1_adj 0.6666 (- Ki Ki_red4))))
+(param Ki_back4 (+ Ki_red5 (* backtonormal_multiplier_1_adj 1.00 (- Ki Ki_red4))))
+(time-event gradual_reopening2 @gradual_reopening_time1@ ((Ki Ki_back2)))
+(time-event gradual_reopening3 @gradual_reopening_time2@ ((Ki Ki_back3)))
+(time-event gradual_reopening4 @gradual_reopening_time3@ ((Ki Ki_back4)))
+ """
+
+# gradual reopening from 'current' transmission level 
+    gradual_reopening2_str = """
+(param Ki_back1 (+ Ki_red6 (* @reopening_multiplier_4@ 0.25 (- Ki Ki_red6))))
+(param Ki_back2 (+ Ki_red6 (* @reopening_multiplier_4@ 0.50 (- Ki Ki_red6))))
+(param Ki_back3 (+ Ki_red6 (* @reopening_multiplier_4@ 0.75 (- Ki Ki_red6))))
+(param Ki_back4 (+ Ki_red6 (* @reopening_multiplier_4@ 1.00 (- Ki Ki_red6))))
 (time-event gradual_reopening1 @gradual_reopening_time1@ ((Ki Ki_back1)))
 (time-event gradual_reopening2 @gradual_reopening_time2@ ((Ki Ki_back2)))
 (time-event gradual_reopening3 @gradual_reopening_time3@ ((Ki Ki_back3)))
 (time-event gradual_reopening4 @gradual_reopening_time4@ ((Ki Ki_back4)))
 """
 
-    contactTracing_str = """
-(time-event contact_tracing_start @contact_tracing_start_1@ ((reduced_inf_of_det_cases @reduced_inf_of_det_cases_ct1@ ) (d_As @d_AsP_ct1@) (d_P @d_AsP_ct1@) (d_Sym @d_Sym_ct1@)))
-;(time-event contact_tracing_end @contact_tracing_stop1@ ((reduced_inf_of_det_cases @reduced_inf_of_det_cases@ ) (d_As @d_As@) (d_P @d_P@) (d_Sym @d_Sym@)))
-    """
 
+    improveHS_str = define_change_detection_and_isolation(grpList=None,
+                                    reduced_inf_of_det_cases = False,
+                                    d_As = False,
+                                    d_P = False ,
+                                    d_Sym_ct = True,
+                                    d_Sym_grp = False,
+                                    d_Sym_grp_option = None)
+
+
+    contactTracing_str = define_change_detection_and_isolation(grpList=None,
+                                    reduced_inf_of_det_cases = True,
+                                    d_As = True,
+                                    d_P = True ,
+                                    d_Sym_ct = False,
+                                    d_Sym_grp = False,
+                                    d_Sym_grp_option = None)
+
+
+    contactTracing_improveHS_str = define_change_detection_and_isolation(grpList=None,
+                                    reduced_inf_of_det_cases = True,
+                                    d_As = True,
+                                    d_P = True,
+                                    d_Sym_ct = True,
+                                    d_Sym_grp = False,
+                                    d_Sym_grp_option = None)
+
+
+    fittedTimeEvents_str = param_change_str + socialDistance_change_str + d_Sym_change_str
    
     if scenarioName == "interventionStop" :
-        total_string = total_string.replace(';[INTERVENTIONS]', continuedSIP_str + interventionSTOP_str)
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + interventionSTOP_str)
     if scenarioName == "interventionSTOP_adj" :
-        total_string = total_string.replace(';[INTERVENTIONS]', continuedSIP_str + interventionSTOP_adj_str)
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + interventionSTOP_adj_str)
+    if scenarioName == "interventionSTOP_adj2":
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + interventionSTOP_adj2_str)
     if scenarioName == "gradual_reopening" :
-        total_string = total_string.replace(';[INTERVENTIONS]', continuedSIP_str + gradual_reopening_str)
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening_str)
+    if scenarioName == "gradual_reopening2" :
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening2_str)
     if scenarioName == "continuedSIP" :
-        total_string = total_string.replace(';[INTERVENTIONS]', continuedSIP_str)
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str)
+    if scenarioName == "rollback" :
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + rollback_str)
+    if scenarioName == "reopen_rollback":
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + interventionSTOP_adj2_str + rollback_str)
+    if scenarioName == "reopen_contactTracing" :
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening2_str + contactTracing_str)
+    if scenarioName == "reopen_contactTracing_improveHS" :
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening2_str + contactTracing_improveHS_str)
+    if scenarioName == "reopen_improveHS" :
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening2_str + improveHS_str)
     if scenarioName == "contactTracing" :
-        total_string = total_string.replace(';[INTERVENTIONS]', continuedSIP_str + interventionSTOP_adj_str + contactTracing_str)
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + contactTracing_str)
+    if scenarioName == "contactTracing_improveHS" :
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + contactTracing_improveHS_str)
+    if scenarioName == "improveHS" :
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + improveHS_str)
+    if scenarioName == "rollbacktriggered" :
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening2_str + rollbacktriggered_str)
+
 
     return (total_string)
   
 
 #### To do , make age specific   and add to emodl generator functions
 def write_agespecific_interventions(grp, total_string, expandModel, change_testDelay=None) :
+
+
+#    param_change_strII = ""
+#    for grp in grpList:
+#        temp_str = """
+#(observe frac_crit_t_{grp} fraction_critical_{grp})
+#(time-event frac_crit_adjust1 @crit_time_1@ ((fraction_critical_{grp} @fraction_critical_incr1@) (fraction_hospitalized_{grp} (- 1 (+ @fraction_critical_incr1@ @fraction_dead@))) (Kh1 (/ fraction_hospitalized_{grp} time_to_hospitalization)) (Kh2 (/ fraction_critical_{grp} time_to_hospitalization )) (Kh1_D (/ fraction_hospitalized_{grp} (- time_to_hospitalization time_D_Sys))) (Kh2_D (/ fraction_critical_{grp} (- time_to_hospitalization time_D_Sys) )) ))  
+#(time-event frac_crit_adjust2 @crit_time_2@ ((fraction_critical_{grp} @fraction_critical_incr2@) (fraction_hospitalized_{grp} (- 1 (+ @fraction_critical_incr2@ @fraction_dead@))) (Kh1 (/ fraction_hospitalized_{grp} time_to_hospitalization)) (Kh2 (/ fraction_critical_{grp} time_to_hospitalization )) (Kh1_D (/ fraction_hospitalized_{grp} (- time_to_hospitalization time_D_Sys))) (Kh2_D (/ fraction_critical_{grp} (- time_to_hospitalization time_D_Sys) )) ))
+#(time-event frac_crit_adjust3 @crit_time_3@ ((fraction_critical_{grp} @fraction_critical_incr3@) (fraction_hospitalized_{grp} (- 1 (+ @fraction_critical_incr3@ @fraction_dead@))) (Kh1 (/ fraction_hospitalized_{grp} time_to_hospitalization)) (Kh2 (/ fraction_critical_{grp} time_to_hospitalization )) (Kh1_D (/ fraction_hospitalized_{grp} (- time_to_hospitalization time_D_Sys))) (Kh2_D (/ fraction_critical_{grp} (- time_to_hospitalization time_D_Sys) )) )) 
+#            """.format(grp=grp)
+#        socialDistance_change_str = socialDistance_change_str + temp_str
+
 
     change_uniformtestDelay_str = """
 (time-event change_testDelay1 @change_testDelay_time1@ ( {} {} {} {} {} {} {} ))
@@ -846,7 +1046,7 @@ def generate_emodl(grpList, file_output, expandModel, add_interventions , homoge
 
         reaction_string_combined = reaction_string_combined + '\n' + reaction_string
 
-    params = write_params(expandModel) + age_specific_param_string + write_N_population(grpList) + write_observed_param(grpList) + write_contact_matrix(len(grpList)) 
+    params = write_params(expandModel) + age_specific_param_string + write_N_population(grpList) +  write_contact_matrix(len(grpList)) 
     functions_string = functions_string + write_All(grpList)
     intervention_string = ";[INTERVENTIONS]\n;[ADDITIONAL_TIMEEVENTS]"
     
