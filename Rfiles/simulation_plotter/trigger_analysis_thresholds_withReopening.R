@@ -1,5 +1,5 @@
 ## -----------------------------------------
-### Rsctipt to combine and analyse trigger analyses
+### Rscript to combine and analyze trigger analyses
 ## -----------------------------------------
 
 library(tidyverse)
