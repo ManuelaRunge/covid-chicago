@@ -11,17 +11,13 @@ source("load_paths.R")
 source("processing_helpers.R")
 
 
-simulation_subfolder <- "EMS/20200821_state_events"
-simulation_output <- file.path(simulation_output, simulation_subfolder)
+simulation_iteration <- "20200821_state_events"
+simulation_output <- file.path(simulation_output,"EMS", simulation_iteration)
+outdir <- file.path(project_path, "Plots + Graphs/simulated_scenarios", simulation_iteration)
 
 plot_first_day <- "2020-08-01"
 plot_last_day <- "2021-01-01"
 
-
-# simulation_iteration <- "20200814_state_events"
-simulation_iteration <- "20200821_state_events"
-
-outdir <- file.path(project_path, "Plots + Graphs/simulated_scenarios", simulation_iteration)
 cols <- rev(c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#ffff99"))
 theme_set(theme_cowplot())
 
