@@ -11,17 +11,26 @@ source("load_paths.R")
 source("processing_helpers.R")
 
 
-simdates <- c( "20200805", "20200812","20200819")
+simdates <- c(  "20200812","20200819" ,"20200826")
 scenario <- "baseline" # june1partial10  , june1partial30
 
-dat1 <- read.csv(file.path(project_path, paste0("NU_civis_outputs/", simdates[1], "/csv/nu_il_", scenario, "_", simdates[1], ".csv")))
-dat2 <- read.csv(file.path(project_path, paste0("NU_civis_outputs/", simdates[2], "/csv/nu_il_", scenario, "_", simdates[2], ".csv")))
-dat3 <- read.csv(file.path(project_path, paste0("NU_civis_outputs/", simdates[3], "/csv/nu_il_", scenario, "_", simdates[3], ".csv")))
+dat1 <- read_csv(file.path(project_path, paste0("NU_civis_outputs/", simdates[1], "/csv/nu_il_", scenario, "_", simdates[1], ".csv")))
+dat2 <- read_csv(file.path(project_path, paste0("NU_civis_outputs/", simdates[2], "/csv/nu_il_", scenario, "_", simdates[2], ".csv")))
+dat3 <- read_csv(file.path(project_path, paste0("NU_civis_outputs/", simdates[3], "/csv/nu_il_", scenario, "_", simdates[3], ".csv")))
+
+colnames(dat3)[colnames(dat3)=="Number of recovered Covid-19 infections"] <- "Total recovered"
+colnames(dat3)[colnames(dat3)=="Lower error bound on recovered Covid-19 infections"] <- "Lower error bound on recovered"
+colnames(dat3)[colnames(dat3)=="Upper error bound on recovered Covid-19 infections"] <- "Upper error bound on recovered"
+
 
 
 dat1$simdate <- simdates[1]
 dat2$simdate <- simdates[2]
 dat3$simdate <- simdates[3]
+
+
+dat2 <- dat2 %>%  dplyr::select(colnames(dat1))
+dat3 <- dat3 %>%  dplyr::select(colnames(dat1))
 
 dat <- dat3 %>%
   dplyr::select(colnames(dat1)) %>%
@@ -32,6 +41,12 @@ dat <- dat3 %>%
     geography_modeled == "illinois"
   )
 
+table(dat$simdate)
+
+colnames(dat)
+colnames(dat) <- gsub(" ",".",colnames(dat))
+colnames(dat) <- gsub("-",".",colnames(dat))
+colnames(dat)
 
 legend <- get_legend(ggplot(data = dat) +
   theme_cowplot() +
