@@ -20,7 +20,7 @@ source("estimate_Rt/getRt_function.R")
 
 
 ### Load simulation outputs
-exp_name ="20200818_IL_RR_baseline_0"
+exp_name ="20200826_IL_baseline"
 #Rt_dat <- read.csv(file.path(simulation_output, exp_name, 'estimatedRt', 'combined_estimated_Rt.csv'))
 load(file.path(simulation_output, exp_name, 'estimatedRt', 'combined_estimated_Rt.Rdata'))
 
@@ -31,8 +31,15 @@ Rt_dat <- Rt_dat %>%
           select(time,scen_num, restore_region, region, `Mean(R)`  ,`Median(R)`) %>%
           rename(meanRt =`Mean(R)`  ,medianRt=`Median(R)` )
 
-Rt_datRR <- Rt_dat %>%  group_by(restore_region, time, scen_num) %>% summarize(meanRt=mean(meanRt),medianRt=mean(medianRt) )  %>% rename(geography_modeled=restore_region)
-Rt_datIL <- Rt_dat %>%  group_by( time, scen_num) %>% summarize(meanRt=mean(meanRt),medianRt=mean(medianRt) )  %>% mutate(geography_modeled="illinois")
+Rt_datRR <- Rt_dat %>%  
+  group_by(restore_region, time, scen_num) %>%
+  summarize(meanRt=mean(meanRt),medianRt=mean(medianRt) )  %>% 
+  rename(geography_modeled=restore_region)
+
+Rt_datIL <- Rt_dat %>%  
+  group_by( time, scen_num) %>% 
+  summarize(meanRt=mean(meanRt),medianRt=mean(medianRt) )  %>%
+  mutate(geography_modeled="illinois")
 
 
 Rt_dat <- Rt_dat %>% rename(geography_modeled=region) %>% 
@@ -65,7 +72,8 @@ RtdatCombined$geography_modeled <- tolower(RtdatCombined$geography_modeled)
 
 saveForCivis=FALSE
 if(saveForCivis){
-  fname =  paste0("nu_il_", exp_scenario ,simdate,".csv")
+  simdate="20200826"
+  fname =  paste0("nu_il_", exp_scenario,"_" ,simdate,".csv")
 
   ## Combine to baseline csv file
   bsl <- read_csv(file.path(project_path, "NU_civis_outputs" ,simdate, 'csv',fname))
@@ -82,21 +90,24 @@ if(saveForCivis){
 generatePlots=F
 if(generatePlots){
 
-  RtdatCombined$region <- factor(RtdatCombined$geography_modeled, levels=as.character(c(1:11)), labels=c(1:11))
+  library(cowplot)
+  
+  RtdatCombined$region <- factor(RtdatCombined$geography_modeled, levels=paste0("covidregion_",c(1:11)), labels=c(1:11))
   
   pplot <-  RtdatCombined %>% 
     filter(Date>= "2020-04-01" & Date<= "2020-11-01") %>%
-    filter(geography_modeled %in% as.character(c(1:11))) %>%
+    filter(region %in% as.character(c(1:11))) %>%
     ggplot() + 
     theme_cowplot() +
     geom_rect(xmin=-Inf, xmax=as.Date(Sys.Date()), ymin=-Inf, ymax=Inf, fill="lightgrey",alpha=0.02)+
     geom_ribbon(aes(x=Date, ymin=Lower.error.bound.of.covid.19.Rt, ymax=Upper.error.bound.of.covid.19.Rt), fill="deepskyblue3", alpha=0.3) +
     geom_line(aes(x=Date, y=Median.of.covid.19.Rt), col="deepskyblue3") +
-    facet_wrap(~geography_modeled)+
+    facet_wrap(~region)+
    # background_grid() +
    # geom_hline(yintercept = seq(0.6, 1.4, 0.2), col="grey", size=0.7)+
     geom_hline(yintercept = 1) +
-    geom_hline(yintercept = c(-Inf, Inf))+ geom_vline(xintercept = c(-Inf, Inf))
+    geom_hline(yintercept = c(-Inf, Inf))+ geom_vline(xintercept = c(-Inf, Inf))+
+    customThemeNoFacet
   
   ggsave(paste0("estimatedRt_overtime.png"),
          plot = pplot, path =file.path(simulation_output, exp_name, 'estimatedRt'), width =12, height = 6, device = "png"
@@ -106,12 +117,13 @@ if(generatePlots){
   
  pplot <-  RtdatCombined %>% 
     filter(Date>= "2020-08-18" & Date< "2020-08-19") %>%
-    filter(geography_modeled %in% as.character(c(1:11))) %>%
+    filter(region %in% as.character(c(1:11))) %>%
   ggplot() + 
     theme_cowplot() +
-    geom_errorbar(aes(x=reorder(geography_modeled, Median.of.covid.19.Rt), ymin=Lower.error.bound.of.covid.19.Rt, ymax=Upper.error.bound.of.covid.19.Rt), width=0.3, alpha=0.3) +
-    geom_point(aes(x=reorder(geography_modeled, Median.of.covid.19.Rt), y=Median.of.covid.19.Rt), col="deepskyblue3",size=2.5) +
-    geom_hline(yintercept = 1)
+    geom_errorbar(aes(x=reorder(region, Median.of.covid.19.Rt), ymin=Lower.error.bound.of.covid.19.Rt, ymax=Upper.error.bound.of.covid.19.Rt), width=0.3, alpha=0.3) +
+    geom_point(aes(x=reorder(region, Median.of.covid.19.Rt), y=Median.of.covid.19.Rt), col="deepskyblue3",size=2.5) +
+    geom_hline(yintercept = 1)+
+   customThemeNoFacet
   
   ggsave(paste0("estimatedRt_20200819.png"),
          plot = pplot,path =file.path(simulation_output, exp_name, 'estimatedRt'), width = 8, height =5, device = "png"
@@ -120,16 +132,13 @@ if(generatePlots){
   
   compareWithOverflow=F
   if(compareWithOverflow){
-    nu_hospitaloverflow_20200818 <- read.csv("C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/NU_civis_outputs/20200819/csv/nu_hospitaloverflow_20200818.csv")
+    nu_hospitaloverflow <- read.csv(file.path(simulation_output, exp_name, "nu_hospitaloverflow_20200826.csv"))
     
     
-    dt <- nu_hospitaloverflow_20200818 %>% mutate(date_window_upper_bound=as.Date(date_window_upper_bound),geography_modeled=gsub("covidregion_","",geography_modeled))
+    dt <- nu_hospitaloverflow %>% mutate(date_window_upper_bound=as.Date(date_window_upper_bound),region=gsub("covidregion_","",geography_modeled))
     
-    
-    
-    dt$region <- factor(dt$geography_modeled, levels=c(1:11), labels=c(1:11))
-    
-    RtdatCombined$region <- factor(RtdatCombined$geography_modeled, levels=c(1:11), labels=c(1:11))
+    dt$region <- factor(dt$region, levels=c(1:11), labels=c(1:11))
+    RtdatCombined$region <- factor(RtdatCombined$region, levels=c(1:11), labels=c(1:11))
     
     pplot <-  RtdatCombined %>% 
       filter(Date>= "2020-07-01" & Date<= "2020-11-01") %>%
