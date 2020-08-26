@@ -1055,7 +1055,7 @@ def generate_emodl(grpList, file_output, expandModel, add_interventions , homoge
     ### Add interventions (optional)
     if add_interventions != None :
         total_string = write_interventions(total_string, add_interventions)
-        total_string = total_string + write_agespecific_interventions(grpList, total_string, expandModel, change_testDelay)
+        total_string = write_agespecific_interventions(grpList, total_string, expandModel, change_testDelay)
 
 
     print(total_string)
