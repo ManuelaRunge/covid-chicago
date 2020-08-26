@@ -228,6 +228,10 @@ capacitiesDat <- load_capacity() %>%
 exp_names <- list.dirs(simulation_output, recursive = FALSE, full.names = FALSE)
 
 
+### Define sim pre and suffix for generating labels from exp_name
+sim_prefix="20200812_IL_MR_"
+sim_suffix="_triggeredrollback"
+
 datList <- list()
 for (exp_name in exp_names) {
   print(exp_name)
@@ -241,16 +245,22 @@ datAll <- datList %>%
   left_join(capacitiesDat, by = "region") %>%
   f_addRestoreRegion() %>%
   mutate(
-    expname = gsub("_triggeredrollback", "", gsub("20200812_IL_MR_", "", exp_name)),
+    expname = gsub(sim_suffix, "", gsub(sim_prefix, "", exp_name)),
     scenario = expname
   )
 
 unique(datAll$expname)
 datAll$expname_fct <- factor(datAll$expname,
-  levels = c("baseline", "critical100", "critical75", "hospitalizations100", "hospitalizations75"),
+  levels = c("baseline",
+             "critical100", 
+             "critical75",
+             "hospitalizations100",
+             "hospitalizations75"),
   labels = c(
-    "None", "100% of ICU beds available", "75% of ICU beds available",
-    "100% of non-ICU beds available", "75% of non-ICU beds available"
+    "None", "100% of ICU beds available", 
+    "75% of ICU beds available",
+    "100% of non-ICU beds available",
+    "75% of non-ICU beds available"
   )
 )
 
