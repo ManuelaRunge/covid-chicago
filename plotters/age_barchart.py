@@ -10,33 +10,34 @@ import sys
 sys.path.append('../')
 from processing_helpers import *
 from load_paths import load_box_paths
+from datetime import datetime, timedelta
 
 mpl.rcParams['pdf.fonttype'] = 42
 testMode = True
 
 datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths()
 
-def calculate_mean_and_CI(adf, channel, output_filename=None) :
+def calculate_mean_and_CI(adf, channel, grpVars=['time']) :
 
-    mdf = adf.groupby('time')[channel].agg([np.mean, CI_5, CI_95, CI_25, CI_75]).reset_index()
-    if output_filename :
-        mdf.to_csv(os.path.join(sim_output_path, output_filename), index=False)
+    mdf = adf.groupby([grpVars])[channel].agg([np.mean, CI_5, CI_95, CI_25, CI_75]).reset_index()
+    return mdf
 
-def barplot(sim_output_path, ems) :
-    df = pd.read_csv(os.path.join(sim_output_path, 'trajectoriesDat.csv'))
+def barplot(exp_output_path, ems) :
+    df = pd.read_csv(os.path.join(exp_output_path, 'trajectoriesDat.csv'))
 
     suffix_names = [x.split('_')[1] for x in df.columns.values if 'susceptible' in x]
     base_names = [x.split('_%s' % suffix_names[0])[0] for x in df.columns.values if suffix_names[0] in x]
 
     first_day = date(2020, 2, 13)  # datetime.strptime(df['startdate'].unique()[0], '%Y-%m-%d')
     df['date'] = df['time'].apply(lambda x: first_day + timedelta(days=int(x)))
-    plot_first_day = date(2020, 3, 1)
-    plot_last_day = date(2020, 10, 1)
-    df = df[(df['date'] == plot_last_day)]
+    df['date'] = pd.to_datetime(df['date'])
+    lastmonths = datetime.today() - timedelta(days=90)
+
+    df = df[(df['date'] >= lastmonths)]
 
     df.columns = df.columns.str.replace("_All", "_ageAll")
     df["infected_age0to19"] = df["infected_age0to9"] + df["infected_age10to19"]
-    df2 = pd.melt(df, id_vars=['time', 'date'], var_name='metrics', value_name='values')
+    df2 = pd.melt(df, id_vars=['time',  'scen_num','date'], var_name='metrics', value_name='values')
     df3 = df2["metrics"].str.split("_age", n=1, expand=True)
     df2["metrics"] = df3[0]
     df2["age"] = df3[1]
@@ -58,31 +59,35 @@ def barplot(sim_output_path, ems) :
         ax = axes[c]
 
         mdf = df2[(df2['metrics'] == channel)]
+        ### aggregate time per scen_num and age
+       # mdf  = calculate_mean_and_CI(adf=mdf , channel=['values'], grpVars= ['age','metrics','scen_num'] )
+        mdf = mdf.groupby(['age','metrics','scen_num'] )['values'].agg(CI_50).reset_index()
+        ### aggregate scen_num per age
         mdf = mdf.groupby('age')['values'].agg(CI_50).reset_index()
         ax.bar(mdf['age'], mdf['values'], color=palette[c])
         ax.set_title(channel, y=1)
         # ax.set_ylim(0, max(mdf['values']))
 
     fig.tight_layout()
-    fig.savefig(os.path.join(sim_output_path, 'age_barchart_covidregion_%s.png' % ems))
-    fig.savefig(os.path.join(sim_output_path, 'age_barchart_covidregion_%s.png' % ems))
+    fig.savefig(os.path.join(exp_output_path, 'age_barchart_covidregion_%s.png' % ems))
+    fig.savefig(os.path.join(exp_output_path, 'age_barchart_covidregion_%s.png' % ems))
     # plt.show()
 
 if __name__ == '__main__' :
 
+    #exp_location = 'simulation_output'
+    exp_location =  'simulation_output/age_model/20200825'
     #stem = sys.argv[1]
     stem = "extendedmodel_age8"
-    exp_names = [x for x in os.listdir(os.path.join(wdir, 'simulation_output')) if stem in x]
+    exp_names = [x for x in os.listdir(os.path.join(wdir, exp_location)) if stem in x]
     #exp_name = '20200825_EMS_9_extendedmodel_age8'
-    plot_last_day =  datetime.today().strftime('%Y%m%d') # "20200804"
 
     for exp_name in exp_names:
         region = exp_name.split('_')[2]
         ems_nr = exp_name.split('_')[2]
         region = exp_name.split('_')[1]
 
-        barplot(sim_output_path = os.path.join(wdir, 'simulation_output', exp_name), ems=ems_nr)
-
+        barplot(exp_output_path = os.path.join(wdir, exp_location, exp_name), ems=ems_nr)
 
 
 
