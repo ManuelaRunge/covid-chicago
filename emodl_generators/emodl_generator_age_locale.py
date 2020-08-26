@@ -19,13 +19,13 @@ def write_N_population(ageList, regionList, pop_dic):
 
     string2 = ""
     for age_i in ageList:
-        temp_str = "\n(param N_" + age_i + " (+ " + repeat_string_by_grp(fixedstring='N_' + age_i + '_', grpList1=regionList, grpList2=None) + "))"
+        temp_str = "\n(param N_" + age_i + " (+ " + repeat_string_by_grp(fixedstring='N_' + age_i + '_', regionList1=regionList, regionList2=None) + "))"
         string2 = string2 + temp_str
 
     ### Change order to N_age_region, fixedstring or loop needs to be separated
     #string3 = ""
     #for region_i in regionList:
-    #  temp_str = "\n(param N_" + region_i + " (+ " + repeat_string_by_grp(fixedstring='N_' + region_i + '_', grpList1=ageList, grpList2=None) + "))"
+    #  temp_str = "\n(param N_" + region_i + " (+ " + repeat_string_by_grp(fixedstring='N_' + region_i + '_', regionList1=ageList, regionList2=None) + "))"
     #  string3 = string3 + temp_str
 
     string4 = "\n(param N_All (+ " + repeat_string_by_grp('N_', ageList, regionList) + "))"
@@ -122,60 +122,60 @@ def sub2(x):
     
 def write_observe(age, region, expandModel=None):
     region = str(region)
-    grpout = sub(region)
+    regionout = sub(region)
 
     observe_str = """
-(observe susceptible_{age}_{grpout} S_{age}::{region})
-(observe exposed_{age}_{grpout} E_{age}::{region})
-(observe asymptomatic_{age}_{grpout} asymptomatic_{age}_{region})
-(observe presymptomatic_{age}_{grpout} presymptomatic_{age}_{region})
-(observe symptomatic_mild_{age}_{grpout} symptomatic_mild_{age}_{region})
-(observe symptomatic_severe_{age}_{grpout} symptomatic_severe_{age}_{region})
-(observe hospitalized_{age}_{grpout} hospitalized_{age}_{region})
-(observe critical_{age}_{grpout} critical_{age}_{region})
-(observe deaths_{age}_{grpout} deaths_{age}_{region})
-(observe recovered_{age}_{grpout} recovered_{age}_{region})
+(observe susceptible_{age}_{regionout} S_{age}::{region})
+(observe exposed_{age}_{regionout} E_{age}::{region})
+(observe asymptomatic_{age}_{regionout} asymptomatic_{age}_{region})
+(observe presymptomatic_{age}_{regionout} presymptomatic_{age}_{region})
+(observe symptomatic_mild_{age}_{regionout} symptomatic_mild_{age}_{region})
+(observe symptomatic_severe_{age}_{regionout} symptomatic_severe_{age}_{region})
+(observe hospitalized_{age}_{regionout} hospitalized_{age}_{region})
+(observe critical_{age}_{regionout} critical_{age}_{region})
+(observe deaths_{age}_{regionout} deaths_{age}_{region})
+(observe recovered_{age}_{regionout} recovered_{age}_{region})
 
-(observe asymptomatic_det_{age}_{grpout} asymptomatic_det_{age}_{region})
-(observe presymptomatic_det{grpout} presymptomatic_det_{age}_{region} )
-(observe symptomatic_mild_det_{age}_{grpout} symptomatic_mild_det_{age}_{region})
-(observe symptomatic_severe_det_{age}_{grpout} symptomatic_severe_det_{age}_{region})
-(observe hospitalized_det_{age}_{grpout} hospitalized_det_{age}_{region})
-(observe critical_det_{age}_{grpout} critical_det_{age}_{region})
-(observe deaths_det_{age}_{grpout} D3_det3_{age}::{region})
-(observe recovered_det_{age}_{grpout} recovered_det_{age}_{region})
+(observe asymptomatic_det_{age}_{regionout} asymptomatic_det_{age}_{region})
+(observe presymptomatic_det{regionout} presymptomatic_det_{age}_{region} )
+(observe symptomatic_mild_det_{age}_{regionout} symptomatic_mild_det_{age}_{region})
+(observe symptomatic_severe_det_{age}_{regionout} symptomatic_severe_det_{age}_{region})
+(observe hospitalized_det_{age}_{regionout} hospitalized_det_{age}_{region})
+(observe critical_det_{age}_{regionout} critical_det_{age}_{region})
+(observe deaths_det_{age}_{regionout} D3_det3_{age}::{region})
+(observe recovered_det_{age}_{regionout} recovered_det_{age}_{region})
 
-(observe asymp_cumul_{age}_{grpout} asymp_cumul_{age}_{region} )
-(observe asymp_det_cumul_{age}_{grpout} asymp_det_cumul_{age}_{region})
-(observe symp_mild_cumul_{age}_{grpout} symp_mild_cumul_{age}_{region})
+(observe asymp_cumul_{age}_{regionout} asymp_cumul_{age}_{region} )
+(observe asymp_det_cumul_{age}_{regionout} asymp_det_cumul_{age}_{region})
+(observe symp_mild_cumul_{age}_{regionout} symp_mild_cumul_{age}_{region})
 
-(observe symp_severe_cumul_{age}_{grpout} symp_severe_cumul_{age}_{region})
+(observe symp_severe_cumul_{age}_{regionout} symp_severe_cumul_{age}_{region})
  
-(observe hosp_cumul_{age}_{grpout} hosp_cumul_{age}_{region})
-(observe hosp_det_cumul_{age}_{grpout} hosp_det_cumul_{age}_{region} )
-(observe crit_cumul_{age}_{grpout} crit_cumul_{age}_{region})
-(observe crit_det_cumul_{age}_{grpout} crit_det_cumul_{age}_{region})
-(observe crit_det_{age}_{grpout} crit_det_{age}_{region})
-(observe death_det_cumul_{age}_{grpout} death_det_cumul_{age}_{region} )
+(observe hosp_cumul_{age}_{regionout} hosp_cumul_{age}_{region})
+(observe hosp_det_cumul_{age}_{regionout} hosp_det_cumul_{age}_{region} )
+(observe crit_cumul_{age}_{regionout} crit_cumul_{age}_{region})
+(observe crit_det_cumul_{age}_{regionout} crit_det_cumul_{age}_{region})
+(observe crit_det_{age}_{regionout} crit_det_{age}_{region})
+(observe death_det_cumul_{age}_{regionout} death_det_cumul_{age}_{region} )
 
-(observe infected_{age}_{grpout} infected_{age}_{region})
-(observe infected_cumul_{age}_{grpout} infected_cumul_{age}_{region})
+(observe infected_{age}_{regionout} infected_{age}_{region})
+(observe infected_cumul_{age}_{regionout} infected_cumul_{age}_{region})
 
-(observe infectious_undet_{age}_{grpout} infectious_undet_{age}_{region})
-(observe infectious_det_{age}_{grpout} infectious_det_{age}_{region})
-(observe infectious_det_symp_{age}_{grpout} infectious_det_symp_{age}_{region})
-(observe infectious_det_AsP_{age}_{grpout} infectious_det_AsP_{age}_{region})
+(observe infectious_undet_{age}_{regionout} infectious_undet_{age}_{region})
+(observe infectious_det_{age}_{regionout} infectious_det_{age}_{region})
+(observe infectious_det_symp_{age}_{regionout} infectious_det_symp_{age}_{region})
+(observe infectious_det_AsP_{age}_{regionout} infectious_det_AsP_{age}_{region})
 
-(observe symp_mild_det_cumul_{age}_{grpout} symp_mild_det_cumul_{age}_{region})
-(observe symp_severe_det_cumul_{age}_{grpout} symp_severe_det_cumul_{age}_{region})
-(observe detected_{age}_{grpout} detected_{age}_{region})
-(observe detected_cumul_{age}_{grpout} detected_cumul_{age}_{region} )
+(observe symp_mild_det_cumul_{age}_{regionout} symp_mild_det_cumul_{age}_{region})
+(observe symp_severe_det_cumul_{age}_{regionout} symp_severe_det_cumul_{age}_{region})
+(observe detected_{age}_{regionout} detected_{age}_{region})
+(observe detected_cumul_{age}_{regionout} detected_cumul_{age}_{region} )
 
-(observe prevalence_{age}_{grpout} prevalence_{age}_{region})    
-(observe seroprevalence_{age}_{grpout} seroprevalence_{age}_{region} )
-(observe prevalence_det_{age}_{grpout} prevalence_det_{age}_{region})    
-(observe seroprevalence_det_{age}_{grpout} seroprevalence_det_{age}_{region} )
-""".format(grpout=grpout, age=age, region=region)
+(observe prevalence_{age}_{regionout} prevalence_{age}_{region})    
+(observe seroprevalence_{age}_{regionout} seroprevalence_{age}_{region} )
+(observe prevalence_det_{age}_{regionout} prevalence_det_{age}_{region})    
+(observe seroprevalence_det_{age}_{regionout} seroprevalence_det_{age}_{region} )
+""".format(regionout=regionout, age=age, region=region)
     
     observe_str = observe_str.replace("  ", " ")
     return (observe_str)
@@ -206,6 +206,7 @@ def write_functions(age, region, expandModel=None):
 (func presymptomatic_{age}_{region}  (+ P_{age}::{region} P_det_{age}::{region}))
 (func presymptomatic_det_{age}_{region}  (- presymptomatic_{age}_{region}  P_{age}::{region} )
 
+    
 (func asymptomatic_det_{age}_{region}  (- asymptomatic_{age}_{region} As_{age}::{region}))
 (func symptomatic_mild_det_{age}_{region}  (- symptomatic_mild_{age}_{region} Sym_{age}::{region}))
 (func symptomatic_severe_det_{age}_{region}  (- symptomatic_severe_{age}_{region} Sys_{age}::{region}))
@@ -234,10 +235,10 @@ def write_functions(age, region, expandModel=None):
 (func infected_det_{age}_{region} (+ infectious_det_{age}_{region} H1_det3_{age}::{region} H2_det3_{age}::{region} H3_det3_{age}::{region} C2_det3_{age}::{region} C3_det3_{age}::{region}))
 
 (func prevalence_{age}_{region}(/ infected_{age}_{region} N_{age}_{region}))    
-(func seroprevalence_{age}_{region}(/ (+ infected_{age}_{region} recovered_{grp}) N_{age}_{region}))    
+(func seroprevalence_{age}_{region}(/ (+ infected_{age}_{region} recovered_{age}_{region}) N_{age}_{region}))    
 
 (func prevalence_det_{age}_{region}(/ infected_det_{age}_{region} N_{age}_{region}))    
-(func seroprevalence_det_{age}_{region}(/ (+ infected_det_{age}_{region} recovered_det_{grp}) N_{age}_{region}))    
+(func seroprevalence_det_{age}_{region}(/ (+ infected_det_{age}_{region} recovered_det_{age}_{region}) N_{age}_{region}))    
 
 """.format(age=age, region=region)
     functions_str = functions_str.replace("  ", "")
@@ -354,60 +355,60 @@ def write_params(expandModel=None):
     return (params_str)
 
 
-def write_age_specific_param(grp, expandModel):
-    grp = str(grp)
+def write_age_specific_param(region, expandModel):
+    region = str(region)
     params_str =  """
-(param fraction_severe_{grp} @fraction_severe_{grp}@)
-(param Ksys{grp} (* fraction_severe_{grp} (/ 1 time_to_symptoms)))
-(param Ksym{grp} (* (- 1 fraction_severe_{grp}) (/ 1 time_to_symptoms))) 
+(param fraction_severe_{region} @fraction_severe_{region}@)
+(param Ksys{region} (* fraction_severe_{region} (/ 1 time_to_symptoms)))
+(param Ksym{region} (* (- 1 fraction_severe_{region}) (/ 1 time_to_symptoms))) 
 
-(param fraction_dead_{grp} @fraction_dead_{grp}@)
+(param fraction_dead_{region} @fraction_dead_{region}@)
 
-(param fraction_critical_{grp} @fraction_critical_{grp}@ )
-(param fraction_hospitalized_{grp} @fraction_hospitalized_{grp}@)
+(param fraction_critical_{region} @fraction_critical_{region}@ )
+(param fraction_hospitalized_{region} @fraction_hospitalized_{region}@)
 
-(param fraction_symptomatic_{grp} @fraction_symptomatic_{grp}@)
-(param Kl{grp} (/ (- 1 fraction_symptomatic_{grp} ) time_to_infectious))
-(param Ks{grp} (/ fraction_symptomatic_{grp}  time_to_infectious))
+(param fraction_symptomatic_{region} @fraction_symptomatic_{region}@)
+(param Kl{region} (/ (- 1 fraction_symptomatic_{region} ) time_to_infectious))
+(param Ks{region} (/ fraction_symptomatic_{region}  time_to_infectious))
 
-(param recovery_time_hosp_{grp} @recovery_time_hosp_{grp}@)
-(param Kr_h{grp} (/ 1 recovery_time_hosp_{grp}))
+(param recovery_time_hosp_{region} @recovery_time_hosp_{region}@)
+(param Kr_h{region} (/ 1 recovery_time_hosp_{region}))
 
-""".format(grp=grp)    
+""".format(region=region)    
 
     expand_base_str = """
-(param Kh1{grp} (/ fraction_hospitalized_{grp} time_to_hospitalization))
-(param Kh2{grp} (/ fraction_critical_{grp} time_to_hospitalization ))
-(param Kh3{grp} (/ fraction_dead_{grp}  time_to_hospitalization))
-""".format(grp=grp)    
+(param Kh1{region} (/ fraction_hospitalized_{region} time_to_hospitalization))
+(param Kh2{region} (/ fraction_critical_{region} time_to_hospitalization ))
+(param Kh3{region} (/ fraction_dead_{region}  time_to_hospitalization))
+""".format(region=region)    
 
     expand_uniformtestDelay_str = """
-(param Kh1{grp} (/ fraction_hospitalized_{grp} time_to_hospitalization))
-(param Kh2{grp} (/ fraction_critical_{grp} time_to_hospitalization ))
-(param Kh3{grp} (/ fraction_dead_{grp}  time_to_hospitalization))
-(param Kh1_D{grp} (/ fraction_hospitalized_{grp} (- time_to_hospitalization time_D)))
-(param Kh2_D{grp} (/ fraction_critical_{grp} (- time_to_hospitalization time_D) ))
-(param Kh3_D{grp} (/ fraction_dead_{grp}  (- time_to_hospitalization time_D)))
-""".format(grp=grp)    
+(param Kh1{region} (/ fraction_hospitalized_{region} time_to_hospitalization))
+(param Kh2{region} (/ fraction_critical_{region} time_to_hospitalization ))
+(param Kh3{region} (/ fraction_dead_{region}  time_to_hospitalization))
+(param Kh1_D{region} (/ fraction_hospitalized_{region} (- time_to_hospitalization time_D)))
+(param Kh2_D{region} (/ fraction_critical_{region} (- time_to_hospitalization time_D) ))
+(param Kh3_D{region} (/ fraction_dead_{region}  (- time_to_hospitalization time_D)))
+""".format(region=region)    
 
 
     expand_testDelay_SymSys_str = """
-(param Kh1{grp} (/ fraction_hospitalized_{grp} time_to_hospitalization))
-(param Kh2{grp} (/ fraction_critical_{grp} time_to_hospitalization ))
-(param Kh3{grp} (/ fraction_dead_{grp}  time_to_hospitalization))
-(param Kh1_D{grp} (/ fraction_hospitalized_{grp} (- time_to_hospitalization time_D_Sys)))
-(param Kh2_D{grp} (/ fraction_critical_{grp} (- time_to_hospitalization time_D_Sys) ))
-(param Kh3_D{grp} (/ fraction_dead_{grp}  (- time_to_hospitalization time_D_Sys)))
-""".format(grp=grp)    
+(param Kh1{region} (/ fraction_hospitalized_{region} time_to_hospitalization))
+(param Kh2{region} (/ fraction_critical_{region} time_to_hospitalization ))
+(param Kh3{region} (/ fraction_dead_{region}  time_to_hospitalization))
+(param Kh1_D{region} (/ fraction_hospitalized_{region} (- time_to_hospitalization time_D_Sys)))
+(param Kh2_D{region} (/ fraction_critical_{region} (- time_to_hospitalization time_D_Sys) ))
+(param Kh3_D{region} (/ fraction_dead_{region}  (- time_to_hospitalization time_D_Sys)))
+""".format(region=region)    
 
     expand_testDelay_AsSymSys_str = """
-(param Kh1{grp} (/ fraction_hospitalized_{grp} time_to_hospitalization))
-(param Kh2{grp} (/ fraction_critical_{grp} time_to_hospitalization ))
-(param Kh3{grp} (/ fraction_dead_{grp}  time_to_hospitalization))
-(param Kh1_D{grp} (/ fraction_hospitalized_{grp} (- time_to_hospitalization time_D_Sys)))
-(param Kh2_D{grp} (/ fraction_critical_{grp} (- time_to_hospitalization time_D_Sys) ))
-(param Kh3_D{grp} (/ fraction_dead_{grp}  (- time_to_hospitalization time_D_Sys)))
-""".format(grp=grp)    
+(param Kh1{region} (/ fraction_hospitalized_{region} time_to_hospitalization))
+(param Kh2{region} (/ fraction_critical_{region} time_to_hospitalization ))
+(param Kh3{region} (/ fraction_dead_{region}  time_to_hospitalization))
+(param Kh1_D{region} (/ fraction_hospitalized_{region} (- time_to_hospitalization time_D_Sys)))
+(param Kh2_D{region} (/ fraction_critical_{region} (- time_to_hospitalization time_D_Sys) ))
+(param Kh3_D{region} (/ fraction_dead_{region}  (- time_to_hospitalization time_D_Sys)))
+""".format(region=region)    
 
     if expandModel == None:
         params_str = params_str + expand_base_str
@@ -424,21 +425,21 @@ def write_age_specific_param(grp, expandModel):
     return params_str
 
 
-def repeat_string_by_grp(fixedstring, grpList1, grpList2):
+def repeat_string_by_grp(fixedstring, regionList1, regionList2):
     stringAll = ""
     middlesymbol = "_"
     
     if fixedstring == "S_" or fixedstring == "E_" or fixedstring == "P_":
         middlesymbol = "::"
 
-    if grpList2 !=  None :
-        for age, region in [(x, y) for x in grpList1 for y in grpList2]:
+    if regionList2 !=  None :
+        for age, region in [(x, y) for x in regionList1 for y in regionList2]:
             temp_string = " " + fixedstring + age + middlesymbol + region
             stringAll = stringAll + temp_string
 
-    if grpList2 == None :
-        for grp  in grpList1:
-            temp_string = " " + fixedstring + grp
+    if regionList2 == None :
+        for region  in regionList1:
+            temp_string = " " + fixedstring + region
             stringAll = stringAll + temp_string
 
     return stringAll
@@ -512,11 +513,11 @@ def write_travel_reaction(age, region, travelspeciesList=None):
 #### Age specific contact matric
 def write_contact_matrix(age_list, scale=True):
     nageGroups = len(age_list)
-    grp_x = range(1, nageGroups + 1)
-    grp_y = reversed(grp_x)
+    region_x = range(1, nageGroups + 1)
+    region_y = reversed(region_x)
 
     ki_dic = {}
-    for i, xy in enumerate(itertools.product(grp_x, grp_y)):
+    for i, xy in enumerate(itertools.product(region_x, region_y)):
         ki_dic[i] = ["C" + str(xy[0]) + '_' + str(xy[1])]
 
     ki_mix_param1 = ""
@@ -724,7 +725,7 @@ def write_reactions(age, region, expandModel=None):
     return (reaction_str)
 
 
-def write_interventions(regionList, total_string, scenarioName, expandModel, change_testDelay=None) :
+def write_interventions(regionList, total_string, scenarioName, change_testDelay=None, trigger_channel=None) :
 
     param_change_str = """
 ;(observe d_Sys_t d_Sys)
@@ -734,7 +735,7 @@ def write_interventions(regionList, total_string, scenarioName, expandModel, cha
 (time-event detection4 @detection_time_4@ ((d_Sys @d_Sys_incr4@)))
 (time-event detection5 @detection_time_5@ ((d_Sys @d_Sys_incr5@)))
 (time-event detection6 @detection_time_6@ ((d_Sys @d_Sys_incr6@)))
-(time-event detection5 @detection_time_7@ ((d_Sys @d_Sys_incr7@)))
+(time-event detection7 @detection_time_7@ ((d_Sys @d_Sys_incr7@)))
 
 
 ;(observe frac_crit_t fraction_critical)
@@ -760,8 +761,9 @@ def write_interventions(regionList, total_string, scenarioName, expandModel, cha
 (time-event socialDistance_change_2 @socialDistance_time4@ ((Ki_{region} Ki_red5_{region})))
 (time-event socialDistance_change_3 @socialDistance_time4@ ((Ki_{region} Ki_red6_{region})))
 """.format(region=region)
-        continuedSIP_str = continuedSIP_str + temp_str
+        socialDistance_change_str = socialDistance_change_str + temp_str
 
+    rollback_str = ""
     for region in regionList:
         temp_str = """
 (time-event socialDistance_change_rollback @socialDistance_rollback_time@ ((Ki_{region} Ki_red4_{region})))
@@ -808,19 +810,36 @@ def write_interventions(regionList, total_string, scenarioName, expandModel, cha
         """.format(region=region)
         interventionSTOP_adj_str = interventionSTOP_adj_str + temp_str
 
-    gradual_reopening_str = ""
-    for region in regionList:
-        temp_str = """
-(param Ki_back1_{region} (+ Ki_red4_{region} (* @reopening_multiplier_1@ (- Ki_{region} Ki_red4_{region}))))
-(param Ki_back2_{region} (+ Ki_red4_{region} (* @reopening_multiplier_2@ (- Ki_{region} Ki_red4_{region}))))
-(param Ki_back3_{region} (+ Ki_red4_{region} (* @reopening_multiplier_3@ (- Ki_{region} Ki_red4_{region}))))
-(param Ki_back4_{region} (+ Ki_red4_{region} (* @reopening_multiplier_4@ (- Ki_{region} Ki_red4_{region}))))
-(time-event gradual_reopening1 @gradual_reopening_time1@ ((Ki_{region} Ki_back1_{region})))
-(time-event gradual_reopening2 @gradual_reopening_time2@ ((Ki_{region} Ki_back2_{region})))
-(time-event gradual_reopening3 @gradual_reopening_time3@ ((Ki_{region} Ki_back3_{region})))
-(time-event gradual_reopening4 @gradual_reopening_time4@ ((Ki_{region} Ki_back4_{region})))
-    """.format(region=region)
-        gradual_reopening_str = gradual_reopening_str + temp_str
+        # gradual reopening from 'lowest' transmission level,  Ki_red5 == Ki_back1
+        gradual_reopening_str = ""
+        for region in regionList:
+            temp_str = """
+    (param backtonormal_multiplier_1_adj_{region}  (- @backtonormal_multiplier@ backtonormal_multiplier_1_{region} ))
+    (observe backtonormal_multiplier_1_adj_{region}  backtonormal_multiplier_1_adj_{region})
+
+    (param Ki_back2_{region} (+ Ki_red5_{region} (* backtonormal_multiplier_1_adj_{region} 0.3333 (- Ki_{region} Ki_red4_{region}))))
+    (param Ki_back3_{region} (+ Ki_red5_{region} (* backtonormal_multiplier_1_adj_{region} 0.6666 (- Ki_{region} Ki_red4_{region}))))
+    (param Ki_back4_{region} (+ Ki_red5_{region} (* backtonormal_multiplier_1_adj_{region} 1.00 (- Ki_{region} Ki_red4_{region}))))
+    (time-event gradual_reopening2 @gradual_reopening_time1@ ((Ki_{region} Ki_back2_{region})))
+    (time-event gradual_reopening3 @gradual_reopening_time2@ ((Ki_{region} Ki_back3_{region})))
+    (time-event gradual_reopening4 @gradual_reopening_time3@ ((Ki_{region} Ki_back4_{region})))
+            """.format(region=region)
+            gradual_reopening_str = gradual_reopening_str + temp_str
+
+        # gradual reopening from 'current' transmission level 
+        gradual_reopening2_str = ""
+        for region in regionList:
+            temp_str = """
+    (param Ki_back1_{region} (+ Ki_red6_{region} (* @reopening_multiplier_4@ 0.25 (- Ki_{region} Ki_red6_{region}))))
+    (param Ki_back2_{region} (+ Ki_red6_{region} (* @reopening_multiplier_4@ 0.50 (- Ki_{region} Ki_red6_{region}))))
+    (param Ki_back3_{region} (+ Ki_red6_{region} (* @reopening_multiplier_4@ 0.75 (- Ki_{region} Ki_red6_{region}))))
+    (param Ki_back4_{region} (+ Ki_red6_{region} (* @reopening_multiplier_4@ 1.00 (- Ki_{region} Ki_red6_{region}))))
+    (time-event gradual_reopening1 @gradual_reopening_time1@ ((Ki_{region} Ki_back1_{region})))
+    (time-event gradual_reopening2 @gradual_reopening_time2@ ((Ki_{region} Ki_back2_{region})))
+    (time-event gradual_reopening3 @gradual_reopening_time3@ ((Ki_{region} Ki_back3_{region})))
+    (time-event gradual_reopening4 @gradual_reopening_time4@ ((Ki_{region} Ki_back4_{region})))
+            """.format(region=region)
+            gradual_reopening2_str = gradual_reopening2_str + temp_str
 
     contactTracing_str = """
 (time-event contact_tracing_start @contact_tracing_start_1@ ((reduced_inf_of_det_cases @reduced_inf_of_det_cases_ct1@ ) (d_As @d_AsP_ct1@) (d_P @d_AsP_ct1@) (d_Sym @d_Sym_ct1@)))
@@ -860,15 +879,15 @@ def write_interventions(regionList, total_string, scenarioName, expandModel, cha
     fittedTimeEvents_str = param_change_str + socialDistance_change_str + d_Sym_change_str
     
     if scenarioName == "interventionStop" :
-        total_string = total_string.replace(';[INTERVENTIONS]', continuedSIP_str + interventiopnSTOP_str)
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + interventiopnSTOP_str)
     if scenarioName == "interventionSTOP_adj" :
-        total_string = total_string.replace(';[INTERVENTIONS]', continuedSIP_str + interventionSTOP_adj_str)
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + interventionSTOP_adj_str)
     if scenarioName == "gradual_reopening" :
-        total_string = total_string.replace(';[INTERVENTIONS]', continuedSIP_str + gradual_reopening_str)
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening_str)
     if scenarioName == "continuedSIP" :
-        total_string = total_string.replace(';[INTERVENTIONS]', continuedSIP_str)
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str)
     if scenarioName == "contactTracing" :
-        total_string = total_string.replace(';[INTERVENTIONS]', continuedSIP_str + interventionSTOP_adj_str + contactTracing_str)
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + interventionSTOP_adj_str + contactTracing_str)
 
     if change_testDelay != None :
         if change_testDelay == "uniform" :
@@ -891,7 +910,7 @@ def write_interventions(regionList, total_string, scenarioName, expandModel, cha
 
 
 ###stringing all of my functions together to make the file:
-def generate_emodl(age_list, region_list,pop_dic, import_dic, import_dic2,file_output, expandModel, add_interventions, add_migration=True, change_testDelay =None):
+def generate_emodl(age_list, region_list,pop_dic, import_dic, import_dic2,file_output, expandModel, add_interventions, add_migration=True, change_testDelay =None ,trigger_channel=None):
     if (os.path.exists(file_output)):
         os.remove(file_output)
 
@@ -916,7 +935,7 @@ def generate_emodl(age_list, region_list,pop_dic, import_dic, import_dic2,file_o
         reaction_string = write_exposure_reaction8(region) + '\n' + reaction_string
         
         for age in age_list:
-            #species_init = write_species_init_2grp(age=age, region_dic=region_dic, region=key)
+            #species_init = write_species_init_2region(age=age, region_dic=region_dic, region=key)
             species_init = set_population(age, region,pop_dic, import_dic)
             species = write_species(age, region)
             total_string = total_string + species_init + species
@@ -946,7 +965,7 @@ def generate_emodl(age_list, region_list,pop_dic, import_dic, import_dic2,file_o
     #total_string = total_string.replace('(species As::EMS_6 0)', '(species As::EMS_6 1)')
     ### Add interventions (optional)
     if add_interventions != None :
-        total_string = write_interventions(region_list, total_string, add_interventions, expandModel, change_testDelay)
+        total_string = write_interventions(region_list, total_string, add_interventions,  change_testDelay, trigger_channel)
 
     print(total_string)
     emodl = open(file_output, "w")  ## again, can make this more dynamic
@@ -959,7 +978,7 @@ def generate_emodl(age_list, region_list,pop_dic, import_dic, import_dic2,file_o
 
 
 if __name__ == '__main__':
-    age_grp8 = ["age0to9", "age10to19", "age20to29", "age30to39", "age40to49", "age50to59", "age60to69", "age70to100"]
+    age_region8 = ["age0to9", "age10to19", "age20to29", "age30to39", "age40to49", "age50to59", "age60to69", "age70to100"]
     region_list = ['EMS_1', 'EMS_2', 'EMS_3', 'EMS_4', 'EMS_5', 'EMS_6', 'EMS_7', 'EMS_8', 'EMS_9', 'EMS_10','EMS_11']
     age_region_pop = {
     'EMS_1' : [{"age0to9": 78641	, "age10to19": 91701	, "age20to29": 94681	, "age30to39" : 89371	, "age40to49": 92396	,"age50to59": 110878	, "age60to69" :92988	, "age70to100" :89076	}],
@@ -1009,7 +1028,7 @@ if __name__ == '__main__':
 
     ### Generate emodl file 
     ### Interventions to add; 'continuedSIP', 'interventionSTOP', 'interventionSTOP_adj', 'gradual_reopening', 'contactTracing', None
-    generate_emodl(age_list=age_grp8,
+    generate_emodl(age_list=age_region8,
                    region_list=region_list,
                    pop_dic=age_region_pop,
                    import_dic=age_region_initialInfect,
@@ -1019,7 +1038,7 @@ if __name__ == '__main__':
                    add_migration=False,
                    file_output=os.path.join(emodl_dir, 'extendedmodel_agelocale_scen3.emodl'))
                    
-    generate_emodl(age_list=age_grp8,
+    generate_emodl(age_list=age_region8,
                    region_list=region_list,
                    pop_dic=age_region_pop,
                    import_dic=age_region_initialInfect,
