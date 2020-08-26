@@ -211,7 +211,7 @@ f_timeLineplot <- function(df, selectedRegions = c(2, 3, 4, 5), outcome = "criti
     )
   }
 
-  return(df)
+  return(pplot)
 }
 
 
@@ -247,7 +247,8 @@ datAll <- datList %>%
   mutate(
     expname = gsub(sim_suffix, "", gsub(sim_prefix, "", exp_name)),
     scenario = expname
-  )
+  ) %>%
+  filter(date <= as.Date(plot_last_day))
 
 unique(datAll$expname)
 datAll$expname_fct <- factor(datAll$expname,
@@ -267,8 +268,8 @@ datAll$expname_fct <- factor(datAll$expname,
 ### Plots
 f_plotBarplot(df = datAll)
 
-f_timeLineplot(df = datAll, selectedRegions = c(2, 3, 4, 5), outcome = "critical", SAVE = T)
-f_timeLineplot(df = datAll, selectedRegions = c(2, 3, 4, 5), outcome = "hospitalized", SAVE = T)
+f_timeLineplot(df = datAll, selectedRegions = c(2, 3, 4, 5), outcome = "critical", SAVE = F)
+f_timeLineplot(df = datAll, selectedRegions = c(2, 3, 4, 5), outcome = "hospitalized", SAVE = F)
 
 
 ## ----------------------
