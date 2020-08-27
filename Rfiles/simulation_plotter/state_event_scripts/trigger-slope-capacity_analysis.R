@@ -14,16 +14,20 @@ source("load_paths.R")
 source("processing_helpers.R")
 
 
-simulation_iteration <- "20200821_state_events"
-simulation_output <- file.path(simulation_output, "EMS", simulation_iteration)
+simdate <- "20200826"
+simulation_iteration <- paste0(simdate, "_state_events")
+# simulation_output <- file.path(simulation_output, "EMS", simulation_iteration)
+simulation_output <- file.path(simulation_output)
+
 # outdir <- file.path(project_path, "Plots + Graphs/simulated_scenarios", simulation_iteration)
-outdir <- file.path(project_path, "Plots + Graphs/simulated_scenarios", "20200825_state_events")
+outdir <- file.path(project_path, "Plots + Graphs/simulated_scenarios", paste0(simdate, "_state_events"))
 
 plot_first_day <- "2020-08-01"
 plot_last_day <- "2021-01-01"
 
 cols <- rev(c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#ffff99"))
 theme_set(theme_cowplot())
+
 
 
 ## ------------------------------
@@ -276,7 +280,10 @@ exp_names <- list.dirs(simulation_output, recursive = FALSE, full.names = FALSE)
 exp_names_crit <- exp_names[grep("crit", exp_names)]
 exp_names_hosp <- exp_names[grep("hosp", exp_names)]
 
+exp_names_crit <- exp_names_crit[grep(simdate, exp_names_crit)]
+exp_names_hosp <- exp_names_hosp[grep(simdate, exp_names_hosp)]
 
+exp_names <- c(exp_names_crit, exp_names_hosp)
 ## -------------------------------
 ### COmbine data
 ## -------------------------------
@@ -306,8 +313,8 @@ for (exp_name in exp_names_crit) {
   # exp_name <- exp_names_crit[2]
   print(exp_name)
 
-  fname <- gsub("20200820_IL_critdet_", "", exp_name)
-  fname <- gsub("20200821_IL_critdet_", "", fname)
+  fname <- gsub(paste0(simdate, "_IL_critdet_"), "", exp_name)
+  fname <- gsub(paste0(simdate, "_IL_hospdet_"), "", fname)
   fname <- gsub("_TriggeredRollback", "", fname)
 
   reopenLabel <- paste0(gsub("perc", "", gsub("reopen", "", fname)), "% reopening scenario")
@@ -331,5 +338,4 @@ for (exp_name in exp_names_crit) {
   }
 }
 
-f_slope_trigger_plot(df = df.exp, selected_exps = exp_names_crit, SAVE = F)
-
+f_slope_trigger_plot(df = df.exp, selected_exps = exp_names_crit, SAVE = T)
