@@ -62,6 +62,8 @@ paramvalues$region <- factor(paramvalues$region, levels = c(1:11), labels = c(1:
 capacityDat$region <- factor(capacityDat$region, levels = c(1:11), labels = c(1:11))
 paramvalues$reopening <- round(paramvalues$reopening_multiplier_4, 2) * 100
 
+dat=paramvalues
+save(dat, file=file.path(simulation_output, exp_name, "aggregatedDat_forR.Rdata"))
 
 library(RColorBrewer)
 getPalette <- colorRampPalette(brewer.pal(9, "PuBuGn"))(12)
