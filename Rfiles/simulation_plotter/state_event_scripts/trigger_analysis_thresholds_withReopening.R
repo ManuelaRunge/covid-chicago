@@ -11,15 +11,22 @@ source("load_paths.R")
 source("processing_helpers.R")
 
 
-simulation_iteration <- "20200821_state_events"
-simulation_output <- file.path(simulation_output,"EMS", simulation_iteration)
-outdir <- file.path(project_path, "Plots + Graphs/simulated_scenarios", simulation_iteration)
+simdate = "20200826"
+simulation_iteration <- paste0(simdate, "_state_events")
+#simulation_output <- file.path(simulation_output, "EMS", simulation_iteration)
+simulation_output <- file.path(simulation_output)
+
+# outdir <- file.path(project_path, "Plots + Graphs/simulated_scenarios", simulation_iteration)
+outdir <- file.path(project_path, "Plots + Graphs/simulated_scenarios", paste0(simdate, "_state_events"))
 
 plot_first_day <- "2020-08-01"
 plot_last_day <- "2021-01-01"
 
 cols <- rev(c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#ffff99"))
 theme_set(theme_cowplot())
+
+
+## ------------------------------
 
 
 ## ------------------------------
@@ -72,10 +79,11 @@ f_loadDat <- function(exp_name) {
 }
 
 f_processDat <- function(df) {
+  
   dfAggr_crit <- df %>%
-    dplyr::group_by(region, capacity_multiplier, scen_num, exp_nr) %>%
+    dplyr::group_by(region, capacity_multiplier, scen_num, exp_nr, expLabel) %>%
     filter(critical == max(critical)) %>%
-    dplyr::group_by(region, exp_nr, exp_name, capacity_multiplier, icu_available, medsurg_available) %>%
+    dplyr::group_by(region, exp_nr, exp_name,expLabel, capacity_multiplier, icu_available, medsurg_available) %>%
     dplyr::summarize(
       median.critical_det = median(critical_det, na.rm = TRUE),
       q2.5.critical_det = quantile(critical_det, probs = 0.025, na.rm = TRUE),
@@ -84,7 +92,7 @@ f_processDat <- function(df) {
       q2.5.critical = quantile(critical, probs = 0.025, na.rm = TRUE),
       q97.5.critical = quantile(critical, probs = 0.975, na.rm = TRUE)
     ) %>%
-    dplyr::group_by(region, exp_nr, exp_name, icu_available, medsurg_available) %>%
+    dplyr::group_by(region, exp_nr, exp_name,expLabel, icu_available, medsurg_available) %>%
     mutate(
       critical_BelowCapacity = ifelse(max(median.critical) < icu_available, 1, 0),
       critical_det_BelowCapacity = ifelse(max(median.critical_det) < icu_available, 1, 0)
@@ -109,9 +117,9 @@ f_processDat <- function(df) {
 
   ### Hospitalized
   dfAggr_hosp <- df %>%
-    dplyr::group_by(region, exp_name, capacity_multiplier, scen_num, exp_nr) %>%
+    dplyr::group_by(region, exp_name, capacity_multiplier, scen_num, exp_nr,expLabel) %>%
     filter(hospitalized == max(hospitalized)) %>%
-    dplyr::group_by(region, exp_nr, exp_name, capacity_multiplier, icu_available, medsurg_available) %>%
+    dplyr::group_by(region, exp_nr, exp_name, expLabel,capacity_multiplier, icu_available, medsurg_available) %>%
     dplyr::summarize(
       median.hospitalized_det = median(hospitalized_det, na.rm = TRUE),
       q2.5.hospitalized_det = quantile(hospitalized_det, probs = 0.025, na.rm = TRUE),
@@ -120,7 +128,7 @@ f_processDat <- function(df) {
       q2.5.hospitalized = quantile(hospitalized, probs = 0.025, na.rm = TRUE),
       q97.5.hospitalized = quantile(hospitalized, probs = 0.975, na.rm = TRUE)
     ) %>%
-    dplyr::group_by(region, exp_nr, exp_name, icu_available, medsurg_available) %>%
+    dplyr::group_by(region, exp_nr, expLabel, exp_name, icu_available, medsurg_available) %>%
     mutate(
       hospitalized_BelowCapacity = ifelse(max(median.hospitalized) < medsurg_available, 1, 0),
       hospitalized_det_BelowCapacity = ifelse(max(median.hospitalized_det) < medsurg_available, 1, 0)
@@ -149,9 +157,17 @@ f_processDat <- function(df) {
   return(out)
 }
 
-f_thresholdScatterPlot <- function(channel = "critical", expDir = expDir, savePDF = FALSE, expLabel = expLabel) {
+f_thresholdScatterPlot <- function(channel = "critical", savePDF = FALSE, expLabel = expLabel) {
+  
+  
+ # library(RColorBrewer)
+ # getPalette = colorRampPalette(brewer.pal(8, "RdYlBu"))(length(unique(df.exp$exp_name)))
+  
+  
   if (channel == "critical") {
+    
     df_crit <- f_processDat(df.exp)[[1]]
+    colnames(df_crit)[colnames(df_crit) =="expLabel.x"] <- "expLabel"
     exp_names_crit <- exp_names[grep("crit", exp_names)]
 
     pplot <- df_crit %>%
@@ -161,30 +177,26 @@ f_thresholdScatterPlot <- function(channel = "critical", expDir = expDir, savePD
       # annotate(geom = "rect", xmin = 0.75, xmax = Inf, ymin = -Inf, ymax = Inf, fill = "azure4", alpha = 0.3) +
       geom_hline(aes(yintercept = icu_available), linetype = "dashed") +
       facet_wrap(~region, scales = "free") +
-      scale_color_manual(values = rev(c("#4575b4", "#fee090", "#fc8d59"))) +
-      scale_fill_manual(values = rev(c("#4575b4", "#fee090", "#fc8d59"))) +
-      theme(legend.position = "none") +
+      scale_color_viridis_d(option = "C") +
+      scale_fill_viridis_d(option = "C") +
+      theme(legend.position = "bottom") +
       customThemeNoFacet +
       geom_hline(yintercept = c(-Inf, Inf)) +
       geom_vline(xintercept = c(-Inf, Inf)) +
       scale_x_discrete(expand = c(0, 0)) +
-      labs(
+      labs(color="scenario", fill="scenario",
         y = "Predicted ICU census",
         x = "% of available ICU beds at which 'trigger' is pulled"
       ) +
-      # geom_rect(mapping = aes(xmin = minCapacity_det, xmax = 0.75, ymin = -Inf, ymax = Inf), fill = "red", alpha = 0.03) +
-      # geom_errorbar(aes(x = as.factor(capacity_multiplier),
-      ##                  ymin = q2.5.critical_det, ymax = q97.5.critical_det, group=exp_name),
-      #             width=0.3,position = position_dodge(width=0.4)) +
       geom_line(aes(
         x = as.factor(capacity_multiplier), y = median.critical_det,
-        col = as.factor(exp_name), group = exp_name
+        col = as.factor(expLabel), group = exp_name
       ),
       size = 1, position = position_dodge(width = 0.4)
       ) +
       geom_point(aes(
         x = as.factor(capacity_multiplier), y = median.critical_det,
-        fill = as.factor(exp_name), group = exp_name
+        fill = as.factor(expLabel), group = exp_name
       ),
       size = 2, shape = 21, position = position_dodge(width = 0.4)
       )
@@ -207,7 +219,9 @@ f_thresholdScatterPlot <- function(channel = "critical", expDir = expDir, savePD
     df_hosp <- f_processDat(df.exp)[[2]]
 
     exp_names_hosp <- exp_names[grep("hosp", exp_names)]
-
+    colnames(df_hosp)[colnames(df_hosp) =="expLabel.x"] <- "expLabel"
+    
+    
     pplot <- df_hosp %>%
       filter(region %in% c(1:11)) %>%
       filter(exp_name %in% exp_names_hosp) %>%
@@ -215,30 +229,26 @@ f_thresholdScatterPlot <- function(channel = "critical", expDir = expDir, savePD
       # annotate(geom = "rect", xmin = 0.75, xmax = Inf, ymin = -Inf, ymax = Inf, fill = "azure4", alpha = 0.3) +
       geom_hline(aes(yintercept = medsurg_available), linetype = "dashed") +
       facet_wrap(~region, scales = "free") +
-      scale_color_manual(values = rev(c("#4575b4", "#fee090", "#fc8d59"))) +
-      scale_fill_manual(values = rev(c("#4575b4", "#fee090", "#fc8d59"))) +
-      theme(legend.position = "none") +
+      scale_color_viridis_d(option = "C") +
+      scale_fill_viridis_d(option = "C") +
+      theme(legend.position = "bottom") +
       customThemeNoFacet +
       geom_hline(yintercept = c(-Inf, Inf)) +
       geom_vline(xintercept = c(-Inf, Inf)) +
       scale_x_discrete(expand = c(0, 0)) +
-      labs(
+      labs(color="scenario", fill="scenario",
         y = "Predicted non-ICU  census",
         x = "% of available non-ICU  beds at which 'trigger' is pulled"
       ) +
-      # geom_rect(mapping = aes(xmin = minCapacity_det, xmax = 0.75, ymin = -Inf, ymax = Inf), fill = "red", alpha = 0.03) +
-      # geom_errorbar(aes(x = as.factor(capacity_multiplier),
-      ##                  ymin = q2.5.critical_det, ymax = q97.5.critical_det, group=exp_name),
-      #             width=0.3,position = position_dodge(width=0.4)) +
       geom_line(aes(
         x = as.factor(capacity_multiplier), y = median.hospitalized_det,
-        col = as.factor(exp_name), group = exp_name
+        col = as.factor(expLabel), group = exp_name
       ),
       size = 1, position = position_dodge(width = 0.4)
       ) +
       geom_point(aes(
         x = as.factor(capacity_multiplier), y = median.hospitalized_det,
-        fill = as.factor(exp_name), group = exp_name
+        fill = as.factor(expLabel), group = exp_name
       ),
       size = 2, shape = 21, position = position_dodge(width = 0.4)
       )
@@ -255,8 +265,10 @@ f_thresholdScatterPlot <- function(channel = "critical", expDir = expDir, savePD
       )
     }
   }
+  
+  return(pplot)
+  
 }
-
 
 
 f_regionalComparison_hospCrit_plot <- function(reg, expDir = expDir, SAVE = TRUE, savePDF = FALSE) {
@@ -268,8 +280,8 @@ f_regionalComparison_hospCrit_plot <- function(reg, expDir = expDir, SAVE = TRUE
     filter(exp_name %in% exp_names_crit) %>%
     ggplot() +
     geom_hline(aes(yintercept = icu_available), linetype = "dashed") +
-    scale_color_manual(values = rev(c("#4575b4", "#fee090", "#fc8d59"))) +
-    scale_fill_manual(values = rev(c("#4575b4", "#fee090", "#fc8d59"))) +
+    scale_color_viridis_d(option = "C") +
+    scale_fill_viridis_d(option = "C") +
     theme(legend.position = "none") +
     customThemeNoFacet +
     geom_hline(yintercept = c(-Inf, Inf)) +
@@ -304,8 +316,8 @@ f_regionalComparison_hospCrit_plot <- function(reg, expDir = expDir, SAVE = TRUE
     filter(exp_name %in% exp_names_hosp) %>%
     ggplot() +
     geom_hline(aes(yintercept = medsurg_available), linetype = "dashed") +
-    scale_color_manual(values = rev(c("#4575b4", "#fee090", "#fc8d59"))) +
-    scale_fill_manual(values = rev(c("#4575b4", "#fee090", "#fc8d59"))) +
+    scale_color_viridis_d(option = "C") +
+    scale_fill_viridis_d(option = "C") +
     theme(legend.position = "none") +
     customThemeNoFacet +
     geom_hline(yintercept = c(-Inf, Inf)) +
@@ -364,6 +376,14 @@ f_regionalComparison_hospCrit_plot <- function(reg, expDir = expDir, SAVE = TRUE
 exp_names <- list.dirs(simulation_output, recursive = FALSE, full.names = FALSE)
 
 
+exp_names_crit <- exp_names[grep("crit", exp_names)]
+exp_names_hosp <- exp_names[grep("hosp", exp_names)]
+
+exp_names_crit <- exp_names_crit[grep(simdate,exp_names_crit)]
+exp_names_hosp <- exp_names_hosp[grep(simdate,exp_names_hosp)]
+
+exp_names <- c(exp_names_crit, exp_names_hosp)
+
 datList <- list()
 for (exp_name in exp_names) {
   
@@ -382,13 +402,20 @@ for (exp_name in exp_names) {
 
 
 df.exp <- datList %>% bind_rows(.id = "exp_nr")
+df.exp$expLabel <-  gsub(paste0(simdate, "_IL_hospdet_reopen"),"reopen ",df.exp$exp_name)
+df.exp$expLabel <-  gsub(paste0(simdate, "_IL_critdet_reopen"),"reopen ",df.exp$expLabel)
+df.exp$expLabel <-  gsub("perc_TriggeredRollback","%",df.exp$expLabel)
+unique( df.exp$expLabel)
 
+df.exp$expLabel  <- factor(df.exp$expLabel ,
+                           levels=c("reopen 0%","reopen 5%","reopen 10%","reopen 15%","reopen 20%"),
+                           labels=c("reopen 0%","reopen 5%","reopen 10%","reopen 15%","reopen 20%"))
 
-f_thresholdScatterPlot(channel = "critical", expDir = expDir, savePDF = FALSE, expLabel = "critical")
-f_thresholdScatterPlot(channel = "hospitalized", expDir = expDir, savePDF = FALSE, expLabel = "hospitalized")
+f_thresholdScatterPlot(channel = "critical", savePDF = FALSE, expLabel = "critical")
+f_thresholdScatterPlot(channel = "hospitalized",  savePDF = FALSE, expLabel = "hospitalized")
 
 
 for (reg in c(1:11)) {
-  f_regionalComparison_hospCrit_plot(reg, SAVE = F)
+  f_regionalComparison_hospCrit_plot(reg, SAVE = T)
 }
 
