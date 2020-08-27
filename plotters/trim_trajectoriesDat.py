@@ -38,6 +38,9 @@ def trim_trajectories_Dat(exp_dir, VarsToKeep, keepTimes=None):
         column_list.append('hospitalized_det_' + str(ems_region))
         column_list.append('hospitalized_' + str(ems_region))
 
+    for ems_region in [ 'EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10', 'EMS-11']:
+        column_list.append('Ki_t_' + str(ems_region))
+
     df = pd.read_csv(os.path.join(exp_dir, 'trajectoriesDat.csv'), usecols=column_list)
 
     if keepTimes is not None:
