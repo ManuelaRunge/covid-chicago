@@ -45,18 +45,15 @@ if (combineScenarioDats) {
   
   f_getPredDat <- function(expDIR) {
     
-    trajectoriesDat <- read.csv(file.path(expDIR, "trajectoriesDat_trim.csv"))
+    trajectoriesDat <- read_csv(file.path(expDIR, "trajectoriesDat_trim.csv"))
     unique(trajectoriesDat$reopening_multiplier_4)
-    
-    
-    colnames(trajectoriesDat) <- gsub("[.]", "-", colnames(trajectoriesDat))
     
     
     ### per restore region
     region_names <- paste0("EMS-", c(1:11)) 
     
     paramvars <- c(
-      #paste0("Ki_t_", region_names),
+      paste0("Ki_t_", region_names),
       paste0("deaths_", region_names),
       paste0("hosp_cumul_", region_names),
       paste0("hosp_det_cumul_", region_names),
@@ -120,12 +117,12 @@ if (combineScenarioDats) {
   
   
   exp_names_old <- c(
-    "20200801_IL_reopen_TD", 
+    "20200731_IL_reopen_TD", 
     "20200731_IL_reopen_counterfactual",
-    "20200801_IL_reopen_HS40TD", 
-    "20200801_IL_reopen_HS40",
-    "20200801_IL_reopen_HS80TD", 
-    "20200801_IL_reopen_HS80"
+    "20200731_IL_reopen_HS40TD", 
+    "20200731_IL_reopen_HS40",
+    "20200731_IL_reopen_HS80TD", 
+    "20200731_IL_reopen_HS80"
   )
   
   exp_names <- c(
@@ -138,47 +135,28 @@ if (combineScenarioDats) {
   )
   
   
-  # dfList <- list()
-  # for (exp_name in exp_names) {
-  #   
-  #   print(exp_name)
-  #   scenname <- gsub("20200801_IL_reopen_", "", exp_name)
-  #   scenname <- gsub("20200731_IL_reopen_", "", exp_name)
-  #   scenname <- gsub(paste0(simdate, "_IL_reopen_"), "", exp_name) 
-  #   
-  #   expDIR <- file.path(simulation_output, "contact_tracing/",simdate,"/", exp_name)
-  #   
-  #   df <- f_combineDat(expDIR, scenname, Rt = TRUE)
-  #   dfList[[length(dfList) + 1]] <- df
-  # }
+  predDat <- list()
+  RtDat <- list()
+   for (exp_name in exp_names) {
+     
+     print(exp_name)
+     scenname <- gsub(paste0(simdate, "_IL_reopen_"), "", exp_name) 
+     
+     expDIR <- file.path(simulation_output, "contact_tracing/",simdate,"/", exp_name)
+     
+     
+     predDat_temp <- f_getPredDat(expDIR) %>% mutate(scenario = scenname)
+     RtDat_temp <- read.csv(file.path(expDIR, "estimatedRt", "EMS_combined_estimated_Rt.csv")) %>% mutate(scenario = scenname)
+     
+    
+     predDat[[length(predDat) + 1]] <- predDat_temp
+     RtDat[[length(RtDat) + 1]] <- RtDat_temp
+     
+     
+     rm(expDIR, predDat_temp, RtDat_temp)
+   }
   
-  source("load_paths.R")
-  expDIR <- file.path(simulation_output, "contact_tracing/",simdate, paste0(simdate,"_IL_reopen_changeTD/"))
-  predDat_TD <- f_getPredDat(expDIR) %>% mutate(scenario = "TDonly")
-  RtDat_TD <- read.csv(file.path(expDIR, "estimatedRt", "EMS_combined_estimated_Rt.csv")) %>% mutate(scenario = "TDonly")
-  
-  
-  expDIR <- file.path(simulation_output, "contact_tracing/",simdate,"/",simdate,"_IL_reopen_counterfactual/")
-  predDat_counterfactual <- f_getPredDat(expDIR) %>% mutate(scenario = "counterfactual")
-  RtDat_counterfactual <- read.csv(file.path(expDIR, "estimatedRt", "EMS_combined_estimated_Rt.csv")) %>% mutate(scenario = "counterfactual")
-  
-  
-  expDIR <- file.path(simulation_output, "contact_tracing/20200731/20200801_IL_reopen_HS40/")
-  predDat_HS40 <- f_getPredDat(expDIR) %>% mutate(scenario = "HS40")
-  RtDat_HS40 <- read.csv(file.path(expDIR, "estimatedRt", "EMS_combined_estimated_Rt.csv")) %>% mutate(scenario = "HS40")
-  
-  expDIR <- file.path(simulation_output, "contact_tracing/20200731/20200801_IL_reopen_HS40TD/")
-  predDat_HS40TD <- f_getPredDat(expDIR) %>% mutate(scenario = "HS40TD")
-  RtDat_HS40TD <- read.csv(file.path(expDIR, "estimatedRt", "EMS_combined_estimated_Rt.csv")) %>% mutate(scenario = "HS40TD")
-  
-  expDIR <- file.path(simulation_output, "contact_tracing/20200731/20200801_IL_reopen_HS80/")
-  predDat_HS80 <- f_getPredDat(expDIR) %>% mutate(scenario = "HS80")
-  RtDat_HS80 <- read.csv(file.path(expDIR, "estimatedRt", "EMS_combined_estimated_Rt.csv")) %>% mutate(scenario = "HS80")
-  
-  expDIR <- file.path(simulation_output, "contact_tracing/20200731/20200801_IL_reopen_HS80TD/")
-  predDat_HS80TD <- f_getPredDat(expDIR) %>% mutate(scenario = "HS80TD")
-  RtDat_HS80TD <- read.csv(file.path(expDIR, "estimatedRt", "EMS_combined_estimated_Rt.csv")) %>% mutate(scenario = "HS80TD")
-  
+
   
   predDatHS <- rbind(predDat_counterfactual, predDat_TD, predDat_HS40, predDat_HS40TD, predDat_HS80, predDat_HS80TD)
   RtDatHS <- rbind(RtDat_counterfactual, RtDat_TD, RtDat_HS40, RtDat_HS40TD, RtDat_HS80, RtDat_HS80TD)
@@ -191,7 +169,8 @@ if (combineScenarioDats) {
   if (SAVE) save(RtDatHS, file = file.path(simulation_output, "contact_tracing/20200731/RtDatHS.Rdata"))
 }
 
-capacity <- load_capacity(selected_ems = tolower(unique(predDatHS$restore_region)))
+capacity <- load_new_capacity(selected_ems = tolower(unique(predDatHS$restore_region)))
+
 popdat <- load_population() %>% 
   mutate(region =as.character(geography_name) ) %>% 
   filter(region !="illinois") %>%
