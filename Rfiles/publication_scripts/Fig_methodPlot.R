@@ -13,26 +13,30 @@ library(data.table)
 
 theme_set(theme_cowplot())
 
-# setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
+Location="NUCLUSTER"
+if(Location=="NUCLUSTER") setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
 source("load_paths.R")
 source("setup.R")
 source("processing_helpers.R")
 source("ct_analysis/helper_functions_CT.R")
 
-pdfdir <- "C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/project_notes/publications/covid_model_IL/pdfs_ais/"
+#pdfdir <- "C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/project_notes/publications/covid_model_IL/pdfs_ais/"
+pdfdir <- "/home/mrm9534/Box/NU-malaria-team/projects/covid_chicago/project_notes/publications/covid_model_IL/pdfs_ais/"
+
 ct_dir <- file.path(simulation_output, "contact_tracing")
 
 # region_cols <- c()
 restoreRegion_cols <- c("Central" = "red2", "Northcentral" = "dodgerblue3", "Northeast" = "chartreuse4", "Southern" = "orchid4")
 
-simdate ="20200731"
+simdate ="20200823"
 startdate <- "2020-06-15"
 stopdate <- "2020-12-30"
-reopen <- c(0, 0.05, 0.1)
-customTheme <- f_getCustomTheme()
-ct_startdate <- as.Date("2020-07-30")
 
-reopeningdate = as.Date("2020-07-22")
+reopen <- c(0, 0.05, 0.1, 0.15, 0.20)
+customTheme <- f_getCustomTheme()
+ct_startdate <- as.Date("2020-09-01")
+reopeningdate = as.Date("2020-08-30")
+
 ## ================================================
 ###  Plot individual trajectories over time for method plot
 ## ================================================
@@ -41,13 +45,13 @@ methodPlot <- FALSE
 if (methodPlot) {
   customTheme <- f_getCustomTheme(fontscl = 3)
   
-  exp_name <- "20200731_IL_reopen_contactTracing"
+  exp_name <- paste0(simdate,"_IL_reopen_contactTracing")  # "20200731_IL_reopen_contactTracing"
   exp_dir <- file.path(file.path(simulation_output, "contact_tracing",simdate, exp_name)) 
   
   #source("C:/Users/mrm9534/gitrepos/covid-chicago/Rfiles/ct_analysis/loadData_defineParam.R")
   
   selected_ems <- c(1:11)
-  emsvars_temp <- c("critical_EMS.")   ### c("critical_det_EMS.")
+  emsvars_temp <- c("critical_det_EMS.")   ### c("critical_EMS.")
   emsvars <- NULL
   for (ems in selected_ems) {
     emsvars <- c(emsvars, paste0(emsvars_temp, ems))
@@ -57,7 +61,7 @@ if (methodPlot) {
   (keepvars <- c(groupvars, emsvars))
   
   
-  trajectoriesDat <- read_csv(file.path(simulation_output, "contact_tracing",simdate, exp_name, "trajectoriesDat.csv"), 
+  trajectoriesDat <- read_csv(file.path(simulation_output, "contact_tracing",simdate, exp_name, "trajectoriesDat_trim.csv"), 
                               col_types = cols_only(time = col_guess(), 
                                                     startdate = col_guess(),
                                                     scen_num = col_guess(),
@@ -108,11 +112,13 @@ if (methodPlot) {
     dplyr::group_by(startdate, region, Date,  scen_num,   detection_success, isolation_success, grpvar) %>%
     dplyr::summarize(value = sum(value))
   
-  capacityDat <- load_capacity(unique(subdat$region)) %>%
-    dplyr::rename(capacity = critical,
+  capacityDat <- load_new_capacity(unique(subdat$region)) %>%
+    dplyr::rename(capacity = icu_available,
                   region=geography_name)
   
-  popdat <- load_population() %>% rename(region=geography_name) %>%filter(region %in% unique(subdat$region)) 
+  popdat <- load_population() %>% 
+			rename(region=geography_name) %>%
+			filter(region %in% unique(subdat$region)) 
   
   
   subdat <- subdat %>%
@@ -354,7 +360,7 @@ if (methodPlot) {
       percCapacity = (value-capacity)/capacity
     ) %>%
     filter(grpvar == 0.05) %>%
-    filter(Date >= as.Date(reopeningdate - 60) & Date <= as.Date("2020-10-01"))
+    filter(Date >= as.Date(reopeningdate - 60) & Date <= ct_startdate+30)
   
   
   ##### SMooth, calculate weekly average

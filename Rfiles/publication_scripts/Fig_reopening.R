@@ -1,9 +1,48 @@
 ## ================================================
 ### Figure 2 SImulation:  Baseline and reopening
 ## ================================================
+
+
+#### Plots edited for publication
+library(tidyverse)
+library(cowplot)
+library(scales)
+library(viridis)
+library(data.table)
+
+theme_set(theme_cowplot())
+
+pdfdir <- "C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/project_notes/publications/covid_model_IL/pdfs_ais/"
+
+Location="NUCLUSTER"
+if(Location=="NUCLUSTER") {
+setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
+
+pdfdir <- "/home/mrm9534/Box/NU-malaria-team/projects/covid_chicago/project_notes/publications/covid_model_IL/pdfs_ais/"
+
+}
+source("load_paths.R")
+source("setup.R")
+source("processing_helpers.R")
+source("ct_analysis/helper_functions_CT.R")
+
+ct_dir <- file.path(simulation_output, "contact_tracing")
+
+# region_cols <- c()
+restoreRegion_cols <- c("Central" = "red2", "Northcentral" = "dodgerblue3", "Northeast" = "chartreuse4", "Southern" = "orchid4")
+
+simdate ="20200823"
+startdate <- "2020-06-15"
+stopdate <- "2020-12-30"
+
+reopen <- c(0, 0.05, 0.1, 0.15, 0.20)
+customTheme <- f_getCustomTheme()
+ct_startdate <- as.Date("2020-09-01")
+reopeningdate = as.Date("2020-08-30")
+
+
 f_getPredDat <- function(exp_name) {
   
-  if (!(file.exists(file.path(simulation_output, exp_name, "predDate.csv")))) {
     
     trajectoriesDat <- read.csv(file.path(expDIR, "trajectoriesDat.csv"))
     unique(trajectoriesDat$reopening_multiplier_4)
@@ -13,75 +52,66 @@ f_getPredDat <- function(exp_name) {
     
     
     ### per restore region
-    if ("deaths_southern" %in% colnames(trajectoriesDat)) region_names <- c("southern", "central", "northcentral", "northeast")
-    if (!("deaths_southern" %in% colnames(trajectoriesDat))) region_names <- paste0("EMS-", c(1:11))
-    trajectoriesDat$Ki_t_southern <- (trajectoriesDat$Ki_t_EMS_4 + trajectoriesDat$Ki_t_EMS_5) / 2
-    trajectoriesDat$Ki_t_central <- (trajectoriesDat$Ki_t_EMS_3 + trajectoriesDat$Ki_t_EMS_6) / 2
-    trajectoriesDat$Ki_t_northcentral <- (trajectoriesDat$Ki_t_EMS_7 + trajectoriesDat$Ki_t_EMS_8 + trajectoriesDat$Ki_t_EMS_9 + trajectoriesDat$Ki_t_EMS_10 + trajectoriesDat$Ki_t_EMS_11) / 5
-    trajectoriesDat$Ki_t_northeast <- (trajectoriesDat$Ki_t_EMS_4 + trajectoriesDat$Ki_t_EMS_5) / 2
-    
+    region_names <- paste0("EMS-", c(1:11)) 
     
     paramvars <- c(
       paste0("Ki_t_", region_names),
       paste0("deaths_", region_names),
       paste0("hosp_cumul_", region_names),
+      paste0("hosp_det_cumul_", region_names),
       paste0("hospitalized_det_", region_names),
       paste0("hospitalized_", region_names),
       paste0("infected_", region_names),
       paste0("deaths_det_", region_names),
       paste0("prevalence_", region_names),
       paste0("crit_cumul_", region_names),
-      paste0("critical_", region_names)
+	  paste0("crit_det_cumul_", region_names),
+      paste0("crit_det_", region_names),
+	  paste0("critical_", region_names)
     )
     
     
-    keepvars <- c("time", "startdate", "scen_num", "reopening_multiplier_4", paramvars)
-    
+    keepvars <- c("time", "startdate", "scen_num","sample_num", "reopening_multiplier_4", paramvars)
     
     predDat <- trajectoriesDat %>%
       dplyr::select(keepvars) %>%
       dplyr::mutate(date = as.Date(startdate) + time) %>%
-      pivot_longer(cols = -c("time", "date", "startdate", "scen_num", "reopening_multiplier_4"), names_to = "name") %>%
+      pivot_longer(cols = -c("time", "date", "startdate", "scen_num","sample_num",  "reopening_multiplier_4"), names_to = "name") %>%
       dplyr::mutate(
         name = gsub("_cumul_", ".cumul_", name),
         name = gsub("_det_", ".det_", name),
         name = gsub("Ki_t_", "Ki.t_", name)
       ) %>%
-      separate(name, into = c("param", "restore_region"), sep = "_") %>%
+      separate(name, into = c("param", "region"), sep = "_") %>%
       dplyr::mutate(
         param = gsub("[.]", "_", param)
       ) %>%
       dplyr::mutate(exp_name = exp_name)
     
     table(predDat$param)
-    
+	
+	
+	### Aggregate samples
     predDat <- predDat %>%
-      dplyr::group_by(date, restore_region, param, exp_name, reopening_multiplier_4) %>%
+      dplyr::group_by(date, region, param, exp_name, reopening_multiplier_4) %>%
       dplyr::summarize(
         median.val = mean(value, na.rm = TRUE),
         mean.val = mean(value, na.rm = TRUE),
-        mean.val = mean(value, na.rm = TRUE),
-        q25		= quantile(tempvar, probs=0.25, na.rm = TRUE),
-        q75		= quantile(tempvar, probs=0.75, na.rm = TRUE),
-        q2.5		= quantile(tempvar, probs=0.025, na.rm = TRUE),
-        q97.5  	= quantile(tempvar, probs=0.975, na.rm = TRUE),
+        q25		= quantile(value, probs=0.25, na.rm = TRUE),
+        q75		= quantile(value, probs=0.75, na.rm = TRUE),
+        q2.5		= quantile(value, probs=0.025, na.rm = TRUE),
+        q97.5  	= quantile(value, probs=0.975, na.rm = TRUE),
         n.val = n())
     
-    predDat$restore_region <- str_to_sentence(predDat$restore_region)
-    # write.csv(predDat, file.path(simulation_output, exp_name, "predDat.csv"), row.names = FALSE)
-    save(predDat, file = file.path(simulation_output, exp_name, "predDat.Rdata"))
-  }
-  
-  
-  if ((file.exists(file.path(expDIR, "predDate.csv")))) predDat <- load(file.path(expDIR, "predDat.Rdata"))
-  
-  # table( predDat$restore_region,  predDat$param)
+	predDat <- predDat %>% mutate(region =as.numeric(gsub("EMS-","", region))) %>% f_addRestoreRegion() 
+    save(predDat, file = file.path(expDIR,  "predDat.Rdata"))
+
   return(predDat)
 }
 
 #### SHow reopen
 
-f_simulationTimelne_counterfactual <- function(df = predDat, expDIR, baselineDate = "2020-07-21") {
+f_simulationTimelne_counterfactual <- function(df = predDat, expDIR, baselineDate = ct_startdate) {
   
   customTheme <- f_getCustomTheme()
   
@@ -91,7 +121,7 @@ f_simulationTimelne_counterfactual <- function(df = predDat, expDIR, baselineDat
   
   
   df %>%
-    dplyr::filter(date >= as.Date("2020-12-30") & date <= as.Date("2020-12-31")) %>%
+    dplyr::filter(date >= stopdate & date <= stopdate+1) %>%
     dplyr::group_by(restore_region, reopening_multiplier_4, param) %>%
     dplyr::summarize(additionalPredperc_mean.val = mean(additionalPredperc_mean.val)) %>%
     pivot_wider(names_from = "param", values_from = "additionalPredperc_mean.val")
@@ -101,32 +131,39 @@ f_simulationTimelne_counterfactual <- function(df = predDat, expDIR, baselineDat
   ###  Hospitalizations by restore region timeline
   #### ---------------------------
   
+  #capacity <- load_capacity(selected_ems = tolower(unique(predDat$restore_region)))
+
+capacityDat <- load_new_capacity(unique(df$region)) %>%
+    dplyr::rename(capacity = icu_available,
+                  region=geography_name)
+				  
+  df$region <- as.character(df$region )
   plotdat <- df %>%
-    dplyr::mutate(geography_name = tolower(restore_region)) %>%
-    left_join(capacity, by = "geography_name") %>%
-    dplyr::filter(param %in% c("critical") & date >= as.Date("2020-03-01") & date <= as.Date("2020-12-30"))
+    left_join(capacityDat, by = "region") %>%
+    dplyr::filter(param %in% c("critical") & date >= as.Date("2020-03-01") & date <= stopdate)
   
-  
+  plotdat$region <- factor(plotdat$region, levels=c(1:11), labels=c(1:11))
   pplot <- ggplot(data = plotdat) +
-    # geom_ribbon(aes(x=date , ymin=lower.ci.val , ymax=  upper.ci.val , fill=restore_region , group=reopening_multiplier_4),size=1, alpha=0.3) +
-    geom_line(aes(x = date, y = mean.val, col = as.factor(reopening_multiplier_4), group = reopening_multiplier_4), size = 1.3) +
-    geom_line(data = subset(plotdat, date <= as.Date(baselineDate)), aes(x = date, y = mean.val, group = reopening_multiplier_4), col = "black", size = 1.3) +
-    geom_hline(aes(yintercept = icu_available), linetype = "dashed", col = "black", size = 1) +
+    geom_ribbon(aes(x=date , ymin=q2.5 , ymax=  q97.5 , fill=as.factor(reopening_multiplier_4) , group=reopening_multiplier_4),size=1, alpha=0.3) +
+    geom_line(aes(x = date, y = median.val, col = as.factor(reopening_multiplier_4), group = reopening_multiplier_4), size = 1.3) +
+    geom_line(data = subset(plotdat, date <= as.Date(baselineDate)), aes(x = date, y = median.val, group = reopening_multiplier_4), col = "black", size = 1.3) +
+    geom_hline(aes(yintercept = capacity), linetype = "dashed", col = "black", size = 1) +
     scale_y_continuous(labels = function(x) x / 1000, expand = c(0, 0)) + # label = comma
     scale_x_date(date_breaks = "60 days", date_labels = "%b", expand = c(0, 0)) +
-    # scale_color_brewer(palette = "Dark2") +
-    scale_color_manual(values=c("#fecc5c","#fd8d3c","#f03b20","#bd0026")) +
-    customTheme +
+    scale_color_brewer(palette = "Dark2") +
+    #scale_color_manual(values=c("#fecc5c","#fd8d3c","#f03b20","#bd0026")) +
+    scale_fill_brewer(palette = "Dark2") +
+    #scale_fill_manual(values=c("#fecc5c","#fd8d3c","#f03b20","#bd0026")) +customTheme +
     labs(x = "") +
     theme(legend.position = "None") +
     labs(y = "Cases requiring ICU beds\nper 1000 population") +
-    facet_wrap(~restore_region, scales = "free_y", ncol = 1)
+    facet_wrap(~region, scales = "free_y", ncol = 2)
   
   ggsave(paste0("reopening_scenarios_restoreRegions", ".pdf"),
-         plot = pplot, path = file.path(expDIR), width = 5, height = 7.5, device = "pdf"
+         plot = pplot, path = file.path(expDIR), width = 12, height = 7.5, device = "pdf"
   )
   ggsave(paste0("reopening_scenarios_restoreRegions", ".pdf"),
-         plot = pplot, path = file.path(pdfdir), width = 5, height = 7.5, device = "pdf"
+         plot = pplot, path = file.path(pdfdir), width = 12, height = 7.5, device = "pdf"
   )
   
   
@@ -137,10 +174,11 @@ f_simulationTimelne_counterfactual <- function(df = predDat, expDIR, baselineDat
   #### ---------------------------
   ###  Different outcome channels by timeline
   #### ---------------------------
-  capacity_long <- capacity %>% pivot_longer(cols = -c("geography_name"), names_to = "param", values_to = "capacity") %>%
+  capacity_long <- capacityDat %>% 
+  pivot_longer(cols = -c("region"), names_to = "param", values_to = "capacity") %>%
     filter(param != "vents_available") %>%
     mutate(param = case_when(
-      param == "icu_available" ~ "critical",
+      param == "capacity" ~ "critical",
       param == "medsurg_available" ~ "hospitalized"
     )) 
   
@@ -148,7 +186,7 @@ f_simulationTimelne_counterfactual <- function(df = predDat, expDIR, baselineDat
     filter(param != "vents_available") %>%
     mutate(param = case_when(
       param == "hospitalized" ~ "hosp_cumul",
-      param == "critical" ~ "crit_cumul"
+      param == "capacity" ~ "crit_cumul"
     )) %>%
     rbind(capacity_long) %>%
     group_by(param) %>%
@@ -159,45 +197,40 @@ f_simulationTimelne_counterfactual <- function(df = predDat, expDIR, baselineDat
     mutate(region =as.character(geography_name) ) %>% 
     filter(region !="illinois") %>%
     f_addRestoreRegion() %>% 
-    group_by(restore_region) %>%
-    summarize(pop=sum(as.numeric(pop))) %>%
-    mutate(geography_name = tolower(restore_region)) %>%
-    select(-restore_region)
-  
-  
-  
+    #group_by(region) %>%
+    #summarize(pop=sum(as.numeric(pop))) %>%
+    #mutate(geography_name = tolower(restore_region)) %>%
+    #select(-region)
+    
   plotdat <- df %>% as.data.frame() %>%
-    dplyr::mutate(geography_name = tolower(restore_region)) %>%
+    #dplyr::mutate(geography_name = tolower(restore_region)) %>%
     dplyr::filter(param %in% c("infected", "hospitalized", "critical", "prevalence")) %>%
-    dplyr::left_join(popdat, by = c("geography_name")) %>%
-    dplyr::filter(date >= as.Date("2020-03-01") & date <= as.Date("2020-12-31")) %>%
+    dplyr::left_join(popdat, by = c("region")) %>%
+    dplyr::filter(date >= as.Date("2020-03-01") & date <= stopdate) %>%
     dplyr::group_by(date, reopening_multiplier_4, param) %>%
-    select(-c('sd.val', 'n.val', 'se.val', 'lower.ci.val', 'upper.ci.val', 'additionalPred_mean.val', 'additionalPredperc_mean.val')) %>% 
-    pivot_wider(names_from = "param", values_from="mean.val") %>%
-    dplyr::left_join(capacity, by = c("geography_name")) %>%
+    select(-c( 'mean.val','n.val', "q75", 'q25', "q2.5","q97.5")) %>% 
+    pivot_wider(names_from = "param", values_from="median.val") %>%
+    dplyr::left_join(capacityDat, by = c("region")) %>%
     dplyr::summarize(
-      icu_available = sum(icu_available),
-      medsurg_available = sum(medsurg_available),
-      infected = sum(infected),
-      hospitalized = sum(hospitalized),
-      critical = sum(critical),
-      prevalence = mean(prevalence)*100
+      icu_available = sum(capacity , na.rm=TRUE),
+      infected = sum(infected , na.rm=TRUE),
+      critical = sum(critical , na.rm=TRUE)
     ) %>%
-    pivot_longer(cols=-c(date,reopening_multiplier_4, icu_available, medsurg_available), names_to="param", values_to="mean.val") %>%
+    pivot_longer(cols=-c(date,reopening_multiplier_4, icu_available), names_to="param", values_to="median.val") %>%
     dplyr::left_join(capacity_long, by = c( "param")) 
     
   
   plotdat$param <- factor(plotdat$param,
-                          levels = c("infected","prevalence", "hospitalized", "critical"),
-                          labels = c("COVID-19 infections","Prevalence" , "Cases requiring hospitalization", "Cases requiring intensive care")
+                          levels = c("infected", "critical"),
+                          labels = c("COVID-19 infections", "Cases requiring intensive care")
   )
   
   customTheme <- f_getCustomTheme()
   
   pplot <- ggplot(data = plotdat) +
     # geom_errorbar(aes(x=date , ymin=lower.ci.val , ymax=  upper.ci.val , fill=restore_region , group=reopening_multiplier_4),size=1, alpha=0.3) +
-    geom_line(aes(x = date, y = mean.val, col = as.factor(reopening_multiplier_4), group = reopening_multiplier_4), size = 1.3) +
-    geom_line(data = subset(plotdat, date <= as.Date(baselineDate)), aes(x = date, y = mean.val, group = reopening_multiplier_4), col = "black", size = 1.3) +
+    geom_line(aes(x = date, y = median.val, col = as.factor(reopening_multiplier_4), group = reopening_multiplier_4), size = 1.3) +
+    geom_line(data = subset(plotdat, date <= as.Date(baselineDate)), aes(x = date, y = median.val, group = reopening_multiplier_4), col = "black", size = 1.3) +
     geom_hline(aes(yintercept = capacity), linetype = "dashed", col = "black", size = 1) +
     geom_hline(yintercept = c(-Inf)) +
     # geom_vline(xintercept =c( -Inf, Inf)) +
@@ -227,18 +260,18 @@ f_simulationTimelne_counterfactual <- function(df = predDat, expDIR, baselineDat
   #### ---------------------------
   
   pplot <- df %>%
-    mutate(geography_name = tolower(restore_region)) %>%
-    left_join(capacity, by = "geography_name") %>%
-    filter(param %in% c("crit_cumul") & date >= as.Date("2020-12-30") & date <= as.Date("2020-12-31")) %>%
+    #mutate(geography_name = tolower(restore_region)) %>%
+    left_join(capacityDat, by = "region") %>%
+    filter(param %in% c("crit_cumul") & (date >= as.Date(stopdate) & date <= as.Date(stopdate)+1)) %>%
+	#summarize() %>%
     ggplot() +
-    theme_cowplot() +
     # geom_ribbon(aes(x=date , ymin=lower.ci.val , ymax=  upper.ci.val , fill=restore_region , group=reopening_multiplier_4),size=1, alpha=0.3) +
     geom_bar(aes(
-      x = reopening_multiplier_4, y = mean.val,
+      x = reopening_multiplier_4, y = median.val,
       fill = as.factor(reopening_multiplier_4),
       group = reopening_multiplier_4
     ), stat = "identity", size = 1.3) +
-    facet_wrap(~restore_region, scales = "free_y", nrow = 2) +
+    facet_wrap(~region, scales = "free_y", nrow = 2) +
     scale_y_continuous(labels = function(x) x / 1000, expand = c(0, 0)) +
     scale_fill_brewer(palette = "Dark2") +
     customTheme +
@@ -418,11 +451,14 @@ f_simulationTimelne_counterfactual <- function(df = predDat, expDIR, baselineDat
 }
 
 source("load_paths.R")
-exp_name <- "20200731_IL_reopen_counterfactual"
-expDIR <- file.path(simulation_output, "contact_tracing/20200731/", exp_name)
+exp_name <- paste0(simdate, "_IL_reopen_counterfactual")
+expDIR <- file.path(simulation_output, "contact_tracing/",simdate, exp_name)
 
-predDat <- f_getPredDat(exp_name)
-capacity <- load_capacity(selected_ems = tolower(unique(predDat$restore_region)))
+
+if (file.exists(file.path(expDIR, "predDate.csv"))) predDat <- load(file.path(expDIR, "predDat.Rdata"))
+if (!file.exists(file.path(expDIR, "predDate.csv"))) predDat <- f_getPredDat(exp_name)
+    
+				  
 f_simulationTimelne_counterfactual()
 
 
