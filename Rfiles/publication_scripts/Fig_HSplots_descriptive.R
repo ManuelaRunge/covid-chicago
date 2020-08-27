@@ -2,8 +2,6 @@
 #### Additional plots for contact tracing simulations
 ### =======================================================
 
-pdfdir <- "C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/project_notes/publications/covid_model_IL/pdfs_ais/"
-
 #### Plots edited for publication
 library(tidyverse)
 library(cowplot)
@@ -13,19 +11,29 @@ library(data.table)
 
 theme_set(theme_cowplot())
 
-# setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
+Location="LOCAL"
+if(Location=="NUCLUSTER") setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
 source("load_paths.R")
 source("setup.R")
 source("processing_helpers.R")
-source("ct_analysis/helper_functions_CT.R")
+source("publication_scripts/helper_functions_CT.R")
+
+pdfdir <- "C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/project_notes/publications/covid_model_IL/pdfs_ais/"
+#pdfdir <- "/home/mrm9534/Box/NU-malaria-team/projects/covid_chicago/project_notes/publications/covid_model_IL/pdfs_ais/"
+
+ct_dir <- file.path(simulation_output, "contact_tracing")
+
 # region_cols <- c()
 restoreRegion_cols <- c("Central" = "red2", "Northcentral" = "dodgerblue3", "Northeast" = "chartreuse4", "Southern" = "orchid4")
 
+simdate ="20200823"
 startdate <- "2020-06-15"
 stopdate <- "2020-12-30"
-reopen <- c(0, 0.05, 0.1)
+
+reopen <- c(0, 0.05, 0.1, 0.15, 0.20)
 customTheme <- f_getCustomTheme()
-ct_startdate <- as.Date("2020-07-30")
+ct_startdate <- as.Date("2020-09-01")
+reopeningdate = as.Date("2020-08-30")
 
 ## ================================================
 ###  Figure 3 - HS scenarios - no contact tracing
@@ -39,63 +47,65 @@ if (combineScenarioDats) {
     
     trajectoriesDat <- read.csv(file.path(expDIR, "trajectoriesDat_trim.csv"))
     unique(trajectoriesDat$reopening_multiplier_4)
-    unique(trajectoriesDat$fraction_critical)
     
-    region_names <- paste0("EMS-", c(1:11))
     
     colnames(trajectoriesDat) <- gsub("[.]", "-", colnames(trajectoriesDat))
     
     
     ### per restore region
+    region_names <- paste0("EMS-", c(1:11)) 
+    
     paramvars <- c(
+      #paste0("Ki_t_", region_names),
       paste0("deaths_", region_names),
       paste0("hosp_cumul_", region_names),
+      paste0("hosp_det_cumul_", region_names),
       paste0("hospitalized_det_", region_names),
       paste0("hospitalized_", region_names),
       paste0("infected_", region_names),
       paste0("deaths_det_", region_names),
       paste0("prevalence_", region_names),
-      paste0("seroprevalence_", region_names),
-      paste0("recovered_", region_names),
-      paste0("critical_", region_names),
-      paste0("crit_cumul_", region_names)
+      paste0("crit_cumul_", region_names),
+      paste0("crit_det_cumul_", region_names),
+      paste0("crit_det_", region_names),
+      paste0("critical_", region_names)
     )
     
     
-    keepvars <- c("time", "startdate", "scen_num", "reopening_multiplier_4", paramvars)
-    
+    keepvars <- c("time", "startdate", "scen_num","sample_num", "reopening_multiplier_4", paramvars)
     
     predDat <- trajectoriesDat %>%
       dplyr::select(keepvars) %>%
       dplyr::mutate(date = as.Date(startdate) + time) %>%
-      pivot_longer(cols = -c("time", "date", "startdate", "scen_num", "reopening_multiplier_4"), names_to = "name") %>%
+      pivot_longer(cols = -c("time", "date", "startdate", "scen_num","sample_num",  "reopening_multiplier_4"), names_to = "name") %>%
       dplyr::mutate(
         name = gsub("_cumul_", ".cumul_", name),
-        name = gsub("_det_", ".det_", name)
+        name = gsub("_det_", ".det_", name),
+        name = gsub("Ki_t_", "Ki.t_", name)
       ) %>%
       separate(name, into = c("param", "region"), sep = "_") %>%
       dplyr::mutate(
-        param = gsub("[.]", "_", param),
-        exp_name = exp_name,
-        region = gsub("EMS-", "", region)
+        param = gsub("[.]", "_", param)
       ) %>%
-      f_addRestoreRegion() %>%
-      dplyr::group_by(date, scen_num, restore_region, param, exp_name, reopening_multiplier_4) %>%
-      dplyr::summarize(value = sum(value)) %>%
-      dplyr::group_by(date, restore_region, param, exp_name, reopening_multiplier_4) %>%
+      dplyr::mutate(exp_name = exp_name)
+    
+    table(predDat$param)
+    
+    
+    ### Aggregate samples
+    predDat <- predDat %>%
+      dplyr::group_by(date, region, param, exp_name, reopening_multiplier_4) %>%
       dplyr::summarize(
+        median.val = mean(value, na.rm = TRUE),
         mean.val = mean(value, na.rm = TRUE),
-        sd.val = sd(value, na.rm = TRUE),
-        n.val = n(),
-      ) %>%
-      dplyr::mutate(
-        se.val = sd.val / sqrt(n.val),
-        lower.ci.val = mean.val - qt(1 - (0.05 / 2), n.val - 1) * se.val,
-        upper.ci.val = mean.val + qt(1 - (0.05 / 2), n.val - 1) * se.val
-      )
+        q25		= quantile(value, probs=0.25, na.rm = TRUE),
+        q75		= quantile(value, probs=0.75, na.rm = TRUE),
+        q2.5		= quantile(value, probs=0.025, na.rm = TRUE),
+        q97.5  	= quantile(value, probs=0.975, na.rm = TRUE),
+        n.val = n())
     
-    
-    predDat$restore_region <- str_to_sentence(predDat$restore_region)
+    predDat <- predDat %>% mutate(region =as.numeric(gsub("EMS-","", region))) %>% f_addRestoreRegion() 
+    save(predDat, file = file.path(expDIR,  "predDat.Rdata"))
     
     return(predDat)
   }
@@ -109,7 +119,7 @@ if (combineScenarioDats) {
   }
   
   
-  exp_names <- c(
+  exp_names_old <- c(
     "20200801_IL_reopen_TD", 
     "20200731_IL_reopen_counterfactual",
     "20200801_IL_reopen_HS40TD", 
@@ -118,26 +128,37 @@ if (combineScenarioDats) {
     "20200801_IL_reopen_HS80"
   )
   
+  exp_names <- c(
+   paste0(simdate, "_IL_reopen_TD"), 
+   paste0(simdate,"_IL_reopen_counterfactual"), 
+   paste0(simdate,"_IL_reopen_HS40TD"), 
+   paste0(simdate,"_IL_reopen_HS40"), 
+   paste0(simdate,"_IL_reopen_HS80TD"), 
+   paste0(simdate,"_IL_reopen_HS80")
+  )
   
-  dfList <- list()
-  for (exp_name in exp_names) {
-    
-    print(exp_name)
-    scenname <- gsub("20200801_IL_reopen_", "", exp_name)
-    scenname <- gsub("20200731_IL_reopen_", "", exp_name)
-    expDIR <- file.path(simulation_output, "contact_tracing/20200731/", exp_name)
-    
-    df <- f_combineDat(expDIR, scenname, Rt = TRUE)
-    dfList[[length(dfList) + 1]] <- df
-  }
+  
+  # dfList <- list()
+  # for (exp_name in exp_names) {
+  #   
+  #   print(exp_name)
+  #   scenname <- gsub("20200801_IL_reopen_", "", exp_name)
+  #   scenname <- gsub("20200731_IL_reopen_", "", exp_name)
+  #   scenname <- gsub(paste0(simdate, "_IL_reopen_"), "", exp_name) 
+  #   
+  #   expDIR <- file.path(simulation_output, "contact_tracing/",simdate,"/", exp_name)
+  #   
+  #   df <- f_combineDat(expDIR, scenname, Rt = TRUE)
+  #   dfList[[length(dfList) + 1]] <- df
+  # }
   
   source("load_paths.R")
-  expDIR <- file.path(simulation_output, "contact_tracing/20200731/20200801_IL_reopen_TD/")
+  expDIR <- file.path(simulation_output, "contact_tracing/",simdate, paste0(simdate,"_IL_reopen_changeTD/"))
   predDat_TD <- f_getPredDat(expDIR) %>% mutate(scenario = "TDonly")
   RtDat_TD <- read.csv(file.path(expDIR, "estimatedRt", "EMS_combined_estimated_Rt.csv")) %>% mutate(scenario = "TDonly")
   
   
-  expDIR <- file.path(simulation_output, "contact_tracing/20200731/20200731_IL_reopen_counterfactual/")
+  expDIR <- file.path(simulation_output, "contact_tracing/",simdate,"/",simdate,"_IL_reopen_counterfactual/")
   predDat_counterfactual <- f_getPredDat(expDIR) %>% mutate(scenario = "counterfactual")
   RtDat_counterfactual <- read.csv(file.path(expDIR, "estimatedRt", "EMS_combined_estimated_Rt.csv")) %>% mutate(scenario = "counterfactual")
   
