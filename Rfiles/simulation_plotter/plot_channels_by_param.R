@@ -198,5 +198,70 @@ if(combinedPlot){
          plot = pplot, path = file.path(simulation_output, exp_name), width = 12, height = 8, device = "png"
   )
   
+  
+  
+  
+  
+  
+  ########################################
+  
+  
+  ### GEt minimum date
+  pdat1 <- paramvalues %>%
+    filter(date <= as.Date("2020-12-30") ) %>%
+    filter(date >= as.Date("2020-08-19") & outcome == "hospitalized_det") %>%
+    group_by(region, reopening_multiplier_4, outcome) %>%
+    # filter(median.value == max(median.value)) %>%
+    left_join(capacityDat) %>%
+    filter(median.value >= medsurg_available ) %>%
+    filter(reopening_multiplier_4 == min(reopening_multiplier_4)) %>%
+    filter(date == min(date))
+  
+  
+  pdat2 <- paramvalues %>%
+    filter(date <= as.Date("2020-12-30") ) %>%
+    filter(date >= as.Date("2020-08-19") & outcome == "crit_det") %>%
+    group_by(region, reopening_multiplier_4, outcome) %>%
+    #filter(median.value == max(median.value)) %>%
+    left_join(capacityDat) %>%
+    filter(median.value >= icu_available) %>%
+    filter(reopening_multiplier_4 == min(reopening_multiplier_4)) %>%
+    filter(date == min(date))
+  
+  
+  datRib <- rbind(pdat1, pdat2) 
+  
+  summary(paramvalues$date)
+  summary(datRib$date)
+  summary(pdat1$date)
+  summary(pdat2$date)
+  
+  
+  pplot <- ggplot(data = datRib) +
+    # geom_errorbar(aes(x = as.factor(reopening), ymin = q2.5.value, ymax = q97.5.value, group = outcome), width = 0.3) +
+    geom_point(aes(x = date, y =reopening_multiplier_4, fill = as.factor(outcome), group = as.factor(outcome)), 
+               stat="identity", position="dodge", shape=21, width=0.8,show.legend = F, size = 3) +
+    labs(
+      x = "Date",
+      y = "Reopening multiplier (%)",
+      title = "Median date of capacity exceedance for ICU (blue) and non-ICU (orange) per covid region\n"
+    ) +
+    facet_wrap(~region)+
+    scale_color_manual(values=rev(c("orange","deepskyblue3")))+
+    scale_fill_manual(values=rev(c("orange","deepskyblue3")))+
+    background_grid() +
+    customThemeNoFacet +
+    # theme(panel.grid.major.y = element_blank()) +
+    geom_hline(yintercept = c(-Inf, Inf)) +
+    geom_vline(xintercept = c(-Inf, Inf))
+  
+  
+  
+  
+  
+  ggsave(paste0("date_of_overflow_perCovidRegion_.png"),
+         plot = pplot, path = file.path(simulation_output, exp_name), width = 12, height = 8, device = "png"
+  )
+  
 }
 
