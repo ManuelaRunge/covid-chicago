@@ -22,15 +22,14 @@ theme_set(theme_cowplot())
 source("load_paths.R")
 source("setup.R")
 source("processing_helpers.R")
-source("ct_analysis/helper_functions_CT.R")
+
 # region_cols <- c()
 restoreRegion_cols <- c("Central" = "red2", "Northcentral" = "dodgerblue3", "Northeast" = "chartreuse4", "Southern" = "orchid4")
 
-startdate <- "2020-06-15"
+startdate <- "2020-07-01"
 stopdate <- "2020-12-30"
 reopen <- c(0, 0.05, 0.1)
 customTheme <- f_getCustomTheme()
-ct_startdate <- as.Date("2020-07-30")
 
 ## ================================================
 ###  Figure 1a Load true data and plot over time
@@ -281,9 +280,9 @@ f_parameter_figure(exp_name)
 ## ================================================
 
 ### Load simulations
-exp_name <- "20200818_IL_RR_baseline_0"
+exp_name <- "20200825_IL_RR_baseline_0"
 source("load_paths.R")
-trajectoriesDat <- read_csv(file.path(simulation_output, exp_name, "trajectoriesDat.csv"),
+trajectoriesDat <- read_csv(file.path(simulation_output, exp_name, "trajectoriesDat_trim.csv"),
   col_types = cols_only(
     scen_num = col_guess(),
     time = col_guess(),
@@ -386,6 +385,38 @@ ggsave(paste0("IL_fitting_plot", ".pdf"),
   plot = pplot1, path = file.path(pdfdir), width = 12, height = 5, device = "pdf"
 )
 
+
+pplot7dAvr <- pplot7dAvr %>% filter(name=="confirmed_covid_icu") 
+simdat <- simdat  %>% filter(name=="confirmed_covid_icu") 
+
+customTheme <- f_getCustomTheme(fontscl = 3)
+
+pplot1 <- ggplot(data = pplot7dAvr) +
+  geom_ribbon(data = simdat, aes(x = Date, ymin = q2.5.val, ymax = q97.5.val), fill = "#fd8d3c", alpha = 0.3) +
+  geom_ribbon(data = simdat, aes(x = Date, ymin = q25.val, ymax = q75.val), fill = "#fd8d3c", alpha = 0.5) +
+  geom_line(data = simdat, aes(x = Date, y = median.val), col = "#fd8d3c") +
+  geom_point(data = pplot7dAvr, aes(x = Date, y = value, col = source), size = 1) +
+  geom_line(data = pplot7dAvr, aes(x = Date, y = value7, col = source), size = 1) +
+  scale_color_manual(values = c("black", "gray50")) +
+   scale_x_date(lim = c(as.Date("2020-03-01"), as.Date("2020-08-30")), date_breaks = "30 days", date_labels = "%b") +
+  #scale_x_date(lim = c(as.Date("2020-08-01"), as.Date("2020-12-30")), date_breaks = "30 days", date_labels = "%b") +
+  customTheme +
+  labs(
+    x = "",
+    y = "Total cases\n(log scale)",
+    color = ""
+  ) +
+  background_grid(major = "y") + 
+  geom_hline(yintercept = c(-Inf, Inf)) +
+  geom_vline(xintercept = c(-Inf, Inf))
+
+if(uselog)  pplot1 <- pplot1 + scale_y_log10(label = comma) 
+
+
+ggsave(paste0("IL_fitting_plot", ".pdf"),
+       plot = pplot1, path = file.path(pdfdir), width = 12, height = 5, device = "pdf"
+)
+
 #### per covid region
 
 ## ================================================
@@ -393,7 +424,7 @@ ggsave(paste0("IL_fitting_plot", ".pdf"),
 ## ================================================
 
 ### Load simulations
-exp_name <- "20200818_IL_RR_baseline_0"
+exp_name <- "20200825_IL_RR_baseline_0"
 source("load_paths.R")
 trajectoriesDat <- read_csv(file.path(simulation_output, exp_name, "trajectoriesDat.csv"))
 # colnames(trajectoriesDat)
@@ -479,10 +510,14 @@ pplot7dAvr <- emresource %>%
 simdatSub <- subset(simdat, name == "confirmed_covid_icu")
 pplot7dAvrSub <- subset(pplot7dAvr, name == "confirmed_covid_icu")
 
-simdatSub$region <- factor(simdatSub$region, levels = c(1:11), labels = paste0("Covid region ", c(1:11)))
-pplot7dAvrSub$region <- factor(pplot7dAvrSub$region, levels = c(1:11), labels = paste0("Covid region ", c(1:11)))
+simdatSub$region <- factor(simdatSub$region, levels = c(1:11), labels = paste0("Region ", c(1:11)))
+pplot7dAvrSub$region <- factor(pplot7dAvrSub$region, levels = c(1:11), labels = paste0("Region ", c(1:11)))
 
 
+customTheme <- f_getCustomTheme(fontscl=-3)
+
+for(uselog in c(TRUE, FALSE)){
+  
 pplot <- ggplot(data = pplot7dAvrSub) +
   geom_ribbon(data = simdatSub, aes(x = Date, ymin = q2.5.val, ymax = q97.5.val), fill = "#fd8d3c", alpha = 0.3) +
   geom_ribbon(data = simdatSub, aes(x = Date, ymin = q25.val, ymax = q75.val), fill = "#fd8d3c", alpha = 0.5) +
@@ -490,21 +525,44 @@ pplot <- ggplot(data = pplot7dAvrSub) +
   geom_point(data = pplot7dAvrSub, aes(x = Date, y = value, col = source), size = 1) +
   geom_line(data = pplot7dAvrSub, aes(x = Date, y = value7, col = source), size = 1) +
   scale_color_manual(values = c("black", "gray50")) +
-  scale_x_date(lim = c(as.Date("2020-03-01"), as.Date("2020-08-01"))) +
-  facet_wrap(~region, ncol = 4) +
-  scale_y_log10(label = comma) +
   customTheme +
   labs(
     x = "",
-    y = "Total cases\n(log scale)",
     color = ""
   ) +
   background_grid(major = "y") + 
   geom_hline(yintercept = c(-Inf, Inf)) +
   geom_vline(xintercept = c(-Inf, Inf)) +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+ # scale_x_date(lim = c(as.Date("2020-03-01"), as.Date("2020-08-30")), date_breaks = "30 days", date_labels = "%b") +
+  scale_x_date(lim = c(as.Date("2020-08-01"), as.Date("2020-12-30")), date_breaks = "30 days", date_labels = "%b") +
+  theme(  axis.text.x = element_text( angle = 90, vjust = 0, hjust = 1))
 
 
-ggsave(paste0("IL_covid_region_fitting_plot_confirmed_covid_icu", ".pdf"),
-  plot = pplot, path = file.path(pdfdir), width = 10, height = 7, device = "pdf"
-)
+if(uselog){
+  pplot <- pplot + labs(    y = "Total cases\n(log scale)")+
+    facet_wrap(~region, ncol = 4, scales="free") +
+    scale_y_log10(label = comma) 
+  
+
+  
+  ggsave(paste0("IL_covid_region_fitting_plot_confirmed_covid_icu", ".pdf"),
+         plot = pplot, path = file.path(pdfdir), width = 10, height = 7, device = "pdf"
+  )
+}
+
+if(uselog==FALSE){
+
+  pplot <- pplot + labs(    y = "Total cases\n") +
+    facet_wrap(~region, ncol = 4, scales="free") 
+  
+  ggsave(paste0("IL_covid_region_fitting_plot_confirmed_covid_icu_nolog_Decv2", ".pdf"),
+         plot = pplot, path = file.path(pdfdir), width = 10, height =7, device = "pdf"
+  )
+}
+
+}
+
+
+
+#### Same plot for IL
