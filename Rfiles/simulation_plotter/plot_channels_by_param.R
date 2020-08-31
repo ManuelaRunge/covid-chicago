@@ -44,7 +44,6 @@ paramvalues <- trajectoriesDat %>%
   pivot_longer(cols = -c("time", "date", "startdate", "d_AsP_ct1"), names_to = "region") %>%
   separate(region, into = c("outcome", "region"), sep = "_EMS-") %>%
   mutate(
-    region = as.numeric(region),
     exp_name = exp_name,
   ) %>%
   group_by(date, region, exp_name, d_AsP_ct1, outcome) %>%
@@ -59,27 +58,34 @@ paramvalues <- trajectoriesDat %>%
 
 capacityDat <- load_new_capacity() %>% mutate(region = as.character(geography_name))
 
-table(paramvalues$region)
-paramvalues$region <- factor(paramvalues$region, levels = paste0("All",c(1:11)), labels = c(1:11))
-capacityDat$region <- factor(capacityDat$region, levels = c(1:11), labels = c(1:11))
+table(paramvalues$region, exclude = NULL)
+paramvalues$region[is.na(paramvalues$region)] <- "illinois"
+paramvalues$region_label <- factor(paramvalues$region, levels = c("illinois",c(1:11)), labels = c("illinois",c(1:11)))
+capacityDat$region_label <- factor(capacityDat$region,  levels = c("illinois",c(1:11)), labels = c("illinois",c(1:11)))
 paramvalues$d_AsP_ct1 <- round(paramvalues$d_AsP_ct1, 2) * 100
 
+paramvalues <- paramvalues[!is.na(paramvalues$region_label),]
 dat=paramvalues
 save(dat, file=file.path(simulation_output, exp_name, "aggregatedDat_forR.Rdata"))
 
-library(RColorBrewer)
-getPalette <- colorRampPalette(brewer.pal(9, "PuBuGn"))(12)
+#library(RColorBrewer)
+#getPalette <- colorRampPalette(brewer.pal(9, "PuBuGn"))(12)
 
+### ---------------------------------------
+## Timeline plot
+### ---------------------------------------
 
 pplot <- paramvalues %>%
-  filter(outcome == "crit_det" & date <= as.Date("2021-01-01")) %>%
+  filter(outcome == "crit_det"  & date >= as.Date("2020-07-01") & date <= as.Date("2021-01-01")) %>%
+  filter(region !="illinois") %>%
+  filter(d_AsP_ct1  %in% c(0,22,44, 56, 78, 100)) %>%
   group_by(region, d_AsP_ct1, outcome) %>%
   left_join(capacityDat) %>%
   ggplot() +
   geom_ribbon(aes(x = date, ymin = q2.5.value, ymax = q97.5.value, fill=as.factor(d_AsP_ct1), group=d_AsP_ct1), alpha = 0.2) +
-  geom_ribbon(aes(x = date, ymin = q2.5.value, ymax = q97.5.value, fill=as.factor(d_AsP_ct1), group=d_AsP_ct1), alpha = 0.3) +
+  geom_ribbon(aes(x = date, ymin = q25.value, ymax = q75.value, fill=as.factor(d_AsP_ct1), group=d_AsP_ct1), alpha = 0.3) +
   geom_line(aes(x = date, y = median.value, col = as.factor(d_AsP_ct1), group=d_AsP_ct1), show.legend = F, size = 1) +
-  facet_wrap(~region, scales = "free") +
+  facet_wrap(~region_label, scales = "free") +
   labs(color="Coverage", fill="Coverage") + 
   scale_color_viridis_d(option="C")+
   scale_fill_viridis_d(option="C")+
@@ -87,11 +93,39 @@ pplot <- paramvalues %>%
   labs(x = "Reopening multiplier (%)", y = "Peak in non-ICU census until Jan 2020") +
   customThemeNoFacet
 
-ggsave(paste0("timeline_perCovidRegion.png"),
+ggsave(paste0("timeline_nonICU_perCovidRegion.png"),
        plot = pplot, path = file.path(simulation_output, exp_name), width = 14, height = 8, device = "png"
 )
 rm(pplot)
 
+
+pplot <- paramvalues %>%
+  filter(outcome == "crit_det" & date >= as.Date("2020-07-01") & date <= as.Date("2021-01-01")) %>%
+  filter(region !="illinois") %>%
+  filter(d_AsP_ct1  %in% c(0,22,44, 56, 78, 100)) %>%
+  group_by(date, d_AsP_ct1, outcome) %>%
+  summarize(median.value=sum(median.value),
+            q75.value=sum(q75.value),
+            q25.value=sum(q25.value),
+            q2.5.value=sum(q2.5.value),
+            q97.5.value=sum(q97.5.value)) %>%
+  mutate(region="illinois") %>%
+  left_join(capacityDat) %>%
+  ggplot() +
+  geom_ribbon(aes(x = date, ymin = q2.5.value, ymax = q97.5.value, fill=as.factor(d_AsP_ct1), group=d_AsP_ct1), alpha = 0.2) +
+  geom_ribbon(aes(x = date, ymin = q25.value, ymax = q75.value, fill=as.factor(d_AsP_ct1), group=d_AsP_ct1), alpha = 0.3) +
+  geom_line(aes(x = date, y = median.value, col = as.factor(d_AsP_ct1), group=d_AsP_ct1), show.legend = F, size = 1) +
+  labs(color="Coverage", fill="Coverage") + 
+  scale_color_viridis_d(option="C")+
+  scale_fill_viridis_d(option="C")+
+ # geom_hline(aes(yintercept = icu_available), linetype="dashed") +
+  labs(x = "Reopening multiplier (%)", y = "Peak in non-ICU census until Jan 2020") +
+  customThemeNoFacet
+
+ggsave(paste0("timeline_nonICU_IL.png"),
+       plot = pplot, path = file.path(simulation_output, exp_name), width = 10, height = 5, device = "png"
+)
+rm(pplot)
 
 
 pplot <- paramvalues %>%
