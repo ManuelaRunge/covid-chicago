@@ -5,9 +5,10 @@ library(tidyverse)
 library(scales)
 library(data.table)
 
-f_runDescriptivePlots <- function(perRestoreRegion = TRUE) {
+f_runDescriptivePlots <- function(perRestoreRegion = FALSE) {
+  
   selected_ems <- c(1:11)
-  emsvars_temp <- c("critical_EMS.")
+  emsvars_temp <- c("crit_det_EMS.")
   # selected_ems <-c("northeast","northcentral","southern","central")
   # emsvars_temp <- c("critical_")
 
@@ -40,8 +41,8 @@ f_runDescriptivePlots <- function(perRestoreRegion = TRUE) {
   }
 
 
-  capacity <- load_capacity(unique(subdat$region)) %>% dplyr::rename(capacity = critical)
-  subdat <- merge(subdat, capacity, by.x = "region", by.y = "geography_name")
+  capacityDat <- load_new_capacity(selected_ems=NULL) %>% dplyr::rename(capacity = icu_available, region=geography_name)
+  subdat <- merge(subdat, capacityDat, by= "region")
 
   #### aggregate only those below the capacity line 
   subdatBelowCapacityAggr <- subdat %>%
@@ -53,42 +54,48 @@ f_runDescriptivePlots <- function(perRestoreRegion = TRUE) {
   if (length(unique(subdat$region)) == 11) subdat$region <- factor(subdat$region, levels = c(1:11), labels = c(1:11))
   
   for (i in unique(subdat$grpvar)) {
+    
     tdat <- subset(subdat, grpvar == i)
     tdatSub <- subset(subdatBelowCapacityAggr, grpvar == i)
-
+    
+    tdat$region <- factor(tdat$region, levels = c(1:11), labels = c(1:11))
+    tdatSub$region <- factor(tdatSub$region, levels = c(1:11), labels = c(1:11))
+    
     l_plot <- ggplot(data = tdat) +
-      theme_minimal() +
-      geom_line(aes(x = Date, y = value, group=scen_num ), col = "deepskyblue4", size = 1, alpha=0.5) +
-      geom_hline(aes(yintercept = capacity)) +
+      theme_cowplot() +
+      geom_line(aes(x = Date, y = value, group=scen_num ), col = "brown3", size = 0.7, alpha=0.8) +
+      geom_hline(aes(yintercept = capacity), linetype="dashed") +
       scale_color_viridis(discrete = TRUE) +
       labs(title = paste0("reopen ", i, " %"), 
            subtitle = "", y = "Predicted ICU bed demand",
            x="") +
       customThemeNoFacet +
       scale_x_date(breaks = "1 month", labels = date_format("%b")) +
-      facet_wrap(~region, scales = "free")
+      facet_wrap(~region, scales = "free") +
+      geom_hline(yintercept = c(-Inf, Inf))+
+      geom_vline(xintercept = c(-Inf, Inf))
 
     selectedScens <- sample(unique(tdat$scen_num), 5, replace = FALSE, prob = NULL)
-    l_plot_withColor <- l_plot + geom_line(data = tdatSub, aes(x = Date, y = value, group=scen_num), col = "brown3", size = 1, alpha=0.5) 
+    l_plot_withColor <- l_plot + geom_line(data = tdatSub, aes(x = Date, y = value, group=scen_num), col = "deepskyblue3", size = 1, alpha=0.5) 
     
 
     ggsave(paste0("reopen_", i, "_", adminlevel, "_capacity_timeline.png"),
-      plot = l_plot_withColor, path = file.path(exp_dir), width = 10, height = 6, device = "png"
+      plot = l_plot_withColor, path = file.path(exp_dir), width = 12, height = 7, device = "png"
     )
     ggsave(paste0("reopen_", i, "_", adminlevel, "_capacity_timeline.pdf"),
-      plot = l_plot_withColor, path = file.path(exp_dir), width = 10, height = 6, device = "pdf"
+      plot = l_plot_withColor, path = file.path(exp_dir), width = 12, height = 7, device = "pdf"
     )
 
   }
 
 
-  pplot <- ggplot(data = subset(trajectoriesDat, Date >= as.Date("2020-12-30") & Date <= as.Date("2020-12-31")), aes(x = grpvar, y = crit_cumul_All, group = grpvar)) +
+  pplot <- ggplot(data = subset(trajectoriesDat, Date >= as.Date("2020-12-30") & Date <= as.Date("2020-12-31")), aes(x = grpvar, y = crit_det_cumul_All, group = grpvar)) +
     theme_minimal() +
     geom_violin(fill = "deepskyblue3", col = "deepskyblue3") +
     stat_summary(fun = median, geom = "point", size = 2, color = "black") +
-    geom_hline(yintercept = sum(capacity$capacity)) +
+    geom_hline(yintercept = sum(capacityDat$capacity)) +
     scale_y_continuous(expand = c(0, 0), labels = scales::comma) +
-    labs(y = "Daily critical cases", x = "") +
+    labs(y = "ICU census (cumulative)", x = "") +
     customThemeNoFacet +
     theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank())
 
@@ -98,7 +105,35 @@ f_runDescriptivePlots <- function(perRestoreRegion = TRUE) {
   ggsave(paste0(adminlevel, "_boxplot_by_grp_cumulEnd2020.pdf"),
     plot = pplot, path = file.path(exp_dir), width = 10, height = 6, device = "pdf"
   )
+  
+  
+  subdatAll <-  trajectoriesDat %>%
+    filter(Date <= as.Date("2020-12-31")) %>%
+    dplyr::group_by( scen_num, reopening_multiplier_4) %>%
+    dplyr::mutate(valueMax = max(crit_det_All, na.rm = TRUE)) %>%
+    filter(valueMax <= sum(capacityDat$capacity))
+    
+  l_plot<- ggplot(data = subset(trajectoriesDat, Date <= as.Date("2020-12-31"))) +
+    theme_cowplot() +
+    geom_line(aes(x = Date, y = crit_det_All, group=scen_num ), col = "brown3", size = 0.7, alpha=0.8) +
+    geom_line(data = subdatAll, 
+              aes(x = Date, y = crit_det_All, group=scen_num ), col = "deepskyblue3", size = 0.7, alpha=0.8) +
+    geom_hline(yintercept = sum(capacityDat$capacity)) +
+    scale_color_viridis(discrete = TRUE) +
+    labs(title = paste0("reopen ", i, " %"), 
+         subtitle = "", y = "Predicted ICU bed demand",
+         x="") +
+    customThemeNoFacet +
+    scale_x_date(breaks = "1 month", labels = date_format("%b")) +
+    geom_hline(yintercept = c(-Inf, Inf))+
+    geom_vline(xintercept = c(-Inf, Inf))
 
+  ggsave(paste0("reopen_IL_capacity_timeline.png"),
+         plot = l_plot_withColor, path = file.path(exp_dir), width = 12, height = 7, device = "png"
+  )
+  ggsave(paste0("reopen_IL_capacity_timeline.pdf"),
+         plot = l_plot_withColor, path = file.path(exp_dir), width = 12, height = 7, device = "pdf"
+  )
 
   #####  visualize detection variables
   if("d_As_t" %in% colnames(trajectoriesDat) & "d_Sym_t" %in% colnames(trajectoriesDat ) ){
@@ -170,8 +205,8 @@ f_runDescriptivePlots <- function(perRestoreRegion = TRUE) {
 #### Run either local (for loop) or on NUCLUSTER
 ###===========================================================
 
-if (!exists("LOCAL")) runinBatchMode <- TRUE
-if (exists("LOCAL")) runinBatchMode <- FALSE
+if (!exists("Location")) runinBatchMode <- TRUE
+if (exists("Location")) runinBatchMode <- FALSE
 
 if (runinBatchMode) {
   # cmd_agrs <- commandArgs()
@@ -182,14 +217,14 @@ if (runinBatchMode) {
   # task_id <- Sys.getenv("SLURM_ARRAY_TASK_ID")
   # print(task_id)
   # print(simdate)
-  simdate <- "20200731"
+  simdate <- "20200827"
 
   ## Load packages
   packages_needed <- c("tidyverse", "reshape", "cowplot", "scales", "readxl", "viridis", "stringr", "broom")
   lapply(packages_needed, require, character.only = TRUE)
 
   ## Load directories and custom objects and functions
-  setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
+ # setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
   source("load_paths.R")
   source("processing_helpers.R")
   source("ct_analysis/helper_functions_CT.R")
