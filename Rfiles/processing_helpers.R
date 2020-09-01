@@ -82,11 +82,12 @@ combineDat <- function(filelist, namelist) {
 
 
 
-load_new_capacity <- function(selected_ems = NULL, simdate = "20200825") {
+load_new_capacity <- function(selected_ems = NULL, filedate = "20200825") {
 
-
-  fname <- paste0("capacity_weekday_average_",simdate,".csv")
-  df <- read.csv(file.path(data_path, "covid_IDPH/Corona virus reports/hospital_capacity_thresholds_template", fname))
+  library(readr)
+  library(dplyr)
+  fname <- paste0("capacity_weekday_average_",filedate,".csv")
+  df <- read_csv(file.path(data_path, "covid_IDPH/Corona virus reports/hospital_capacity_thresholds_template", fname))
 
 
   df <- df %>%
@@ -98,28 +99,28 @@ load_new_capacity <- function(selected_ems = NULL, simdate = "20200825") {
     select(geography_name, icu_availforcovid, hb_availforcovid)
 
   dfRR <- df %>%
-    rename(region = geography_name) %>%
+    dplyr::rename(region = geography_name) %>%
     f_addRestoreRegion() %>%
-    group_by(restore_region) %>%
-    summarize(
+    dplyr::group_by(restore_region) %>%
+    dplyr::summarize(
       icu_availforcovid = sum(icu_availforcovid),
       hb_availforcovid = sum(hb_availforcovid)
     ) %>%
-    mutate(geography_name = tolower(restore_region)) %>%
-    select(geography_name, icu_availforcovid, hb_availforcovid)
+    dplyr::mutate(geography_name = tolower(restore_region)) %>%
+    dplyr::select(geography_name, icu_availforcovid, hb_availforcovid)
 
   dfIL <- df %>%
-    summarize(
+    dplyr::summarize(
       icu_availforcovid = sum(icu_availforcovid),
       hb_availforcovid = sum(hb_availforcovid)
     ) %>%
-    mutate(geography_name = "illinois") %>%
-    select(geography_name, icu_availforcovid, hb_availforcovid)
+    dplyr::mutate(geography_name = "illinois") %>%
+    dplyr::select(geography_name, icu_availforcovid, hb_availforcovid)
 
 
   df <- rbind(df, dfRR, dfIL) %>%
     as.data.frame() %>%
-    rename(
+    dplyr::rename(
       icu_available = icu_availforcovid,
       medsurg_available = hb_availforcovid
     )
