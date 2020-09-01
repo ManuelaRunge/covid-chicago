@@ -8,6 +8,7 @@
 
 ## Load packages
 Location="LOCAL"
+LOCAL=TRUE
 packages_needed <- c( 'tidyverse','reshape', 'cowplot', 'scales', 'readxl', 'viridis', 'stringr', 'broom') 
 lapply(packages_needed, require, character.only = TRUE) 
 
@@ -17,7 +18,7 @@ source("setup.R")
 source("processing_helpers.R")
 source("ct_analysis/helper_functions_CT.R")
 
-simdate <- "20200731"
+simdate <- "20200827"
 exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
 exp_names <- exp_names[grep("contact",exp_names)]
 
@@ -50,8 +51,8 @@ for (exp_name in exp_names) {
   if (describeDat) source(file.path("ct_analysis/describeTrajectoriesDat.R"))
   
   if (heatmapCritical){
-    #source(file.path("ct_analysis/heatmap_loess_contactTracing.R"))  
-    source(file.path("ct_analysis/combine_thresholds_dat.R"))
+    source(file.path("ct_analysis/heatmap_loess_contactTracing.R"))  
+    # source(file.path("ct_analysis/combine_thresholds_dat.R"))
   }
   
   if (estimateRt){ 
