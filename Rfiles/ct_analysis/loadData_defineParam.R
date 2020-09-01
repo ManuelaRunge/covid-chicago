@@ -12,6 +12,9 @@
   Rt_dir <- file.path(ct_dir, simdate, exp_name, "estimatedRt")
   if (!dir.exists(Rt_dir)) dir.create(Rt_dir)
   
+  heatmapRtDir <- file.path(exp_dir, "heatmap_Rt")
+  if(!dir.exists(heatmapRtDir))dir.create(heatmapRtDir)
+  
   
   heatmapICUDir <- file.path(exp_dir, "heatmap_ICU")
   if (!dir.exists(heatmapICUDir)) dir.create(heatmapICUDir)

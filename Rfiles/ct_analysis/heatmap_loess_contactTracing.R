@@ -491,7 +491,7 @@ if(runinBatchMode){
   # emsregions <- "Illinois"
     
     for (ems in emsregions) {
-      f_runHeatmapAnalysis_ems(ems)
+      f_runHeatmapAnalysis_region(ems)
       
     }
     

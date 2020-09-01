@@ -24,9 +24,9 @@ exp_names <- exp_names[grep("contact",exp_names)]
 
 ### Define which analysis scripts to run
 describeDat <- FALSE
-heatmapCritical <- TRUE
+heatmapCritical <- FALSE
 
-estimateRt <- FALSE 
+estimateRt <- TRUE 
 heatmapRt <- FALSE 
 
 tresholdsAll <- FALSE
@@ -56,10 +56,9 @@ for (exp_name in exp_names) {
   }
   
   if (estimateRt){ 
-     source(file.path("ct_analysis/get_Rt_from_contactTracingSimulations.R"))
-     source(file.path("ct_analysis/combine_Rt_and_plot.R"))
+     #source(file.path("ct_analysis/get_Rt_from_contactTracingSimulations.R"))
+    # source(file.path("ct_analysis/combine_Rt_and_plot.R"))
      source(file.path("ct_analysis/heatmap_loess_contactTracing_Rt.R"))
-     source(file.path("ct_analysis/combine_Rt_and_plot.R"))
   }
   
   
