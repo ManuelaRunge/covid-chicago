@@ -11,6 +11,10 @@
 
   Rt_dir <- file.path(ct_dir, simdate, exp_name, "estimatedRt")
   if (!dir.exists(Rt_dir)) dir.create(Rt_dir)
+  
+  
+  heatmapICUDir <- file.path(exp_dir, "heatmap_ICU")
+  if (!dir.exists(heatmapICUDir)) dir.create(heatmapICUDir)
 
 
   ## Define contact  tracing parameters
@@ -37,7 +41,7 @@
 f_loadTrajectories <- function(useTrim=FALSE){
   ## Load trajectories Dat
   fname =  "trajectoriesDat.csv"
-  if(useTrim) fname == "trajectoriesDat_trim.csv"
+  if(useTrim) fname = "trajectoriesDat_trim.csv"
 
   trajectoriesDat <- read.csv(file.path(exp_dir, fname))
 
@@ -52,6 +56,8 @@ f_loadTrajectories <- function(useTrim=FALSE){
   trajectoriesDat$detection_success <- trajectoriesDat[, colnames(trajectoriesDat) == detectionVar]
   trajectoriesDat$isolation_success <- trajectoriesDat[, colnames(trajectoriesDat) == isolationVar]
   trajectoriesDat$grpvar <- trajectoriesDat[, colnames(trajectoriesDat) == groupVar]
+  
+  trajectoriesDat$expname <- exp_name
   if (isolationVar == "reduced_inf_of_det_cases_ct1") trajectoriesDat$isolation_success <- 1 - (trajectoriesDat$isolation_success)
   
   return(trajectoriesDat)
@@ -66,9 +72,14 @@ if(loadTrajectores){
   trajectoriesDat <- f_loadTrajectories(useTrim=useTrim)
   
   ### Extract relevant dates from trajectpries dat
-  reopeningdate <- unique(as.Date(trajectoriesDat$gradual_reopening_time3, origin = trajectoriesDat$startdate))
-  interventionstart <- unique(as.Date(trajectoriesDat$contact_tracing_start_1, origin = trajectoriesDat$startdate))
-  interventionstop <- unique(as.Date(trajectoriesDat$contact_tracing_stop1, origin = trajectoriesDat$startdate))
+ # reopeningdate <- unique(as.Date(trajectoriesDat$gradual_reopening_time4, origin = trajectoriesDat$startdate))
+  #interventionstart <- unique(as.Date(trajectoriesDat$contact_tracing_start_1, origin = trajectoriesDat$startdate))
+  #interventionstop <- unique(as.Date(trajectoriesDat$contact_tracing_stop1, origin = trajectoriesDat$startdate))
+  
+  reopeningdate <- as.Date("2020-08-30")
+  interventionstart <- as.Date("2020-09-01")
+  interventionstop <- as.Date("2022-09-01")
+  enddate <- as.Date("2020-12-31")
   
 }
 
