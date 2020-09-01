@@ -25,6 +25,8 @@ f_combineCSVs <- function(exp_dir,  fname = "ICUcapacity.csv", fnameout="CT_ICU_
     if(dim(temp)[1]<1)next
     
     temp$id <- thresholdsfiles[i]
+    
+    colnames(temp) <- gsub("regin","region",    colnames(temp))
     temp$region <- as.character(temp$region )
     datlist[[length(datlist)+1]] <- temp 
     
@@ -45,11 +47,12 @@ f_combineCSVs <- function(exp_dir,  fname = "ICUcapacity.csv", fnameout="CT_ICU_
     print("file not found")
   }
   
+  rm(thresholdsfiles)
 }
 
 
 
-simdate <- "20200731"
+simdate <- "20200827"
 
 exp_names <- list.dirs( file.path(simulation_output,'contact_tracing',simdate), recursive = FALSE, full.names = FALSE)
 exp_names <- exp_names[grep("reopen_contact",exp_names)]
@@ -63,6 +66,7 @@ for (exp_name in exp_names) {
   
   f_combineCSVs(exp_dir,  fname = "loess_ICUcapacity.csv", fnameout="CT_ICU_thresholds.csv")
   
+  print("CT_RT")
   f_combineCSVs(exp_dir,  fname = "loess_Rt.csv", fnameout="CT_Rt_thresholds.csv")
   
 
