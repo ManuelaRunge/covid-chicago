@@ -5,7 +5,7 @@ packages_needed <- c( 'tidyverse')
 lapply(packages_needed, require, character.only = TRUE) 
 
 ## Load directories and custom objects and functions
-setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
+#setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
 source("load_paths.R")
 source("processing_helpers.R")
 
@@ -14,22 +14,22 @@ source("processing_helpers.R")
 f_getPredDat <- function(simdir, exp_name) {
   
   expDIR <- file.path(simdir, exp_name )
-  trajectoriesDat <- read.csv(file.path(expDIR, "trajectoriesDat.csv"))
+  trajectoriesDat <- read_csv(file.path(expDIR, "trajectoriesDat_trim.csv"))
   unique(trajectoriesDat$reopening_multiplier_4)
   
   region_names <- paste0("EMS-",c(1:11))
     
-  colnames(trajectoriesDat) <- gsub("[.]", "-", colnames(trajectoriesDat))
-  
+
   ### per restore region
   outcomevars <- c(
-    paste0("deaths_", region_names),
+   # paste0("deaths_", region_names),
+    paste0("infected_", region_names),
     paste0("hosp_cumul_", region_names),
     paste0("hospitalized_det_", region_names),
     paste0("hospitalized_", region_names),
     paste0("infected_", region_names),
-    paste0("deaths_det_", region_names),
-    paste0("prevalence_", region_names),
+   # paste0("deaths_det_", region_names),
+    #paste0("prevalence_", region_names),
     paste0("crit_cumul_", region_names)
   )
   
@@ -68,7 +68,6 @@ f_getPredDat <- function(simdir, exp_name) {
   return(predDat)
 }
 
-
 f_combineDat <- function(simdir, exp_name, Rt = FALSE) {
   
   if (Rt == FALSE) df <- f_getPredDat(simdir, exp_name) %>%  mutate(scenario = exp_name)
@@ -77,37 +76,41 @@ f_combineDat <- function(simdir, exp_name, Rt = FALSE) {
   return(df)
 }
 
+simdate = "20200827"
+simdir <- file.path(simulation_output, "contact_tracing/",simdate)
 
-exp_names <- c(
-  "20200801_IL_reopen_TD", "20200731_IL_reopen_counterfactual",
-  "20200801_IL_reopen_HS40TD", "20200801_IL_reopen_HS40",
-  "20200801_IL_reopen_HS80TD", "20200801_IL_reopen_HS80"
-)
-
+exp_names <- list.dirs(simdir, recursive = FALSE, full.names = FALSE)
+exp_names <- exp_names[!grepl("reopen_contactTracing",exp_names)]
+exp_names <- exp_names[grep("IL_reopen",exp_names)]
 
 RtList <- list()
-predList <- list()
-
 for (exp_name in exp_names) {
   # exp_name = exp_names[1]
   
   print(exp_name)
 
-  simdir <- file.path(simulation_output, "contact_tracing/20200731/")
+ Rtdf <- f_combineDat(simdir, exp_name, Rt = TRUE)
+ RtList[[length(RtList) + 1]] <- Rtdf
   
-  Rtdf <- f_combineDat(simdir, exp_name, Rt = TRUE)
-  RtList[[length(RtList) + 1]] <- Rtdf
-  
+  rm(Rtdf)
+
+}
+RtDatHS <- RtList %>% bind_rows() 
+if (SAVE) save(RtDatHS, file = file.path(simulation_output, "contact_tracing",simdate,"RtDatHS.Rdata"))
+
+predList <- list()
+for (exp_name in exp_names) {
+
+  print(exp_name)
   preddf <- f_combineDat(simdir, exp_name, Rt = FALSE)
   predList[[length(predList) + 1]] <- preddf
-  
-  rm(Rtdf, preddf )
+  rm(preddf)
+
 }
 
+predDatHS <- predList %>% bind_rows() 
+if (SAVE) save(predDatHS, file = file.path(simulation_output, "contact_tracing",simdate,"predDatHS.Rdata"))
 
-
-if (SAVE) save(predDatHS, file = file.path(simulation_output, "contact_tracing/20200731/predDatHS.Rdata"))
-if (SAVE) save(RtDatHS, file = file.path(simulation_output, "contact_tracing/20200731/RtDatHS.Rdata"))
 
 
 
