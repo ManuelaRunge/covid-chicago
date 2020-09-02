@@ -8,6 +8,7 @@
 library(tidyverse)
 library(EpiEstim)
 library(readr)
+library(cowplot)
 
 runViaSource <- TRUE
 
@@ -27,37 +28,49 @@ load(file.path(simulation_output, exp_name, "estimatedRt", "combined_estimated_R
 ### Combine list to dataframe
 Rt_dat <- Rt_dat %>%
   mutate(time = t_end) %>%
-  f_addRestoreRegion() %>%
-  select(time, scen_num, restore_region, region, `Mean(R)`, `Median(R)`) %>%
-  rename(meanRt = `Mean(R)`, medianRt = `Median(R)`)
-
-Rt_datRR <- Rt_dat %>%
-  group_by(restore_region, time, scen_num) %>%
-  summarize(meanRt = mean(meanRt), medianRt = mean(medianRt)) %>%
-  rename(geography_modeled = restore_region)
+  rename(meanRt = `Mean(R)`, 
+         medianRt = `Median(R)`,
+         q2.5Rt = `Quantile.0.025(R)`,
+         q25Rt = `Quantile.0.25(R)`,
+         q75Rt = `Quantile.0.75(R)`,
+         q97.5Rt = `Quantile.0.975(R)`)%>%
+  rename(geography_modeled = region) 
 
 Rt_datIL <- Rt_dat %>%
   group_by(time, scen_num) %>%
-  summarize(meanRt = mean(meanRt), medianRt = mean(medianRt)) %>%
+  summarize(meanRt = mean(meanRt), 
+            medianRt = mean(medianRt),
+            q2.5Rt = mean(q2.5Rt),
+            q25Rt = mean(q25Rt),
+            q75Rt = mean(q75Rt),
+            q97.5Rt = mean(q97.5Rt)) %>%
   mutate(geography_modeled = "illinois")
 
 
 Rt_dat <- Rt_dat %>%
-  rename(geography_modeled = region) %>%
-  select(-restore_region) %>%
-  rbind(Rt_datRR) %>%
+  select(colnames(Rt_datIL)) %>%
   rbind(Rt_datIL)
 
 table(Rt_dat$geography_modeled)
 
 
+### Aggregate scenarios and use confidence intervals from Rt estimation
+Rt_dat <- Rt_dat %>%
+  group_by(time,geography_modeled ) %>%
+  summarize(meanRt = mean(meanRt), 
+            medianRt = mean(medianRt),
+            q2.5Rt = mean(q2.5Rt),
+            q25Rt = mean(q25Rt),
+            q75Rt = mean(q75Rt),
+            q97.5Rt = mean(q97.5Rt))
+
 
 RtdatCombined <- Rt_dat %>%
   dplyr::group_by(time, geography_modeled) %>%
-  dplyr::summarize(
-    Median.of.covid.19.Rt = median(medianRt),
-    Lower.error.bound.of.covid.19.Rt = quantile(medianRt, probs = 0.025, na.rm = TRUE),
-    Upper.error.bound.of.covid.19.Rt = quantile(medianRt, probs = 0.975, na.rm = TRUE)
+  dplyr::rename(
+    Median.of.covid.19.Rt = medianRt,
+    Lower.error.bound.of.covid.19.Rt = q2.5Rt,
+    Upper.error.bound.of.covid.19.Rt = q97.5Rt
   ) %>%
   dplyr::mutate(Date = as.Date("2020-02-13") + time) %>%
   dplyr::arrange(Date, geography_modeled) %>%
@@ -66,11 +79,8 @@ RtdatCombined <- Rt_dat %>%
   ungroup() %>%
   dplyr::select(-time)
 
-RtdatCombined$geography_modeled <- gsub("covidregion_Central", "Central", RtdatCombined$geography_modeled)
+
 RtdatCombined$geography_modeled <- gsub("covidregion_illinois", "illinois", RtdatCombined$geography_modeled)
-RtdatCombined$geography_modeled <- gsub("covidregion_Northcentral", "Northcentral", RtdatCombined$geography_modeled)
-RtdatCombined$geography_modeled <- gsub("covidregion_Northeast", "Northeast", RtdatCombined$geography_modeled)
-RtdatCombined$geography_modeled <- gsub("covidregion_Southern", "Southern", RtdatCombined$geography_modeled)
 RtdatCombined$geography_modeled <- tolower(RtdatCombined$geography_modeled)
 
 
@@ -93,7 +103,6 @@ if (saveForCivis) {
 
 generatePlots <- F
 if (generatePlots) {
-  library(cowplot)
 
   RtdatCombined$region <- factor(RtdatCombined$geography_modeled, levels = paste0("covidregion_", c(1:11)), labels = c(1:11))
 
@@ -102,23 +111,59 @@ if (generatePlots) {
     filter(region %in% as.character(c(1:11))) %>%
     ggplot() +
     theme_cowplot() +
-    geom_rect(xmin = -Inf, xmax = as.Date(Sys.Date()), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.02) +
+   # geom_rect(xmin = -Inf, xmax = as.Date(Sys.Date()), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.02) +
     geom_ribbon(aes(x = Date, ymin = Lower.error.bound.of.covid.19.Rt, ymax = Upper.error.bound.of.covid.19.Rt), fill = "deepskyblue3", alpha = 0.3) +
     geom_line(aes(x = Date, y = Median.of.covid.19.Rt), col = "deepskyblue3") +
-    facet_wrap(~region) +
+    facet_wrap(~region, scales="free_x") +
+    theme(panel.spacing = unit(1, "lines"))+
     # background_grid() +
     # geom_hline(yintercept = seq(0.6, 1.4, 0.2), col="grey", size=0.7)+
     geom_hline(yintercept = 1) +
     geom_hline(yintercept = c(-Inf, Inf)) +
     geom_vline(xintercept = c(-Inf, Inf)) +
-    customThemeNoFacet
+    customThemeNoFacet+
+    labs(y=expression(italic(R[t])), caption="Shaded area = uncertainity in Rt estimation")+
+    scale_x_date(date_breaks = "30 days", date_labels = "%d\n%b")
 
   ggsave(paste0("estimatedRt_overtime.png"),
-    plot = pplot, path = file.path(simulation_output, exp_name, "estimatedRt"), width = 12, height = 6, device = "png"
+    plot = pplot, path = file.path(simulation_output, exp_name, "estimatedRt"), width = 12, height = 8, device = "png"
   )
+  ggsave(paste0("estimatedRt_overtime.pdf"),
+         plot = pplot, path = file.path(simulation_output, exp_name, "estimatedRt"), width = 12, height = 8, device = "pdf"
+  )
+  
   rm(pplot)
 
+  
+  pplot <- RtdatCombined %>%
+    filter(Date >= "2020-04-01" & Date <= "2020-11-01") %>%
+    filter(geography_modeled=="illinois") %>%
+    ggplot() +
+    theme_cowplot() +
+   # geom_rect(xmin = -Inf, xmax = as.Date(Sys.Date()), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.02) +
+    geom_ribbon(aes(x = Date, ymin = Lower.error.bound.of.covid.19.Rt, ymax = Upper.error.bound.of.covid.19.Rt), fill = "deepskyblue3", alpha = 0.3) +
+    geom_line(aes(x = Date, y = Median.of.covid.19.Rt), col = "deepskyblue3") +
+    # background_grid() +
+    # geom_hline(yintercept = seq(0.6, 1.4, 0.2), col="grey", size=0.7)+
+    geom_hline(yintercept = 1) +
+    geom_hline(yintercept = c(-Inf, Inf)) +
+    geom_vline(xintercept = c(-Inf, Inf)) +
+    customThemeNoFacet +
+    labs(y=expression(italic(R[t])), caption="Shaded area = uncertainity in Rt estimation")+
+    scale_x_date(date_breaks = "30 days", date_labels = "%d\n%b")
+  
+  ggsave(paste0("IL_estimatedRt_overtime.png"),
+         plot = pplot, path = file.path(simulation_output, exp_name, "estimatedRt"), width = 8, height = 6, device = "png"
+  )
+  ggsave(paste0("IL_estimatedRt_overtime.pdf"),
+         plot = pplot, path = file.path(simulation_output, exp_name, "estimatedRt"), width = 8, height = 6, device = "pdf"
+  )
+  
+  rm(pplot)
+  
 
+  
+  ### Change date to today
   pplot <- RtdatCombined %>%
     filter(Date >= "2020-08-18" & Date < "2020-08-19") %>%
     filter(region %in% as.character(c(1:11))) %>%
@@ -127,8 +172,11 @@ if (generatePlots) {
     geom_errorbar(aes(x = reorder(region, Median.of.covid.19.Rt), ymin = Lower.error.bound.of.covid.19.Rt, ymax = Upper.error.bound.of.covid.19.Rt), width = 0.3, alpha = 0.3) +
     geom_point(aes(x = reorder(region, Median.of.covid.19.Rt), y = Median.of.covid.19.Rt), col = "deepskyblue3", size = 2.5) +
     geom_hline(yintercept = 1) +
+    labs(caption="Error bounds based on uncertainty in Rt estimation")+
     customThemeNoFacet
 
+  
+  ### Change name suffix to today
   ggsave(paste0("estimatedRt_20200819.png"),
     plot = pplot, path = file.path(simulation_output, exp_name, "estimatedRt"), width = 8, height = 5, device = "png"
   )
