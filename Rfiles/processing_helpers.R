@@ -3,6 +3,14 @@ library(dplyr)
 
 ## Define functions
 
+load_population <- function(){
+  geography_name <- c('illinois',c(1:11))
+  pop <- c("12830632", "688393","1269519","581432",'676017','424810','760362','791009','1432193','1012222','2477754','2716921')
+  df <-as.data.frame( cbind(geography_name, pop))
+  return(df)
+}
+
+
 ### Load data
 f_loadData <- function(data_path, simdate ='200824') {
   emresource <- read.csv(file.path(data_path, "covid_IDPH/Corona virus reports/emresource_by_region.csv")) %>%
