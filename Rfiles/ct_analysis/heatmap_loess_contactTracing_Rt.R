@@ -6,14 +6,20 @@
 f_runHeatmapAnalysis_Rt_region <- function(ems, geography="Region"){
   
   selected_ems <- as.numeric(regions[[ems]])
+
   
   if(!file.exists(file.path(Rt_dir,"EMS_combined_estimated_Rt.csv" ))) next
   
+  popDat <-     load_population() %>% dplyr::rename(region=geography_name) 
+  popDat$region <- as.character(popDat$region) 
+  
+  ## Average ems regions and scen nums
   dat <- read.csv(file.path(Rt_dir,"EMS_combined_estimated_Rt.csv" )) %>%
     mutate(Date = as.Date(Date)) %>%
-    filter(region == ems &
+    filter(region %in% selected_ems  &
              Date >= as.Date("2020-10-01") & Date < as.Date("2020-10-02")) %>%
-    dplyr::group_by(region, Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>%
+    dplyr::group_by( region, Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>%
+    mutate(region=as.character(region)) %>%
     dplyr::summarize(average_median_Rt = mean(Mean)) %>%
     dplyr::mutate(Rt_fct = ifelse(average_median_Rt < 1, "<1", ">=1"), capacity = 1)
   
@@ -24,10 +30,14 @@ f_runHeatmapAnalysis_Rt_region <- function(ems, geography="Region"){
       group_by(Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>%
       dplyr::summarize(average_median_Rt = mean(average_median_Rt)) %>%
       dplyr::mutate(Rt_fct = ifelse(average_median_Rt < 1, "<1", ">=1"), capacity = 1)
+    
+   # left_join(popDat, by="region") %>%
+   #   dplyr::group_by( Date, t_start, scen_num, t_end, isolation_success, detection_success, grpvar) %>%
+   #   dplyr::summarize(average_median_Rt = mean(average_median_Rt)) %>%
   }
   
   
-  dat <- f_valuefct_cap(dat,fewerClasses=TRUE)
+  dat <- dat %>% mutate(value =average_median_Rt ) %>% f_valuefct_cap(fewerClasses=TRUE)
   
   fitlist <- list()
   
@@ -63,12 +73,13 @@ f_runHeatmapAnalysis_Rt_region <- function(ems, geography="Region"){
       print(fig)
     }
     
-    temp.fit <- f_valuefct_cap(temp.fit, fewerClasses = TRUE)
-    
     temp.fit$detection_success <- as.numeric(temp.fit$detection_success)
     temp.fit$isolation_success <- as.numeric(temp.fit$isolation_success)
-    
+    temp.fit$capacity <- 1
     temp.fit$grpvar <- grp
+    
+    temp.fit <- f_valuefct_cap(temp.fit, fewerClasses = TRUE)
+    
     fitlist[[length(fitlist) + 1]] <- temp.fit
     
     rm(temp.fit_mat, temp.fit)
@@ -294,7 +305,7 @@ if(runinBatchMode){
   source("ct_analysis/helper_functions_CT.R")
   
   
-  simdate <- "20200731"
+  simdate <- "20200927"
   #exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
   exp_names <- exp_names[grep("reopen_contact",exp_names)]
    # exp_names = "20200731_IL_reopen_contactTracingHS80TD"
@@ -321,7 +332,7 @@ for(exp_name in exp_names){
   
   if (geography == "Region") {
     
-    emsregions <- names(regions)
+    emsregions <- names(regions)[5]
     # emsregions <- "Illinois"
     
     for (ems in emsregions) {

@@ -487,7 +487,7 @@ if(runinBatchMode){
   
   if (geography == "Region") {
     
-    emsregions <- names(regions)
+    emsregions <- names(regions)[5]
   # emsregions <- "Illinois"
     
     for (ems in emsregions) {

@@ -24,7 +24,7 @@ exp_names <- exp_names[grep("contact",exp_names)]
 
 ### Define which analysis scripts to run
 describeDat <- FALSE
-heatmapCritical <- FALSE
+heatmapCritical <- TRUE
 
 estimateRt <- TRUE 
 heatmapRt <- FALSE 
@@ -33,7 +33,7 @@ tresholdsAll <- FALSE
 generateMap <- FALSE
 
 ### Loop through each EMS or the operational 'super-regions' 
-geography <- "EMS"  # 'EMS'
+geography <- "Region"  # 'EMS'
 
 ## When plotting heatmaps, should the legend show predictions per 100'000 population ? 
 scalePop <- TRUE
@@ -58,7 +58,7 @@ for (exp_name in exp_names) {
   if (estimateRt){ 
      #source(file.path("ct_analysis/get_Rt_from_contactTracingSimulations.R"))
     # source(file.path("ct_analysis/combine_Rt_and_plot.R"))
-     source(file.path("ct_analysis/heatmap_loess_contactTracing_Rt.R"))
+    source(file.path("ct_analysis/heatmap_loess_contactTracing_Rt.R"))
   }
   
   
@@ -72,7 +72,7 @@ summary1 <- FALSE
 if (summary1){
   selected_outcome <- "Rt" # critical
   compareOutcomes <- FALSE
-  generateMap=FALSE
+  generateMap=TRUE
   source(file.path("ct_analysis/combined_exp_summary_plot_IL.R"))
 }
 
