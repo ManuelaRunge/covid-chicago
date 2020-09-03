@@ -69,7 +69,7 @@ f_loadTrajectories <- function(useTrim=FALSE){
 
 
 if(!exists("loadTrajectores"))loadTrajectores=TRUE
-if(!exists("useTrim"))useTrim=TRUE
+if(!exists("useTrim"))useTrim=FALSE
 
 if(loadTrajectores){
   trajectoriesDat <- f_loadTrajectories(useTrim=useTrim)

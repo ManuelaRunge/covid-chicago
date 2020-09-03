@@ -52,7 +52,7 @@ f_combineCSVs <- function(exp_dir,  fname = "ICUcapacity.csv", fnameout="CT_ICU_
 
 
 
-simdate <- "20200827"
+simdate <- "20200902"#"20200827"
 
 exp_names <- list.dirs( file.path(simulation_output,'contact_tracing',simdate), recursive = FALSE, full.names = FALSE)
 exp_names <- exp_names[grep("reopen_contact",exp_names)]

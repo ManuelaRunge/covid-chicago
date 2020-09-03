@@ -18,7 +18,8 @@ source("setup.R")
 source("processing_helpers.R")
 source("ct_analysis/helper_functions_CT.R")
 
-simdate <- "20200827"
+simdate <- "20200902" #"20200827" #
+
 exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
 exp_names <- exp_names[grep("contact",exp_names)]
 
@@ -26,7 +27,7 @@ exp_names <- exp_names[grep("contact",exp_names)]
 describeDat <- FALSE
 heatmapCritical <- TRUE
 
-estimateRt <- TRUE 
+estimateRt <- FALSE 
 heatmapRt <- FALSE 
 
 tresholdsAll <- FALSE

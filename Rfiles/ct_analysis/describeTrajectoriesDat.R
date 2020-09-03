@@ -27,7 +27,7 @@ f_runDescriptivePlots <- function(perRestoreRegion = FALSE) {
     dplyr::mutate(name = gsub("All", "EMS.IL", name)) %>%
     dplyr::mutate(name = gsub("[.]", "_", name)) %>%
     separate(name, into = c("outcome", "region"), sep = "_EMS_") %>%
-    dplyr::filter(Date >= reopeningdate) %>%
+    dplyr::filter(Date >= as.Date("2020-07-01")) %>%
     dplyr::select(-c(time)) %>%
     f_addRestoreRegion()
 
@@ -71,13 +71,18 @@ f_runDescriptivePlots <- function(perRestoreRegion = FALSE) {
            x="") +
       customThemeNoFacet +
       scale_x_date(breaks = "1 month", labels = date_format("%b")) +
-      facet_wrap(~region, scales = "free") +
       geom_hline(yintercept = c(-Inf, Inf))+
       geom_vline(xintercept = c(-Inf, Inf))
 
     selectedScens <- sample(unique(tdat$scen_num), 5, replace = FALSE, prob = NULL)
     l_plot_withColor <- l_plot + geom_line(data = tdatSub, aes(x = Date, y = value, group=scen_num), col = "deepskyblue3", size = 1, alpha=0.5) 
     
+    if(adminlevel!="restoreregion"){
+      l_plot_withColor <- l_plot_withColor + facet_wrap(~region, scales = "free") 
+    }
+    if(adminlevel=="restoreregion"){
+      l_plot_withColor <- l_plot_withColor + facet_wrap(~restore_region)  
+    }
 
     ggsave(paste0("reopen_", i, "_", adminlevel, "_capacity_timeline.png"),
       plot = l_plot_withColor, path = file.path(exp_dir), width = 12, height = 7, device = "png"
