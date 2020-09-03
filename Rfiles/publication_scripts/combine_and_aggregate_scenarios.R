@@ -68,12 +68,12 @@ f_getPredDat <- function(simdir, exp_name) {
 f_combineDat <- function(simdir, exp_name, Rt = FALSE) {
   
   if (Rt == FALSE) df <- f_getPredDat(simdir, exp_name) %>%  mutate(scenario = exp_name)
-  if (Rt == TRUE) df <- read.csv(file.path(simdir, exp_name, "estimatedRt", "EMS_combined_estimated_Rt.csv")) %>% mutate(scenario = exp_name)
+  if (Rt == TRUE) df <- read.csv(file.path(simdir, exp_name, "estimatedRt", "combined_estimatedRt.csv")) %>% mutate(scenario = exp_name)
   
   return(df)
 }
 
-simdate = "20200827"
+simdate = "20200902"  #"20200827"
 simdir <- file.path(simulation_output, "contact_tracing/",simdate)
 
 exp_names <- list.dirs(simdir, recursive = FALSE, full.names = FALSE)
@@ -97,9 +97,14 @@ for (exp_name in exp_names) {
 RtDatHS <- RtList %>% bind_rows() 
 save(RtDatHS, file = file.path(simulation_output, "contact_tracing",simdate,"RtDatHS.Rdata"))
 
+
+
 predList <- list()
 for (exp_name in exp_names) {
 
+  
+if(!file.exists(file.path(simdir, exp_name, "trajectoriesDat_trim.csv")))next
+  
   print(exp_name)
   preddf <- f_combineDat(simdir, exp_name, Rt = FALSE)
   predList[[length(predList) + 1]] <- preddf

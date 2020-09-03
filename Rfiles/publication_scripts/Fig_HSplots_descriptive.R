@@ -30,7 +30,7 @@ ct_dir <- file.path(simulation_output, "contact_tracing")
 # region_cols <- c()
 restoreRegion_cols <- c("Central" = "red2", "Northcentral" = "dodgerblue3", "Northeast" = "chartreuse4", "Southern" = "orchid4")
 
-simdate ="20200827"
+simdate = "20200902"   #"20200827"
 startdate <- "2020-07-01"
 stopdate <- "2020-12-30"
 
@@ -86,19 +86,20 @@ predDatHS <- predDatHS %>%
 
 customTheme <- f_getCustomTheme()
 
-predDatHS$scenario <- gsub(simdate,"", predDatHS$scenario)
+predDatHS$scenario <- gsub(simdate,"", predDatHS$exp_name)
 predDatHS$scenario <- gsub('_IL_reopen_',"", predDatHS$scenario)
 predDatHS$scenario <- gsub('changeTD',"TD", predDatHS$scenario)
 unique(predDatHS$scenario )
 predDatHS$scenario_fct <- factor(predDatHS$scenario,
-                                 levels = c("counterfactual", "HS40", "TDonly","HS80", "HS40TD", "HS80TD"),
+                                 levels = c("counterfactual", "HS40", "TD","HS80", "HS40TD", "HS80TD","CTHS80TD"),
                                  labels = c(
                                    "current trend (comparison)",
                                    "increase detections to 40%",
                                    "faster testing and isolation",
                                    "increase detections to 80%",
                                    "increase detections to 40%\n& faster testing and isolation",
-                                   "increase detections to 80%\n& faster testing and isolation"
+                                   "increase detections to 80%\n& faster testing and isolation",
+                                   "increase detections to 80%\n& faster testing and isolation + CT"
                                  ))
 
 table(predDatHS$scenario_fct, predDatHS$scenario, exclude = NULL)
