@@ -85,7 +85,7 @@ def write_observe(grp, expandModel=None):
 (observe susceptible_{grpout} S::{grp})
 (observe exposed_{grpout} E::{grp})
 (observe asymptomatic_{grpout} asymptomatic_{grp})
-(observe presymptomatic_{grpout} P_det::{grp})
+(observe presymptomatic_{grpout} presymptomatic_{grp})
 (observe symptomatic_mild_{grpout} symptomatic_mild_{grp})
 (observe symptomatic_severe_{grpout} symptomatic_severe_{grp})
 (observe hospitalized_{grpout} hospitalized_{grp})
@@ -94,7 +94,7 @@ def write_observe(grp, expandModel=None):
 (observe recovered_{grpout} recovered_{grp})
 
 (observe asymptomatic_det_{grpout} asymptomatic_det_{grp})
-(observe presymptomatic_det{grpout} P_det::{grp} )
+(observe presymptomatic_det{grpout} presymptomatic_det_{grp} )
 (observe symptomatic_mild_det_{grpout} symptomatic_mild_det_{grp})
 (observe symptomatic_severe_det_{grpout} symptomatic_severe_det_{grp})
 (observe hospitalized_det_{grpout} hospitalized_det_{grp})
@@ -760,6 +760,8 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
 (time-event detection4 @detection_time_4@ ((d_Sys @d_Sys_incr4@)))
 (time-event detection5 @detection_time_5@ ((d_Sys @d_Sys_incr5@)))
 (time-event detection6 @detection_time_6@ ((d_Sys @d_Sys_incr6@)))
+(time-event detection5 @detection_time_7@ ((d_Sys @d_Sys_incr7@)))
+
 
 ;(observe frac_crit_t fraction_critical)
 (time-event frac_crit_adjust1 @crit_time_1@ ((fraction_critical @fraction_critical_incr1@) (fraction_hospitalized (- 1 (+ @fraction_critical_incr1@ @fraction_dead@))) (Kh1 (/ fraction_hospitalized time_to_hospitalization)) (Kh2 (/ fraction_critical time_to_hospitalization )) (Kh1_D (/ fraction_hospitalized (- time_to_hospitalization time_D_Sys))) (Kh2_D (/ fraction_critical (- time_to_hospitalization time_D_Sys) )) ))  
@@ -775,6 +777,7 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
 (param Ki_red3_{grp} (* Ki_{grp} @social_multiplier_3_{grp}@))
 (param Ki_red4_{grp} (* Ki_{grp} @social_multiplier_4_{grp}@))
 (param Ki_red5_{grp} (* Ki_{grp} @social_multiplier_5_{grp}@))
+(param Ki_red6_{grp} (* Ki_{grp} @social_multiplier_6_{grp}@))
 
 (param backtonormal_multiplier_1_{grp}  (/ (- Ki_red5_{grp}  Ki_red4_{grp} ) (- Ki_{grp} Ki_red4_{grp} ) ) )  
 (observe backtonormal_multiplier_1_{grp} backtonormal_multiplier_1_{grp})
@@ -784,13 +787,14 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
 (time-event socialDistance_start @socialDistance_time3@ ((Ki_{grp} Ki_red3_{grp})))
 (time-event socialDistance_change @socialDistance_time4@ ((Ki_{grp} Ki_red4_{grp})))
 (time-event socialDistance_change_2 @socialDistance_time5@ ((Ki_{grp} Ki_red5_{grp})))
+(time-event socialDistance_change_3 @socialDistance_time6@ ((Ki_{grp} Ki_red6_{grp})))
             """.format(grp=grp)
         socialDistance_change_str = socialDistance_change_str + temp_str
 
     rollback_str = ""
     for grp in grpList:
         temp_str = """
-(time-event socialDistance_change_rollback @socialDistance_rollback_time@ ((Ki_{grp} Ki_red4_{grp})))
+(time-event socialDistance_change_rollback @socialDistance_rollback_time@ ((Ki_{grp} Ki_red6_{grp})))
                 """.format(grp=grp)
         rollback_str = rollback_str + temp_str
 
@@ -798,10 +802,22 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
     rollbacktriggered_str = ""
     for grp in grpList:
         temp_str = """
-(state-event rollbacktrigger_{grp} (and (> time @triggertime@) (> {channel}_{grp} (* @trigger_{grp}@ @capacity_multiplier@)) ) ((Ki_{grp} Ki_red4_{grp})))
+(state-event rollbacktrigger_{grp} (and (> time @today@) (> {channel}_{grp} (* @trigger_{grp}@ @capacity_multiplier@)) ) ((Ki_{grp} Ki_red6_{grp})))
                     """.format(channel=trigger_channel,grp=grp)
         rollbacktriggered_str = rollbacktriggered_str + temp_str
 
+    rollbacktriggered_delay_str = ""
+    for grp in grpList:
+        grpout = sub(grp)
+        temp_str = """
+(param time_of_trigger_{grp} 10000)
+(state-event rollbacktrigger_{grp} (and (> time @today@) (> critical_det_{grp} (* @trigger_{grp}@ @capacity_multiplier@)) ) ((time_of_trigger_{grp} time)))
+(func time_since_trigger_{grp} (- time time_of_trigger_{grp}))
+(state-event apply_rollback_{grp} (> (- time_since_trigger_{grp} @trigger_delay_days@) 0) ((Ki_{grp} Ki_red6_{grp})))   
+(observe triggertime_{grpout} time_of_trigger_{grp})
+                   """.format(channel=trigger_channel,grpout=grpout,grp=grp)
+        rollbacktriggered_delay_str = rollbacktriggered_delay_str + temp_str
+        
     d_Sym_change_str = ""
     for grp in grpList:
         grpout = sub(grp)
@@ -840,7 +856,7 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
     interventionSTOP_adj2_str = ""
     for grp in grpList :
         temp_str = """
-(param Ki_back_{grp} (+ Ki_red5_{grp} (* @backtonormal_multiplier@ (- Ki_{grp} Ki_red5_{grp}))))
+(param Ki_back_{grp} (+ Ki_red6_{grp} (* @backtonormal_multiplier@ (- Ki_{grp} Ki_red6_{grp}))))
 (time-event stopInterventions @socialDistanceSTOP_time@ ((Ki_{grp} Ki_back_{grp})))
         """.format(grp=grp)
         interventionSTOP_adj2_str = interventionSTOP_adj2_str + temp_str
@@ -866,16 +882,32 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
     gradual_reopening2_str = ""
     for grp in grpList:
         temp_str = """
-(param Ki_back1_{grp} (+ Ki_red5_{grp} (* @reopening_multiplier_4@ 0.25 (- Ki_{grp} Ki_red5_{grp}))))
-(param Ki_back2_{grp} (+ Ki_red5_{grp} (* @reopening_multiplier_4@ 0.50 (- Ki_{grp} Ki_red5_{grp}))))
-(param Ki_back3_{grp} (+ Ki_red5_{grp} (* @reopening_multiplier_4@ 0.75 (- Ki_{grp} Ki_red5_{grp}))))
-(param Ki_back4_{grp} (+ Ki_red5_{grp} (* @reopening_multiplier_4@ 1.00 (- Ki_{grp} Ki_red5_{grp}))))
+(param Ki_back1_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4@ 0.25 (- Ki_{grp} Ki_red6_{grp}))))
+(param Ki_back2_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4@ 0.50 (- Ki_{grp} Ki_red6_{grp}))))
+(param Ki_back3_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4@ 0.75 (- Ki_{grp} Ki_red6_{grp}))))
+(param Ki_back4_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4@ 1.00 (- Ki_{grp} Ki_red6_{grp}))))
 (time-event gradual_reopening1 @gradual_reopening_time1@ ((Ki_{grp} Ki_back1_{grp})))
 (time-event gradual_reopening2 @gradual_reopening_time2@ ((Ki_{grp} Ki_back2_{grp})))
 (time-event gradual_reopening3 @gradual_reopening_time3@ ((Ki_{grp} Ki_back3_{grp})))
 (time-event gradual_reopening4 @gradual_reopening_time4@ ((Ki_{grp} Ki_back4_{grp})))
         """.format(grp=grp)
         gradual_reopening2_str = gradual_reopening2_str + temp_str
+
+# gradual reopening from 'current' transmission level with region-specific reopening
+    gradual_reopening3_str = ""
+    for grp in grpList:
+        temp_str = """
+(param Ki_back1_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4_{grp}@ 0.25 (- Ki_{grp} Ki_red6_{grp}))))
+(param Ki_back2_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4_{grp}@ 0.50 (- Ki_{grp} Ki_red6_{grp}))))
+(param Ki_back3_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4_{grp}@ 0.75 (- Ki_{grp} Ki_red6_{grp}))))
+(param Ki_back4_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4_{grp}@ 1.00 (- Ki_{grp} Ki_red6_{grp}))))
+(time-event gradual_reopening1 @gradual_reopening_time1@ ((Ki_{grp} Ki_back1_{grp})))
+(time-event gradual_reopening2 @gradual_reopening_time2@ ((Ki_{grp} Ki_back2_{grp})))
+(time-event gradual_reopening3 @gradual_reopening_time3@ ((Ki_{grp} Ki_back3_{grp})))
+(time-event gradual_reopening4 @gradual_reopening_time4@ ((Ki_{grp} Ki_back4_{grp})))
+        """.format(grp=grp)
+        gradual_reopening3_str = gradual_reopening3_str + temp_str
+
 
     improveHS_str = define_change_detection_and_isolation(grpList=grpList,
                                     reduced_inf_of_det_cases = False,
@@ -946,6 +978,8 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening_str)
     if scenarioName == "gradual_reopening2" :
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening2_str)
+    if scenarioName == "gradual_reopening3" :
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening3_str)
     if scenarioName == "continuedSIP" :
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str)
     if scenarioName == "rollback" :
@@ -965,8 +999,9 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
     if scenarioName == "improveHS" :
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + improveHS_str)
     if scenarioName == "rollbacktriggered" :
-        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + rollbacktriggered_str)
-
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening2_str + rollbacktriggered_str)
+    if scenarioName == "rollbacktriggered_delay" :
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening3_str + rollbacktriggered_delay_str)
 
    # if scenarioName == "gradual_contactTracing" :
    #    total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening2_str + contactTracing_gradual_str)
@@ -1071,11 +1106,13 @@ if __name__ == '__main__':
         generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions=None, add_migration=False, observe_customGroups = False, file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_neverSIP.emodl'))
         generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='interventionStop', add_migration=False,  observe_customGroups = False, file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_interventionStop.emodl'))
         generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='gradual_reopening2', add_migration=False, observe_customGroups = False, file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_gradual_reopening.emodl'))
+        generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='gradual_reopening3', add_migration=False, observe_customGroups = False, file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_gradual_reopening_region_specific.emodl'))
 
-        generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='rollbacktriggered', add_migration=False, observe_customGroups = False, trigger_channel = "critical", file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_critical_triggeredrollback.emodl'))
         generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='rollbacktriggered', add_migration=False, observe_customGroups = False, trigger_channel = "critical_det", file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_criticaldet_triggeredrollback.emodl'))
-        generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='rollbacktriggered', add_migration=False, observe_customGroups = False, trigger_channel = "hospitalized", file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_hosp_triggeredrollback.emodl'))
         generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='rollbacktriggered', add_migration=False, observe_customGroups = False, trigger_channel = "hospitalized_det", file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_hospdet_triggeredrollback.emodl'))
+        generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='rollbacktriggered_delay', add_migration=False, observe_customGroups = False, trigger_channel = "critical_det", file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_criticaldet_triggeredrollbackdelay.emodl'))
+        generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='rollbacktriggered_delay', add_migration=False, observe_customGroups = False, trigger_channel = "hospitalized_det", file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_hospdet_triggeredrollbackdelay.emodl'))
+
 
     generateImprovedDetectionEmodls = True
     if generateImprovedDetectionEmodls:

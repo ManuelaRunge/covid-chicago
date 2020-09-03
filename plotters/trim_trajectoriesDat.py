@@ -1,43 +1,69 @@
 import os
 import pandas as pd
 import sys
+
 sys.path.append('../')
 from load_paths import load_box_paths
-
 datapath, projectpath, wdir,exe_dir, git_dir = load_box_paths()
+sim_output_path = os.path.join(wdir, "simulation_output")
 
-def trim_trajectories_Dat(exp_name, additionalVarsToKeep, keepTimes=None) :
+
+def trim_trajectories_Dat(exp_dir, VarsToKeep, keepTimes=None):
     """Generate a subset of the trajectoriesDat dataframe
     The new csv file is saved under trajectoriesDat_trim.csv, no dataframe is returned
-    Parameters
-    ----------
-    exp_name : str - name of the experiment
-    additionalVarsToKeep : list - column names to keep in addition to the main channels 
-    keepTimes : int - minimum timestep to keep (all values below are discarded)
     """
 
-    sim_output_path = os.path.join(wdir, 'simulation_output', exp_name)
-    df = pd.read_csv(os.path.join(sim_output_path, 'trajectoriesDat.csv'))
-    
-    keepvars = ['time','startdate','scen_num','run_num','sample_num']
-    keepvars = keepvars + [x for x in df.columns.values if 'EMS-' in x]
-    keepvars = keepvars + [x for x in df.columns.values if 'All' in x]
-    keepvars = keepvars + additionalVarsToKeep
+    column_list = VarsToKeep
+    for ems_region in ['All', 'EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10', 'EMS-11']:
+        column_list.append('susceptible_' + str(ems_region))
+        column_list.append('infected_' + str(ems_region))
+        column_list.append('recovered_' + str(ems_region))
+        column_list.append('infected_cumul_' + str(ems_region))
+        column_list.append('asymp_cumul_' + str(ems_region))
+        column_list.append('asymp_det_cumul_' + str(ems_region))
+        column_list.append('symp_mild_cumul_' + str(ems_region))
+        column_list.append('symp_severe_cumul_' + str(ems_region))
+        column_list.append('symp_mild_det_cumul_' + str(ems_region))
+        column_list.append('symp_severe_det_cumul_' + str(ems_region))
+        column_list.append('hosp_det_cumul_' + str(ems_region))
+        column_list.append('hosp_cumul_' + str(ems_region))
+        column_list.append('detected_cumul_' + str(ems_region))
+        column_list.append('crit_cumul_' + str(ems_region))
+        column_list.append('crit_det_cumul_' + str(ems_region))
+        column_list.append('death_det_cumul_' + str(ems_region))
+        column_list.append('deaths_' + str(ems_region))
+        column_list.append('crit_det_' + str(ems_region))
+        column_list.append('critical_det_' + str(ems_region))
+        column_list.append('critical_' + str(ems_region))
+        column_list.append('hospitalized_det_' + str(ems_region))
+        column_list.append('hospitalized_' + str(ems_region))
 
-    df = df[keepvars]
+    for ems_region in [ 'EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10', 'EMS-11']:
+        column_list.append('Ki_t_' + str(ems_region))
+        #column_list.append('triggertime_' + str(ems_region))
 
-    if keepTimes is not None :
-        df = df[df['time']>=int(keepTimes)]
+    #for ems_region in [ 'EMS_1', 'EMS_2', 'EMS_3', 'EMS_4', 'EMS_5', 'EMS_6', 'EMS_7', 'EMS_8', 'EMS_9', 'EMS_10', 'EMS_11']:
+    #    column_list.append('reopening_multiplier_4_' + str(ems_region))
 
-    df.to_csv(os.path.join(sim_output_path, 'trajectoriesDat_trim.csv'), index=False)
+    df = pd.read_csv(os.path.join(exp_dir, 'trajectoriesDat.csv'), usecols=column_list)
+
+    if keepTimes is not None:
+        df = df[df['time'] >= int(keepTimes)]
+
+    df.to_csv(os.path.join(exp_dir, 'trajectoriesDat_trim.csv'), index=False)
+
 
 if __name__ == '__main__':
-    #stem = sys.argv[1]
-    stem = "20200805"
-    exp_names = [x for x in os.listdir(os.path.join(wdir, 'simulation_output')) if stem in x]
-    #exp_name = "20200805_IL_rollback_Sep30"
 
-    additionalVarsToKeep = ['reopening_multiplier_4']
+    VarsToKeep = ['startdate', 'time', 'scen_num','sample_num', 'run_num']
+
+   # moreVarsToKeep = ['capacity_multiplier', 'reopening_multiplier_4','reduced_inf_of_det_cases_ct1', 'change_testDelay_Sym_1', 'change_testDelay_As_1', 'd_Sym_ct1', 'd_AsP_ct1']
+   # VarsToKeep = VarsToKeep + moreVarsToKeep
+
+    stem = sys.argv[1]
+    #stem ="20200722_IL_EMS_scen3"
+    exp_names = [x for x in os.listdir(os.path.join(sim_output_path)) if stem in x]
 
     for exp_name in exp_names:
-        trim_trajectories_Dat(exp_name=exp_name, additionalVarsToKeep=additionalVarsToKeep, keepTimes=120)
+        exp_dir = os.path.join(sim_output_path, exp_name)
+        trim_trajectories_Dat(exp_dir=exp_dir, VarsToKeep=VarsToKeep, keepTimes=120)
