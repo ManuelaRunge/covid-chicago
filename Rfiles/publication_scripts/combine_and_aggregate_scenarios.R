@@ -17,7 +17,7 @@ f_getPredDat <- function(simdir, exp_name) {
   trajectoriesDat <- read_csv(file.path(expDIR, "trajectoriesDat_trim.csv"))
   unique(trajectoriesDat$reopening_multiplier_4)
   
-  region_names <- paste0("EMS-",c(1:11))
+  region_names <-c("All", paste0("EMS-",c(1:11)))
     
 
   ### per restore region
@@ -30,7 +30,8 @@ f_getPredDat <- function(simdir, exp_name) {
     paste0("infected_", region_names),
    # paste0("deaths_det_", region_names),
     #paste0("prevalence_", region_names),
-    paste0("crit_cumul_", region_names)
+   paste0("crit_det_", region_names),
+   paste0("crit_cumul_", region_names)
   )
   
   
@@ -53,15 +54,11 @@ f_getPredDat <- function(simdir, exp_name) {
     ) %>%
     dplyr::group_by(date, region, param, reopening_multiplier_4,reduced_inf_of_det_cases_ct1, d_AsP_ct1,  change_testDelay_As_1,d_Sym_ct1) %>%
     dplyr::summarize(
-      mean.val = mean(value, na.rm = TRUE),
-      sd.val = sd(value, na.rm = TRUE),
-      n.val = n(),
-    ) %>%
-    dplyr::mutate(
-      se.val = sd.val / sqrt(n.val),
-      lower.ci.val = mean.val - qt(1 - (0.05 / 2), n.val - 1) * se.val,
-      upper.ci.val = mean.val + qt(1 - (0.05 / 2), n.val - 1) * se.val
-    )
+      median.val = median(value, na.rm = TRUE),
+      q25		= quantile(value, probs=0.25, na.rm = TRUE),
+      q75		= quantile(value, probs=0.75, na.rm = TRUE),
+      q2.5		= quantile(value, probs=0.025, na.rm = TRUE),
+      q97.5  	= quantile(value, probs=0.975, na.rm = TRUE)) 
   
   predDat$exp_name <- exp_name
   
@@ -83,6 +80,8 @@ exp_names <- list.dirs(simdir, recursive = FALSE, full.names = FALSE)
 exp_names <- exp_names[!grepl("reopen_contactTracing",exp_names)]
 exp_names <- exp_names[grep("IL_reopen",exp_names)]
 
+
+
 RtList <- list()
 for (exp_name in exp_names) {
   # exp_name = exp_names[1]
@@ -96,7 +95,7 @@ for (exp_name in exp_names) {
 
 }
 RtDatHS <- RtList %>% bind_rows() 
-if (SAVE) save(RtDatHS, file = file.path(simulation_output, "contact_tracing",simdate,"RtDatHS.Rdata"))
+save(RtDatHS, file = file.path(simulation_output, "contact_tracing",simdate,"RtDatHS.Rdata"))
 
 predList <- list()
 for (exp_name in exp_names) {
@@ -109,7 +108,7 @@ for (exp_name in exp_names) {
 }
 
 predDatHS <- predList %>% bind_rows() 
-if (SAVE) save(predDatHS, file = file.path(simulation_output, "contact_tracing",simdate,"predDatHS.Rdata"))
+save(predDatHS, file = file.path(simulation_output, "contact_tracing",simdate,"predDatHS.Rdata"))
 
 
 

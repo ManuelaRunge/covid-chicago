@@ -13,23 +13,25 @@ library(data.table)
 
 theme_set(theme_cowplot())
 
-Location="NUCLUSTER"
-if(Location=="NUCLUSTER") setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
+Location="LOCAL"
+
+pdfdir <- "C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/project_notes/publications/covid_model_IL/pdfs_ais/"
+
+if(Location=="NUCLUSTER") {
+  setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
+  pdfdir <- "/home/mrm9534/Box/NU-malaria-team/projects/covid_chicago/project_notes/publications/covid_model_IL/pdfs_ais/"
+}
 source("load_paths.R")
 source("setup.R")
 source("processing_helpers.R")
-source("ct_analysis/helper_functions_CT.R")
+source("publication_scripts/helper_functions_CT.R")
 
-#pdfdir <- "C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/project_notes/publications/covid_model_IL/pdfs_ais/"
-pdfdir <- "/home/mrm9534/Box/NU-malaria-team/projects/covid_chicago/project_notes/publications/covid_model_IL/pdfs_ais/"
 
 ct_dir <- file.path(simulation_output, "contact_tracing")
 
-# region_cols <- c()
-restoreRegion_cols <- c("Central" = "red2", "Northcentral" = "dodgerblue3", "Northeast" = "chartreuse4", "Southern" = "orchid4")
 
-simdate ="20200823"
-startdate <- "2020-06-15"
+simdate ="20200827"
+startdate <- "2020-07-01"
 stopdate <- "2020-12-30"
 
 reopen <- c(0, 0.05, 0.1, 0.15, 0.20)
@@ -43,6 +45,7 @@ reopeningdate = as.Date("2020-08-30")
 
 methodPlot <- FALSE
 if (methodPlot) {
+  
   customTheme <- f_getCustomTheme(fontscl = 3)
   
   exp_name <- paste0(simdate,"_IL_reopen_contactTracing")  # "20200731_IL_reopen_contactTracing"
@@ -256,7 +259,7 @@ if (methodPlot) {
     t_matdat <- expand.grid(detection_success = detection_success, isolation_success = isolation_success)
     
     m <- loess(value ~ detection_success * isolation_success,
-               span = 0.5,
+               span = 0.7,
                degree = 2, data = peakdat
     )
     
@@ -332,6 +335,8 @@ if (methodPlot) {
            plot = p1_withPoints, path = file.path(pdfdir), width = 6, height = 5.5, device = "pdf"
     )
   }
+  
+  
 }
 
 
@@ -473,7 +478,7 @@ if (methodPlot) {
     t_matdat <- expand.grid(detection_success = detection_success, isolation_success = isolation_success)
     
     m <- loess(value ~ detection_success * isolation_success,
-               span = 0.5,
+               span = 0.7,
                degree = 2, data = peakdat
     )
     
@@ -544,5 +549,7 @@ if (methodPlot) {
            plot = p1_withPoints, path = file.path(pdfdir), width = 6, height = 5.5, device = "pdf"
     )
   }
+  
+  
 }
 
