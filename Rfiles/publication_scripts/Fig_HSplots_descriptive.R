@@ -86,6 +86,10 @@ predDatHS <- predDatHS %>%
 
 customTheme <- f_getCustomTheme()
 
+predDatHS$scenario <- gsub(simdate,"", predDatHS$scenario)
+predDatHS$scenario <- gsub('_IL_reopen_',"", predDatHS$scenario)
+predDatHS$scenario <- gsub('changeTD',"TD", predDatHS$scenario)
+unique(predDatHS$scenario )
 predDatHS$scenario_fct <- factor(predDatHS$scenario,
                                  levels = c("counterfactual", "HS40", "TDonly","HS80", "HS40TD", "HS80TD"),
                                  labels = c(
@@ -97,6 +101,7 @@ predDatHS$scenario_fct <- factor(predDatHS$scenario,
                                    "increase detections to 80%\n& faster testing and isolation"
                                  ))
 
+table(predDatHS$scenario_fct, predDatHS$scenario, exclude = NULL)
 
 #### Sum per IL 
 table(predDatHS$param)
@@ -107,82 +112,69 @@ predplotDat <- predDatHS %>%
   filter(region=="All" &
           param %in% c("infected",  "hospitalized_det", "crit_det") &
            date >= as.Date(startdate) & date <= as.Date(stopdate) &
-           reopening_multiplier_4 %in% reopen) %>%
-  dplyr::select(-c('sd.val', 'n.val', 'se.val', 'lower.ci.val', 'upper.ci.val')) %>% 
-  pivot_wider(names_from = "param", values_from="mean.val") %>%
-  ungroup() %>%
-  dplyr::select(date,  scenario, scenario_fct, reopening_multiplier_4,infected, hospitalized_det,crit_det) %>%
-  pivot_longer(cols=-c(date,  scenario, scenario_fct, reopening_multiplier_4), names_to="param", values_to="mean.val") %>%
-  mutate(pop=sum(popdat$pop),
-         icu_available =ILcapacity) %>%
-  mutate(icu_available_per1000pop = (icu_available/pop)*1000,
-         mean.val_per1000pop = (mean.val/pop)*1000) 
+           reopening_multiplier_4 %in% reopen)
 
 
 predplot <- predplotDat %>%
-  filter(param %in% c("critical")) %>%
+  filter(region %in% c("All")) %>%
+  filter(param %in% c("crit_det")) %>%
   ggplot() +
   theme_cowplot() +
-  # geom_ribbon(aes(x=date , ymin=lower.ci.val , ymax=  upper.ci.val , fill=restore_region , group=reopening_multiplier_4),size=1, alpha=0.3) +
-  geom_line(aes(x = date, y = mean.val_per1000pop, col = scenario_fct, group = scenario), size = 1.3) +
-  geom_hline(aes(yintercept = icu_available_per1000pop), linetype = "dashed", col = "black", size = 0.7) +
+  geom_ribbon(aes(x=date , ymin=q2.5 , ymax=  q97.5 ,fill=scenario_fct),size=1, alpha=0.3) +
+  geom_line(aes(x = date, y = median.val, col = scenario_fct, group = scenario), size = 1.3) +
+  geom_hline(yintercept =ILcapacity, linetype = "dashed", col = "black", size = 0.7) +
   geom_hline(yintercept = c(-Inf, Inf)) +
   geom_vline(xintercept = c(-Inf, Inf)) +
   facet_grid(~reopening_multiplier_4, scales = "free") +
   customTheme +
+  scale_fill_brewer(palette = "Dark2", drop=F) +
   scale_color_brewer(palette = "Dark2", drop=F) +
   labs(
     x = "",
-    y = "Critical cases per 1000 population",
-    color = ""
+    y = "ICU census in IL",
+    color = "",
+    fill = ""
   ) +
   theme(legend.position = "bottom") +
-  scale_y_continuous(expand = c(0, 0), limits=c(0, 1)) +
+  scale_y_continuous(expand = c(0, 0)) +
   scale_x_date(breaks = "30 days", labels = date_format("%b"), expand = c(0, 0)) 
 
 
+ggsave(paste0("HS_scenarios_timeline.pdf"),
+       plot = predplot, path = file.path(pdfdir), width = 12, height =5,  device = "pdf"
+)
 
-
-predplot2 <- predplotDat %>%
-  ungroup() %>% 
-  filter(param %in% c("prevalence")) %>%
-  group_by(reopening_multiplier_4,scenario_fct,param) %>%
-  filter(mean.val_per1000pop== max(mean.val_per1000pop)) %>%
+predplot <- predplotDat %>%
+  filter(region %in% c("All")) %>%
+  filter(param %in% c("crit_det")) %>%
+  filter(reopening_multiplier_4 %in% c(0.1)) %>%
   ggplot() +
-  geom_hline(yintercept = c(-Inf, Inf)) +
-  geom_hline(yintercept = c( 0.5), col="grey") +
   theme_cowplot() +
-  # geom_ribbon(aes(x=date , ymin=lower.ci.val , ymax=  upper.ci.val , fill=restore_region , group=reopening_multiplier_4),size=1, alpha=0.3) +
-  geom_bar(aes(x = scenario_fct, y = mean.val, fill = scenario_fct,
-                 group = interaction(param,reopening_multiplier_4, scenario)), position=position_dodge(width=0.5) ,col="azure4",stat="identity", size = 1.3) +
+  geom_ribbon(aes(x=date , ymin=q2.5 , ymax=  q97.5 ,fill=scenario_fct),size=1, alpha=0.3) +
+  geom_line(aes(x = date, y = median.val, col = scenario_fct, group = scenario), size = 1.3) +
+  geom_hline(yintercept =ILcapacity, linetype = "dashed", col = "black", size = 0.7) +
+  geom_hline(yintercept = c(-Inf, Inf)) +
   geom_vline(xintercept = c(-Inf, Inf)) +
-  #facet_wrap(~reopening_multiplier_4) + 
+  facet_grid(~reopening_multiplier_4, scales = "free") +
   customTheme +
-  scale_color_brewer(palette = "Dark2", drop=F) +
   scale_fill_brewer(palette = "Dark2", drop=F) +
+  scale_color_brewer(palette = "Dark2", drop=F) +
   labs(
     x = "",
-    y = "Prevalence",
-    color = ""
+    y = "ICU census in IL",
+    color = "",
+    fill = ""
   ) +
   theme(legend.position = "bottom") +
-  scale_y_continuous(expand = c(0, 0), limits=c(0,30)) 
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_x_date(breaks = "30 days", labels = date_format("%b"), expand = c(0, 0)) 
 
 
-
-if(SAVE){
-  ggsave(paste0("HS_scenarios_timeline.pdf"),
-         plot = predplot, path = file.path(pdfdir), width = 12, height =5,  device = "pdf"
-  )
-}
+ggsave(paste0("IL_HS_scenarios_timeline_reopen10.pdf"),
+       plot = predplot, path = file.path(pdfdir), width = 6, height =6,  device = "pdf"
+)
 
 
-
-if(SAVE){
-  ggsave(paste0("HS_scenarios_prevalence.pdf"),
-         plot = predplot2, path = file.path(pdfdir), width = 9.5, height =7,  device = "pdf"
-  )
-}
 
 #### For RT
 load(file.path(simulation_output, "contact_tracing/20200731/RtDatHS.Rdata"))
