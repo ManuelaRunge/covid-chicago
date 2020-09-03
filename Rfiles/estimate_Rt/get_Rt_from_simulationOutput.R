@@ -86,8 +86,8 @@ RtdatCombined$geography_modeled <- tolower(RtdatCombined$geography_modeled)
 
 saveForCivis <- TRUE
 if (saveForCivis) {
-  simdate <- "20200825"
-  fname <- paste0("nu_il_", exp_scenario, "_", simdate, ".csv")
+  simdate <- "20200902"
+  fname <- paste0("nu_", simdate, ".csv")
 
   ## Combine to baseline csv file
   bsl <- read_csv(file.path(project_path, "NU_civis_outputs", simdate, "csv", fname))
@@ -95,6 +95,16 @@ if (saveForCivis) {
   mergevars <- colnames(bsl)[colnames(bsl) %in% colnames(RtdatCombined)]
   dat <- merge(bsl, RtdatCombined, by = mergevars, all.x = TRUE)
 
+   dat <- dat %>%
+     mutate(scenario_name="baseline") %>%
+     filter(geography_modeled %in% c("illinois",paste0("covidregion_",c(1:11)))) %>%
+     select(date ,geography_modeled ,scenario_name ,cases_median ,cases_lower ,cases_upper ,cases_new_median ,cases_new_lower ,cases_new_upper ,
+            deaths_median ,deaths_lower ,deaths_upper ,deaths_det_median ,deaths_det_lower ,deaths_det_upper ,hosp_bed_median ,hosp_bed_lower ,hosp_bed_upper ,
+            icu_median ,icu_lower ,icu_upper ,
+            vent_median ,vent_lower ,vent_upper ,recovered_median ,recovered_lower ,recovered_upper ,rt_median ,rt_lower ,rt_upper)
+  
+  
+  
   if (dim(bsl)[1] == dim(dat)[1]) {
     write.csv(dat, file = file.path(project_path, "NU_civis_outputs", simdate, "csv", fname), row.names = FALSE)
     write.csv(dat, file = file.path(simulation_output, exp_name, fname), row.names = FALSE)
