@@ -76,7 +76,7 @@ f_combineRtdats <- function(){
   
 
   write.csv(Rt_dat2, file = file.path(Rt_dir, paste0("EMS_combined_estimated_Rt.csv")), row.names = FALSE)
-  save(Rt_dat2, file = file.path(Rt_dir, paste0("EMS_combined_estimated_Rt.Rata")))
+  save(Rt_dat2, file = file.path(Rt_dir, paste0("EMS_combined_estimated_Rt.Rdata")))
   
   return(Rt_dat2)
 }
