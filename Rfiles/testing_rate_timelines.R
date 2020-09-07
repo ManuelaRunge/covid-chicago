@@ -6,7 +6,7 @@ lapply(packages_needed, require, character.only = TRUE)
 source("load_paths.R")
 source("processing_helpers.R")
 
-LL_date <- "200727"
+LL_date <- "200902"
 
 plot_dir <- file.path(project_path, "Plots + Graphs")
 data_path <- file.path(data_path, "covid_IDPH") # covid_IDPH
@@ -70,7 +70,7 @@ dfAggr <- df %>%
   )
 
 
-dfAggr$nweek <- cut(dfAggr$nday, breaks = seq(0, max(dfAggr$nday), 7), labels = (c(1:19)))
+dfAggr$nweek <- cut(dfAggr$nday, breaks = seq(0, max(dfAggr$nday),7), labels = (c(1:24)))
 dfAggr$new_restor = factor(dfAggr$new_restore_region, levels=c(1:11), labels=c(1:11))
 dfAggr$new_restor_label = factor(dfAggr$new_restor, levels=c(1:11), labels=paste0("covid region ", c(1:11)))
 
@@ -153,7 +153,7 @@ for (reg in unique(dfAggr2$restore_region)) {
   dat <- subset(dfAggr2, restore_region == reg)
   titlelab <- toupper(unique(dat$restore_region))
 
-  pplot <- ggplot(data = subset(dat, update_date >= "2020-05-01")) +
+  pplot <- ggplot(data = subset(dat, update_date >= "2020-07-01")) +
     theme_minimal() +
     geom_line(aes(x = update_date, y = test_per1000, col = as.factor(County)), size = 1, col = "deepskyblue3") +
     geom_area(aes(x = update_date, y = test_per1000, fill = as.factor(County)), fill = "deepskyblue3", alpha = 0.3) +
@@ -167,9 +167,9 @@ for (reg in unique(dfAggr2$restore_region)) {
     scale_x_date(breaks = "2 week", minor_breaks = "2 week", labels = date_format("%d\n%b")) +
     scale_y_continuous(lim = c(0, 10), breaks = seq(0, 10, 2), labels = seq(0, 10, 2))
 
-  ggsave(paste0("County_timeline_7daysAvr_", reg, ".pdf"),
-    plot = pplot, path = plot_dir_date, width = 18, height = 12, device = "pdf"
-  )
+  #ggsave(paste0("County_timeline_7daysAvr_", reg, ".pdf"),
+ #   plot = pplot, path = plot_dir_date, width = 18, height = 12, device = "pdf"
+ # )
 
   ggsave(paste0("County_timeline_7daysAvr_", reg, ".png"),
     plot = pplot, path = plot_dir_date, width = 18, height = 12, device = "png"
@@ -308,7 +308,7 @@ p3sub1 <- dfAggr %>%
     test_per1000 = (Testedd / pop) * 1000,
     test_per1000_cumul = (Tested / pop) * 1000
   ) %>%
-  filter(update_date >= "2020-06-01") %>%
+  filter(update_date >= "2020-07-01") %>%
   ggplot() +
   theme_cowplot() +
   geom_line(aes(x = update_date, y = test_per1000), size = 1.3, col = "deepskyblue3") +
@@ -335,7 +335,7 @@ p3sub2 <- dfAggr %>%
     update_date = max(update_date),
     test_per1000 = mean(test_per1000, na.rm = TRUE),
   ) %>%
-  filter(update_date >= "2020-06-01") %>%
+  filter(update_date >= "2020-07-01") %>%
   ggplot() +
   theme_cowplot() +
   geom_line(aes(x = update_date, y = test_per1000), size = 1.3, col = "deepskyblue3") +
@@ -368,11 +368,11 @@ pplot <-  plot_grid(title, pplot, ncol=1, rel_heights=c(0.01,1)) # rel_heights v
 
 
 ggsave(paste0("Regions_7dayAvr_testingRates_Champaign_", LL_date, "LLpublic.png"),
-       plot = pplot, path = plot_dir, width = 20, height = 14, device = "png"
+       plot = pplot, path = plot_dir_date, width = 22, height = 14, device = "png"
 )
 
 ggsave(paste0("Regions_7dayAvr_testingRates_Champaign_", LL_date, "LLpublic.pdf"),
-       plot = pplot, path = plot_dir, width = 20, height = 14, device = "pdf"
+       plot = pplot, path = plot_dir_date, width = 22, height = 14, device = "pdf"
 )
 
 
@@ -532,11 +532,11 @@ if(plotRestoreCovidSeparate){
   
   
   ggsave(paste0("CovidRegion_7dayAvr_testingRates.png"),
-         plot = pweekly, path = plot_dir_date, width = 12, height = 8, device = "png"
+         plot = pweekly, path = plot_dir_date, width = 14, height = 8, device = "png"
   )
   
   ggsave(paste0("CovidRegion_7dayAvr_testingRates.pdf"),
-         plot = pweekly, path = plot_dir_date, width = 12, height = 8, device = "pdf"
+         plot = pweekly, path = plot_dir_date, width = 14, height = 8, device = "pdf"
   )
   
 }
