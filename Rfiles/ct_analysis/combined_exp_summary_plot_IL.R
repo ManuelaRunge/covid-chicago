@@ -402,7 +402,7 @@ f_generateMap <- function(df=tbl, selected_outcome="critical", scen=unique(tbl$s
 ###================================================================
 
 selected_outcome <- "critical" # Rt"
-expnamePrefix = "20200827_IL_reopen_"
+expnamePrefix = "20200902_IL_reopen_"
 
 ### Load simulation data
 exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
@@ -422,7 +422,7 @@ tbl <- sapply(csvfiles, read.csv, simplify=FALSE) %>%
 tbl$scenario <- gsub(sim_dir, "", tbl$id2)
 tbl$scenario <- gsub(paste0("/",csvfilename), "", tbl$scenario)
 tbl$scenario <- gsub(paste0("/",expnamePrefix),  "", tbl$scenario)
-tbl$scenario <- gsub(paste0("/","20200801_IL_reopen_"),  "", tbl$scenario)
+tbl$scenario <- gsub(paste0("/","20200902_IL_reopen_"),  "", tbl$scenario)
 tbl$scenario <- gsub("contactTracing",  "CT", tbl$scenario)
 tbl$scenario <- gsub("[/]",  "", tbl$scenario)
 
