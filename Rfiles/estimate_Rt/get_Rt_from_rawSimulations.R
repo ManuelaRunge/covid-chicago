@@ -12,28 +12,30 @@ runinBatchMode = TRUE
 
 
 if(runinBatchMode){
+
+  setwd("/projects/p30781/covidproject/covid-chicago/Rfiles/")
+
   cmd_agrs <- commandArgs()
   length(cmd_agrs)
-  ems <- cmd_agrs[length(cmd_agrs)]
+  ems <- cmd_agrs[length(cmd_agrs)-1]
+  exp_name = cmd_agrs[length(cmd_agrs)]
   
   task_id <- Sys.getenv("SLURM_ARRAY_TASK_ID")
   print(task_id)
   ems <- task_id
 } else {
   ems <- "11"
+  exp_name = "20200831_IL_regreopen50perc_7daysdelay_sm6"
 }
 
 
 print(ems)
 
-setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
-
 source("load_paths.R")
 source("processing_helpers.R")
 source("estimate_Rt/getRt_function.R")
 
-
-exp_name = "20200731_IL_reopen_contactTracing"
+simulation_output ="/projects/p30781/covidproject/projects/covid_chicago/cms_sim/simulation_output/"
 exp_dir <- file.path(simulation_output, exp_name)
 
 Rt_dir <- file.path(simulation_output, exp_name, "estimatedRt")
@@ -41,12 +43,17 @@ if (!dir.exists(Rt_dir)) dir.create(Rt_dir)
 
 
 ### Load simulation outputs
-tempdat <- read.csv(file.path(exp_dir, "trajectoriesDat.csv")) %>% 
+fname =  "trajectoriesDat.csv"
+if(!exists("useTrim"))useTrim=TRUE
+if(useTrim) fname == "trajectoriesDat_trim.csv"
+
+tempdat <- read.csv(file.path(exp_dir, fname)) %>% 
   dplyr::mutate(
   startdate = as.Date(startdate),
   Date = as.Date(time + startdate)
 )
 
+tempdat <- subset(tempdat, capacity_multiplier==1)
 
 colnames(tempdat)[colnames(tempdat)== paste0( "infected_cumul_EMS.",ems)]  = "infected_cumul"
 colnames(tempdat)[colnames(tempdat)== paste0( "infected_cumul_EMS-",ems)]  = "infected_cumul"
@@ -96,7 +103,7 @@ for (scen in unique(tempdat$scen_num)) {
   rm(Rt_tempdat, SI_tempdat)
 }
 
-save(Rt_tempdat_All, file=file.path(Rt_dir, paste0(ems,"_temp_Rt_tempdat_All.Rdata")))
+save(Rt_tempdat_All, file=file.path(Rt_dir, paste0(ems,"_estimated_Rt.Rdata")))
 
 
 
