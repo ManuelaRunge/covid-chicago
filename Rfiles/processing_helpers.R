@@ -100,11 +100,11 @@ load_new_capacity <- function(selected_ems = NULL, filedate = "20200825") {
 
   df <- df %>%
     filter(overflow_threshold_percent == 1) %>%
-    select(geography_modeled, resource_type, avg_resource_available_prev2weeks) %>%
+    dplyr::select(geography_modeled, resource_type, avg_resource_available_prev2weeks) %>%
     unique() %>%
     pivot_wider(names_from = "resource_type", values_from = "avg_resource_available_prev2weeks") %>%
-    mutate(geography_name = gsub("covidregion_", "", geography_modeled)) %>%
-    select(geography_name, icu_availforcovid, hb_availforcovid)
+    dplyr::mutate(geography_name = gsub("covidregion_", "", geography_modeled)) %>%
+    dplyr::select(geography_name, icu_availforcovid, hb_availforcovid)
 
   dfRR <- df %>%
     dplyr::rename(region = geography_name) %>%
