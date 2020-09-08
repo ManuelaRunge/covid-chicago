@@ -29,5 +29,7 @@ Rt_dir <- file.path(simulation_output, exp_name, "estimatedRt")
 
 Rt_dat <- f_loadAndCombine(filedir = Rt_dir, filename = fname, identfier = c(1:11))
 
-save(Rt_dat, file = file.path(Rt_dir, paste0("combined", fname, ".Rdata")))
-write.csv(Rt_dat, file = file.path(Rt_dir, paste0("combined", fname, ".csv")), row.names = FALSE)
+save(Rt_dat, file = file.path(Rt_dir, paste0("combined_Rt.Rdata")))
+write.csv(Rt_dat, file = file.path(Rt_dir, paste0("combined_Rt.csv")), row.names = FALSE)
+
+
