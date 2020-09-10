@@ -6,6 +6,7 @@
 # library(devtools)
 # install_github("annecori/EpiEstim", force = TRUE)
 library(tidyverse)
+library(readr)
 library(EpiEstim)
 
 
@@ -16,7 +17,7 @@ if (runViaSource) {
 
   ## simdate and  exp_scenario  defined in NUcivis_filecopy.R
 } else {
-  simdate <- "20200902"
+  simdate <- "20200910"
 }
 
 plot_end_date = as.Date("2020-12-30")
@@ -28,7 +29,7 @@ source("estimate_Rt/getRt_function.R")
 fname <- paste0("nu_", simdate, ".csv")
 
 ### Load simulation outputs
-dat <- read.csv(file.path(project_path, "NU_civis_outputs", simdate,"csv",fname))
+dat <- read_csv(file.path(project_path, "NU_civis_outputs", simdate,"csv",fname))
 summary(as.Date(dat$date))
 
 method <- "uncertain_si"
@@ -36,23 +37,22 @@ weekwindow <- 13
 Rt_list <- list()
 si_list <- list()
 
-for (scen in unique(dat$scenario_name)) {
-  for (region in unique(dat$geography_modeled)) {
+for (region in unique(dat$geography_modeled)) {
   # region = unique(dat$geography_modeled)[1]
   disease_incidence_data <- dat %>%
     filter(geography_modeled == region) %>%
-    filter(scenario_name == scen) %>%
+   # filter(scenario_name == scen) %>%
     rename(I = cases_new_median)
 
   res <- getRt(disease_incidence_data, method = method, weekwindow = weekwindow)
 
   pplot <- plot(res)
-  ggsave(paste0(region, "_EpiEstim_default_", method, ".pdf"),
-    plot = pplot, path = file.path(outdir), width = 6, height = 10, dpi = 300, device = "pdf"
-  )
+ # ggsave(paste0(region, "_EpiEstim_default_", method, ".pdf"),
+ #   plot = pplot, path = file.path(outdir), width = 6, height = 10, dpi = 300, device = "pdf"
+ # )
 
-  Rt_list[[region]] <- res$R %>% mutate(region = region,scenario_name=scen, weekwindow = weekwindow)
-  si_list[[region]] <- res$SI.Moments %>% mutate(region = region,scenario_name=scen, weekwindow = weekwindow)
+  Rt_list[[region]] <- res$R %>% mutate(region = region, weekwindow = weekwindow)
+  si_list[[region]] <- res$SI.Moments %>% mutate(region = region, weekwindow = weekwindow)
 }
 
 ### Combine list to dataframe
@@ -69,7 +69,9 @@ Rt_dat <- Rt_dat %>%
     rt_median = `Median(R)`,
     rt_lower = `Quantile.0.025(R)`,
     rt_upper = `Quantile.0.975(R)`
-  )
+  ) %>%
+  mutate(date = as.Date("2020-02-13")+time) 
+  
 
 
 
@@ -77,8 +79,8 @@ RtdatCombined <-  dat %>%
   mutate(date=as.Date(date)) %>%
   arrange(geography_modeled, date) %>%
   dplyr::group_by(geography_modeled) %>%
-  mutate(time = c(1:n_distinct(date))) %>%
-  merge(Rt_dat, by = c("geography_modeled","time")) %>%
+ # mutate(time = c(1:n_distinct(date))) %>%
+  merge(Rt_dat, by = c("geography_modeled","date"), all.x=TRUE) %>%
   filter(geography_modeled %in% c("illinois", paste0("covidregion_", c(1:11)))) %>%
   select(
     date, geography_modeled, scenario_name, cases_median, cases_lower, cases_upper, cases_new_median, cases_new_lower, cases_new_upper,
@@ -88,7 +90,7 @@ RtdatCombined <-  dat %>%
   )
 
 
-if (dim(bsl)[1] == dim(dat)[1]) {
+if (dim(dat)[1] == dim(RtdatCombined)[1]) {
   write.csv(RtdatCombined, file = file.path(project_path, "NU_civis_outputs", simdate, "csv", fname), row.names = FALSE)
   write.csv(RtdatCombined, file = file.path(simulation_output, exp_name, fname), row.names = FALSE)
 }
@@ -100,7 +102,7 @@ if (generatePlots) {
   RtdatCombined$region <- factor(RtdatCombined$geography_modeled, levels = paste0("covidregion_", c(1:11)), labels = c(1:11))
 
   pplot <- RtdatCombined %>%
-    filter(date >= "2020-04-01" & date <= plot_end_date) %>%
+    filter(date >= "2020-04-01") %>%
     filter(region %in% as.character(c(1:11))) %>%
     ggplot() +
     theme_cowplot() +
@@ -119,17 +121,17 @@ if (generatePlots) {
     scale_x_date(date_breaks = "30 days", date_labels = "%d\n%b")
 
   ggsave(paste0("estimatedRt_overtime.png"),
-    plot = pplot, path = file.path(simulation_output, exp_name, "estimatedRt"), width = 12, height = 8, device = "png"
+    plot = pplot, path = file.path(simulation_output, exp_name, "_plots"), width = 12, height = 8, device = "png"
   )
   ggsave(paste0("estimatedRt_overtime.pdf"),
-    plot = pplot, path = file.path(simulation_output, exp_name, "estimatedRt"), width = 12, height = 8, device = "pdf"
+    plot = pplot, path = file.path(simulation_output, exp_name, "_plots"), width = 12, height = 8, device = "pdf"
   )
 
   rm(pplot)
 
 
   pplot <- RtdatCombined %>%
-    filter(date >= "2020-04-01" & date <= plot_end_date) %>%
+    filter(date >= "2020-04-01" ) %>%
     filter(geography_modeled == "illinois") %>%
     ggplot() +
     theme_cowplot() +
@@ -146,10 +148,10 @@ if (generatePlots) {
     scale_x_date(date_breaks = "30 days", date_labels = "%d\n%b")
 
   ggsave(paste0("IL_estimatedRt_overtime.png"),
-    plot = pplot, path = file.path(simulation_output, exp_name, "estimatedRt"), width = 8, height = 6, device = "png"
+    plot = pplot, path = file.path(simulation_output, exp_name, "_plots"), width = 8, height = 6, device = "png"
   )
   ggsave(paste0("IL_estimatedRt_overtime.pdf"),
-    plot = pplot, path = file.path(simulation_output, exp_name, "estimatedRt"), width = 8, height = 6, device = "pdf"
+    plot = pplot, path = file.path(simulation_output, exp_name, "_plots"), width = 8, height = 6, device = "pdf"
   )
 
   rm(pplot)
@@ -180,7 +182,7 @@ if (generatePlots) {
 
   compareWithOverflow <- F
   if (compareWithOverflow) {
-    nu_hospitaloverflow <- read.csv(file.path(simulation_output, exp_name, "nu_hospitaloverflow_",simdate,".csv"))
+    nu_hospitaloverflow <- read.csv(file.path(simulation_output, exp_name, "nu_hospitaloverflow_20200910.csv"))
 
 
     dt <- nu_hospitaloverflow %>% mutate(date_window_upper_bound = as.Date(date_window_upper_bound), region = gsub("covidregion_", "", geography_modeled))
@@ -214,7 +216,7 @@ if (generatePlots) {
       customThemeNoFacet
 
     ggsave(paste0("estimatedRt_overtime_withOverflow.png"),
-      plot = pplot, path = file.path(simulation_output, exp_name, "estimatedRt"), width = 12, height = 6, device = "png"
+      plot = pplot, path = file.path(simulation_output, exp_name, "_plots"), width = 12, height = 6, device = "png"
     )
   }
 }
