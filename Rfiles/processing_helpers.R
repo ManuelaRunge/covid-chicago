@@ -4,7 +4,7 @@ library(dplyr)
 ## Define functions
 
 ### Load data
-f_loadData <- function(data_path, simdate ='200824') {
+f_loadData <- function(data_path, simdate ='200910') {
   emresource <- read.csv(file.path(data_path, "covid_IDPH/Corona virus reports/emresource_by_region.csv")) %>%
     dplyr::mutate(
       date_of_extract = as.Date(date_of_extract),
@@ -102,7 +102,7 @@ load_population <- function(){
 
 
 
-load_new_capacity <- function(selected_ems = NULL, simdate = "20200825") {
+load_new_capacity <- function(selected_ems = NULL, simdate = "20200908") {
 
 
   fname <- paste0("capacity_weekday_average_",simdate,".csv")
