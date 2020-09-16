@@ -4,7 +4,7 @@ import logging
 import os
 import re
 import sys
-
+import subprocess
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
@@ -13,16 +13,14 @@ import yamlordereddictloader
 
 from load_paths import load_box_paths
 from simulation_helpers import (DateToTimestep, cleanup, combineTrajectories,
-                                generateSubmissionFile, makeExperimentFolder,
-                                runExp, sampleplot)
+                                generateSubmissionFile, generateSubmissionFile_quest, makeExperimentFolder,
+                                runExp, runSamplePlot)
 
 log = logging.getLogger(__name__)
 
 mpl.rcParams['pdf.fonttype'] = 42
 
 today = datetime.datetime.today()
-DEFAULT_CONFIG = 'extendedcobey_200428.yaml'
-
 
 def _get_full_factorial_df(df, column_name, values):
     dfs = []
@@ -357,7 +355,7 @@ def generateScenarios(simulation_population, Kivalues, duration, monitoring_samp
 
 
 def get_experiment_config(experiment_config_file):
-    config = yaml.load(open(os.path.join('./experiment_configs', DEFAULT_CONFIG)), Loader=yamlordereddictloader.Loader)
+    config = yaml.load(open(os.path.join('./experiment_configs', args.masterconfig)), Loader=yamlordereddictloader.Loader)
     yaml_file = open(os.path.join('./experiment_configs',experiment_config_file))
     expt_config = yaml.safe_load(yaml_file)
     for param_type, updated_params in expt_config.items():
@@ -405,6 +403,14 @@ def parse_args():
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument(
+        "-mc",
+        "--masterconfig",
+        type=str,
+        help="Master yaml file that includes all model parameters.",
+        default='extendedcobey_200428.yaml',
+    )
+
+    parser.add_argument(
         "-rl",
         "--running_location",
         type=str,
@@ -440,13 +446,9 @@ def parse_args():
         "--cfg_template",
         type=str,
         help="Template cfg file to use",
-        default="model.cfg"
+        default="model_B.cfg"
     )
-    parser.add_argument(
-        "--post_process",
-        action='store_true',
-        help="Whether or not to run post-processing functions",
-    )
+
     parser.add_argument(
         "-n",
         "--name_suffix",
@@ -454,12 +456,27 @@ def parse_args():
         help="Adding custom suffix to the experiment name. Ignored if '--name' specified.",
         default= f"_test_rn{str(today.microsecond)[-2:]}"
     )
+
     parser.add_argument(
         "--exp-name",
         type=str,
         help="Experiment name; also the output directory name",
         default=None,
     )
+
+    parser.add_argument(
+        "--post_process",
+        type=str,
+        help="Whether or not to run post-processing functions current options are 'dataComparison'  'processForCivis' 'SamplePlot' ",
+        default=None,
+    )
+
+    parser.add_argument(
+        "--noSamplePlot",
+        action='store_true',
+        help="If specified, no sample plot with main trajectories will be generated",
+    )
+
 
     return parser.parse_args()
 
@@ -508,7 +525,7 @@ if __name__ == '__main__':
     # Generate folders and copy required files
     # GE 04/10/20 added exp_name,emodl_dir,emodlname,cfg_dir here to fix exp_name not defined error
     temp_dir, temp_exp_dir, trajectories_dir, sim_output_path, plot_path = makeExperimentFolder(
-        exp_name, emodl_dir, args.emodl_template, cfg_dir, args.cfg_template,  yaml_dir, DEFAULT_CONFIG, args.experiment_config, wdir=wdir,
+        exp_name, emodl_dir, args.emodl_template, cfg_dir, args.cfg_template,  yaml_dir,  args.masterconfig, args.experiment_config, wdir=wdir,
         git_dir=git_dir)
     log.debug(f"temp_dir = {temp_dir}\n"
               f"temp_exp_dir = {temp_exp_dir}\n"
@@ -529,14 +546,15 @@ if __name__ == '__main__':
         region=region,
     )
 
-    generateSubmissionFile(
-        nscen, exp_name, trajectories_dir, temp_dir, temp_exp_dir,
-        exe_dir=exe_dir, docker_image=docker_image)
-
     if Location == 'NUCLUSTER':
+        generateSubmissionFile_quest(nscen, exp_name, args.experiment_config, trajectories_dir,  temp_exp_dir)
         runExp(trajectories_dir=temp_exp_dir, Location='NUCLUSTER')
 
     if Location == 'Local':
+        generateSubmissionFile(
+            nscen, exp_name, args.experiment_config,trajectories_dir, temp_dir, temp_exp_dir,
+            exe_dir=exe_dir, docker_image=docker_image)
+
         runExp(trajectories_dir=trajectories_dir, Location='Local')
 
         combineTrajectories(Nscenarios=nscen, trajectories_dir=trajectories_dir,
@@ -545,22 +563,36 @@ if __name__ == '__main__':
                 plot_path=plot_path, delete_temp_dir=True)
         log.info(f"Outputs are in {sim_output_path}")
 
-        if args.post_process:
-            # Once the simulations are done
-            # number_of_samples*len(Kivalues) == nscen ### to check
-            df = pd.read_csv(os.path.join(sim_output_path, 'trajectoriesDat.csv'))
+        if not args.noSamplePlot:
+            log.info("Sample plot")
+            runSamplePlot(sim_output_path=sim_output_path, plot_path=plot_path,start_dates=start_dates,channel_list_name="master")
 
-            master_channel_list = ['susceptible', 'exposed', 'asymptomatic', 'symptomatic_mild',
-                                   'hospitalized', 'detected', 'critical', 'deaths', 'recovered']
-            detection_channel_list = ['detected', 'detected_cumul', 'asymp_det_cumul', 'hosp_det_cumul']
-            custom_channel_list = ['detected_cumul', 'symp_severe_cumul', 'asymp_det_cumul', 'hosp_det_cumul',
-                                   'symp_mild_cumul', 'asymp_cumul', 'hosp_cumul', 'crit_cumul']
+        if args.post_process == 'dataComparison':
+            log.info("Compare to data")
+            p0 = os.path.join(sim_output_path, 'runDataComparison.bat')
+            subprocess.call([p0])
 
-            # FIXME: Timesteps shouldn't be all relative to start_dates[0],
-            #    especially when we have multiple first days.
-            sampleplot(df, allchannels=master_channel_list, start_date=start_dates[0],
-                       plot_fname=os.path.join(plot_path, 'main_channels.png'))
-            sampleplot(df, allchannels=detection_channel_list, start_date=start_dates[0],
-                       plot_fname=os.path.join('detection_channels.png'))
-            sampleplot(df, allchannels=custom_channel_list, start_date=start_dates[0],
-                       plot_fname=os.path.join('cumulative_channels.png'))
+        if args.post_process == 'processForCivis':
+
+            log.info("Compare to data")
+            p0 = os.path.join(sim_output_path, 'runDataComparison.bat')
+            subprocess.call([p0])
+
+            log.info("Process for civis - csv file")
+            p1 = os.path.join(sim_output_path, 'runProcessForCivis_1.bat')
+            subprocess.call([p1])
+
+            log.info("Process for civis - overflow probabilities")
+            p2 = os.path.join(sim_output_path, 'runProcessForCivis_2.bat')
+            subprocess.call([p2])
+
+            log.info("Process for civis - Rt estimation")
+            p3 = os.path.join(sim_output_path, 'runProcessForCivis_3.bat')
+            subprocess.call([p3])
+
+            log.info("Process for civis - file copy and changelog")
+            p4 = os.path.join(sim_output_path, 'runProcessForCivis_4.bat')
+            subprocess.call([p4])
+
+
+
