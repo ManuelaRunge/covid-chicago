@@ -4,8 +4,7 @@ user_path =  Sys.getenv("USERNAME")
 
 if(!exists('Location'))Location="LOCAL"
 
-if(!exists("Location"))Location="LOCAL"
-if(Location=="NUCLUSTER"){
+if(tolower(Location)=="nucluster"){
   user_path = '/projects/p30781/covidproject/'
   home_path = file.path(user_path, 'projects')
   data_path = file.path(user_path,  'data')
@@ -16,7 +15,7 @@ if(Location=="NUCLUSTER"){
 }
 
 
-if(Location=="LOCAL"){
+if(tolower(Location)=="local"){
   
   if('patri' %in%  user_path){
     data_path= file.path(user_path, 'Box Sync')
