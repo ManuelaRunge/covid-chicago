@@ -893,7 +893,7 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
     rollback_str = ""
     for grp in grpList:
         temp_str = """
-(time-event socialDistance_change_rollback @socialDistance_rollback_time@ ((Ki_{grp} Ki_red6_{grp})))
+(time-event socialDistance_change_rollback @socialDistance_rollback_time@ ((Ki_{grp} Ki_red7_{grp})))
                 """.format(grp=grp)
         rollback_str = rollback_str + temp_str
 
@@ -901,14 +901,14 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
     rollbacktriggered_str = ""
     for grp in grpList:
         temp_str = """
-(state-event rollbacktrigger_{grp} (and (> time @today@) (> {channel}_{grp} (* @trigger_{grp}@ @capacity_multiplier@)) ) ((Ki_{grp} Ki_red6_{grp})))
+(state-event rollbacktrigger_{grp} (and (> time @today@) (> {channel}_{grp} (* @trigger_{grp}@ @capacity_multiplier@)) ) ((Ki_{grp} Ki_red7_{grp})))
                     """.format(channel=trigger_channel,grp=grp)
         rollbacktriggered_str = rollbacktriggered_str + temp_str
 
     rollbacktriggered_grp_str = ""
     for grp in grpList:
         temp_str = """
-    (state-event rollbacktrigger_{grp} (and (> time @today@) (> {channel}_{grp} (* @trigger_{grp}@ @capacity_multiplier_{grp}@)) ) ((Ki_{grp} Ki_red6_{grp})))
+    (state-event rollbacktrigger_{grp} (and (> time @today@) (> {channel}_{grp} (* @trigger_{grp}@ @capacity_multiplier_{grp}@)) ) ((Ki_{grp} Ki_red7_{grp})))
                     """.format(channel=trigger_channel, grp=grp)
         rollbacktriggered_grp_str = rollbacktriggered_grp_str + temp_str
 
@@ -919,7 +919,7 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
 (param time_of_trigger_{grp} 10000)
 (state-event rollbacktrigger_{grp} (and (> time @today@) (> crit_det_{grp} (* @trigger_{grp}@ @capacity_multiplier@)) ) ((time_of_trigger_{grp} time)))
 (func time_since_trigger_{grp} (- time time_of_trigger_{grp}))
-(state-event apply_rollback_{grp} (> (- time_since_trigger_{grp} @trigger_delay_days@) 0) ((Ki_{grp} Ki_red6_{grp})))   
+(state-event apply_rollback_{grp} (> (- time_since_trigger_{grp} @trigger_delay_days@) 0) ((Ki_{grp} Ki_red7_{grp})))   
 (observe triggertime_{grpout} time_of_trigger_{grp})
                    """.format(channel=trigger_channel,grpout=grpout,grp=grp)
         rollbacktriggered_delay_str = rollbacktriggered_delay_str + temp_str
@@ -931,7 +931,7 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
 (param time_of_trigger_{grp} 10000)
 (state-event rollbacktrigger_{grp} (and (> time @today@) (> crit_det_{grp} (* @trigger_{grp}@ @capacity_multiplier_{grp}@)) ) ((time_of_trigger_{grp} time)))
 (func time_since_trigger_{grp} (- time time_of_trigger_{grp}))
-(state-event apply_rollback_{grp} (> (- time_since_trigger_{grp} @trigger_delay_days@) 0) ((Ki_{grp} Ki_red6_{grp})))   
+(state-event apply_rollback_{grp} (> (- time_since_trigger_{grp} @trigger_delay_days@) 0) ((Ki_{grp} Ki_red7_{grp})))   
 (observe triggertime_{grpout} time_of_trigger_{grp})
                    """.format(channel=trigger_channel,grpout=grpout,grp=grp)
         rollbacktriggered_grp_delay_str = rollbacktriggered_grp_delay_str + temp_str
@@ -964,7 +964,7 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
     interventionSTOP_adj_str = ""
     for grp in grpList :
         temp_str = """
-(param Ki_back_{grp} (+ Ki_red6_{grp} (* @backtonormal_multiplier@ (- Ki_{grp} Ki_red6_{grp}))))
+(param Ki_back_{grp} (+ Ki_red6_{grp} (* @backtonormal_multiplier@ (- Ki_{grp} Ki_red7_{grp}))))
 (time-event stopInterventions @socialDistanceSTOP_time@ ((Ki_{grp} Ki_back_{grp})))
         """.format(grp=grp)
         interventionSTOP_adj_str = interventionSTOP_adj_str + temp_str
@@ -974,7 +974,7 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
     interventionSTOP_adj2_str = ""
     for grp in grpList :
         temp_str = """
-(param Ki_back_{grp} (+ Ki_red6_{grp} (* @backtonormal_multiplier@ (- Ki_{grp} Ki_red6_{grp}))))
+(param Ki_back_{grp} (+ Ki_red6_{grp} (* @backtonormal_multiplier@ (- Ki_{grp} Ki_red7_{grp}))))
 (time-event stopInterventions @socialDistanceSTOP_time@ ((Ki_{grp} Ki_back_{grp})))
         """.format(grp=grp)
         interventionSTOP_adj2_str = interventionSTOP_adj2_str + temp_str
@@ -1000,10 +1000,10 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
     gradual_reopening2_str = ""
     for grp in grpList:
         temp_str = """
-(param Ki_back1_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4@ 0.25 (- Ki_{grp} Ki_red6_{grp}))))
-(param Ki_back2_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4@ 0.50 (- Ki_{grp} Ki_red6_{grp}))))
-(param Ki_back3_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4@ 0.75 (- Ki_{grp} Ki_red6_{grp}))))
-(param Ki_back4_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4@ 1.00 (- Ki_{grp} Ki_red6_{grp}))))
+(param Ki_back1_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4@ 0.25 (- Ki_{grp} Ki_red7_{grp}))))
+(param Ki_back2_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4@ 0.50 (- Ki_{grp} Ki_red7_{grp}))))
+(param Ki_back3_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4@ 0.75 (- Ki_{grp} Ki_red7_{grp}))))
+(param Ki_back4_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4@ 1.00 (- Ki_{grp} Ki_red7_{grp}))))
 (time-event gradual_reopening1 @gradual_reopening_time1@ ((Ki_{grp} Ki_back1_{grp})))
 (time-event gradual_reopening2 @gradual_reopening_time2@ ((Ki_{grp} Ki_back2_{grp})))
 (time-event gradual_reopening3 @gradual_reopening_time3@ ((Ki_{grp} Ki_back3_{grp})))
@@ -1015,10 +1015,10 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
     gradual_reopening3_str = ""
     for grp in grpList:
         temp_str = """
-(param Ki_back1_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4_{grp}@ 0.25 (- Ki_{grp} Ki_red6_{grp}))))
-(param Ki_back2_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4_{grp}@ 0.50 (- Ki_{grp} Ki_red6_{grp}))))
-(param Ki_back3_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4_{grp}@ 0.75 (- Ki_{grp} Ki_red6_{grp}))))
-(param Ki_back4_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4_{grp}@ 1.00 (- Ki_{grp} Ki_red6_{grp}))))
+(param Ki_back1_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4_{grp}@ 0.25 (- Ki_{grp} Ki_red7_{grp}))))
+(param Ki_back2_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4_{grp}@ 0.50 (- Ki_{grp} Ki_red7_{grp}))))
+(param Ki_back3_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4_{grp}@ 0.75 (- Ki_{grp} Ki_red7_{grp}))))
+(param Ki_back4_{grp} (+ Ki_red6_{grp} (* @reopening_multiplier_4_{grp}@ 1.00 (- Ki_{grp} Ki_red7_{grp}))))
 (time-event gradual_reopening1 @gradual_reopening_time1@ ((Ki_{grp} Ki_back1_{grp})))
 (time-event gradual_reopening2 @gradual_reopening_time2@ ((Ki_{grp} Ki_back2_{grp})))
 (time-event gradual_reopening3 @gradual_reopening_time3@ ((Ki_{grp} Ki_back3_{grp})))
