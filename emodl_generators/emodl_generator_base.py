@@ -621,11 +621,11 @@ def write_interventions( total_string, scenarioName, change_testDelay=None, trig
 (time-event socialDistance_change4 @socialDistance_time7@ ((Ki Ki_red7)))
             """
     rollback_str ="""
-(time-event socialDistance_change_rollback @socialDistance_rollback_time@ ((Ki Ki_red4)))
+(time-event socialDistance_change_rollback @socialDistance_rollback_time@ ((Ki Ki_red7)))
                 """
 
     rollbacktriggered_str =  """
-(state-event rollbacktrigger (and (> time @triggertime@) (> {channel} (* @trigger@ @capacity_multiplier@)) ) ((Ki Ki_red4)))
+(state-event rollbacktrigger (and (> time @triggertime@) (> {channel} (* @trigger@ @capacity_multiplier@)) ) ((Ki Ki_red7)))
                     """.format(channel=trigger_channel)
 
     d_Sym_change_str = """
@@ -645,34 +645,24 @@ def write_interventions( total_string, scenarioName, change_testDelay=None, trig
 # % change from lowest transmission level - immediate
 # starting point is lowest level of transmission  Ki_red4
     interventionSTOP_adj_str = """
-(param Ki_back (+ Ki_red4 (* @backtonormal_multiplier@ (- Ki Ki_red4))))
+(param Ki_back (+ Ki_red4 (* @backtonormal_multiplier@ (- Ki Ki_red7))))
 (time-event stopInterventions @socialDistanceSTOP_time@ ((Ki Ki_back)))
         """
 
 # % change from current transmission level - immediate
 # starting point is current level of transmission  Ki_red5
     interventionSTOP_adj2_str = """
-(param Ki_back (+ Ki_red5 (* @backtonormal_multiplier@ (- Ki Ki_red5))))
+(param Ki_back (+ Ki_red5 (* @backtonormal_multiplier@ (- Ki Ki_red7))))
 (time-event stopInterventions @socialDistanceSTOP_time@ ((Ki Ki_back)))
         """
 
-    gradual_reopening_str =  """
-(param Ki_back1 (+ Ki_red4 (* @reopening_multiplier_1@ (- Ki Ki_red4))))
-(param Ki_back2 (+ Ki_red4 (* @reopening_multiplier_2@ (- Ki Ki_red4))))
-(param Ki_back3 (+ Ki_red4 (* @reopening_multiplier_3@ (- Ki Ki_red4))))
-(param Ki_back4 (+ Ki_red4 (* @reopening_multiplier_4@ (- Ki Ki_red4))))
-(time-event gradual_reopening1 @gradual_reopening_time1@ ((Ki Ki_back1)))
-(time-event gradual_reopening2 @gradual_reopening_time2@ ((Ki Ki_back2)))
-(time-event gradual_reopening3 @gradual_reopening_time3@ ((Ki Ki_back3)))
-(time-event gradual_reopening4 @gradual_reopening_time4@ ((Ki Ki_back4)))
-    """
 
 # gradual reopening from 'current' transmission level
     gradual_reopening2_str =  """
-(param Ki_back1 (+ Ki_red5 (* @reopening_multiplier_4@ 0.25 (- Ki Ki_red5))))
-(param Ki_back2 (+ Ki_red5 (* @reopening_multiplier_4@ 0.50 (- Ki Ki_red5))))
-(param Ki_back3 (+ Ki_red5 (* @reopening_multiplier_4@ 0.75 (- Ki Ki_red5))))
-(param Ki_back4 (+ Ki_red5 (* @reopening_multiplier_4@ 1.00 (- Ki Ki_red5))))
+(param Ki_back1 (+ Ki_red7 (* @reopening_multiplier_4@ 0.25 (- Ki Ki_red7))))
+(param Ki_back2 (+ Ki_red7 (* @reopening_multiplier_4@ 0.50 (- Ki Ki_red7))))
+(param Ki_back3 (+ Ki_red7 (* @reopening_multiplier_4@ 0.75 (- Ki Ki_red7))))
+(param Ki_back4 (+ Ki_red7 (* @reopening_multiplier_4@ 1.00 (- Ki Ki_red7))))
 (time-event gradual_reopening1 @gradual_reopening_time1@ ((Ki Ki_back1)))
 (time-event gradual_reopening2 @gradual_reopening_time2@ ((Ki Ki_back2)))
 (time-event gradual_reopening3 @gradual_reopening_time3@ ((Ki Ki_back3)))
@@ -737,8 +727,6 @@ def write_interventions( total_string, scenarioName, change_testDelay=None, trig
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + interventionSTOP_adj_str)
     if scenarioName == "interventionSTOP_adj2":
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + interventionSTOP_adj2_str)
-    if scenarioName == "gradual_reopening" :
-        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening_str)
     if scenarioName == "gradual_reopening2" :
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening2_str)
     if scenarioName == "continuedSIP" :

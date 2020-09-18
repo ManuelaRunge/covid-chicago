@@ -960,7 +960,7 @@ def write_interventions(regionList, ageList,total_string, scenarioName, expandMo
     rollback_str = ""
     for region in regionList:
         temp_str = """
-(time-event socialDistance_change_rollback @socialDistance_rollback_time@ ((Ki_{region} Ki_red6_{region})))
+(time-event socialDistance_change_rollback @socialDistance_rollback_time@ ((Ki_{region} Ki_red7_{region})))
                 """.format(region=region)
         rollback_str = rollback_str + temp_str
 
@@ -968,7 +968,7 @@ def write_interventions(regionList, ageList,total_string, scenarioName, expandMo
     rollbacktriggered_str = ""
     for region in regionList:
         temp_str = """
-(state-event rollbacktrigger_{region} (and (> time @today@) (> {channel}_{region} (* @trigger_{region}@ @capacity_multiplier@)) ) ((Ki_{region} Ki_red6_{region})))
+(state-event rollbacktrigger_{region} (and (> time @today@) (> {channel}_{region} (* @trigger_{region}@ @capacity_multiplier@)) ) ((Ki_{region} Ki_red7_{region})))
                     """.format(channel=trigger_channel,region=region)
         rollbacktriggered_str = rollbacktriggered_str + temp_str
 
@@ -979,7 +979,7 @@ def write_interventions(regionList, ageList,total_string, scenarioName, expandMo
 (param time_of_trigger_{region} 10000)
 (state-event rollbacktrigger_{region} (and (> time @today@) (> crit_det_{region} (* @trigger_{region}@ @capacity_multiplier@)) ) ((time_of_trigger_{region} time)))
 (func time_since_trigger_{region} (- time time_of_trigger_{region}))
-(state-event apply_rollback_{region} (> (- time_since_trigger_{region} @trigger_delay_days@) 0) ((Ki_{region} Ki_red6_{region})))   
+(state-event apply_rollback_{region} (> (- time_since_trigger_{region} @trigger_delay_days@) 0) ((Ki_{region} Ki_red7_{region})))   
 (observe triggertime_{regionout} time_of_trigger_{region})
                    """.format(channel=trigger_channel,regionout=regionout,region=region)
         rollbacktriggered_delay_str = rollbacktriggered_delay_str + temp_str
@@ -1012,7 +1012,7 @@ def write_interventions(regionList, ageList,total_string, scenarioName, expandMo
     interventionSTOP_adj_str = ""
     for region in regionList :
         temp_str = """
-(param Ki_back_{region} (+ Ki_red6_{region} (* @backtonormal_multiplier@ (- Ki_{region} Ki_red6_{region}))))
+(param Ki_back_{region} (+ Ki_red7_{region} (* @backtonormal_multiplier@ (- Ki_{region} Ki_red7_{region}))))
 (time-event stopInterventions @socialDistanceSTOP_time@ ((Ki_{region} Ki_back_{region})))
         """.format(region=region)
         interventionSTOP_adj_str = interventionSTOP_adj_str + temp_str
@@ -1022,36 +1022,20 @@ def write_interventions(regionList, ageList,total_string, scenarioName, expandMo
     interventionSTOP_adj2_str = ""
     for region in regionList :
         temp_str = """
-(param Ki_back_{region} (+ Ki_red6_{region} (* @backtonormal_multiplier@ (- Ki_{region} Ki_red6_{region}))))
+(param Ki_back_{region} (+ Ki_red7_{region} (* @backtonormal_multiplier@ (- Ki_{region} Ki_red7_{region}))))
 (time-event stopInterventions @socialDistanceSTOP_time@ ((Ki_{region} Ki_back_{region})))
         """.format(region=region)
         interventionSTOP_adj2_str = interventionSTOP_adj2_str + temp_str
 
 
-# gradual reopening from 'lowest' transmission level,  Ki_red5 == Ki_back1
-    gradual_reopening_str = ""
-    for region in regionList:
-        temp_str = """
-(param backtonormal_multiplier_1_adj_{region}  (- @backtonormal_multiplier@ backtonormal_multiplier_1_{region} ))
-(observe backtonormal_multiplier_1_adj_{region}  backtonormal_multiplier_1_adj_{region})
-
-(param Ki_back2_{region} (+ Ki_red5_{region} (* backtonormal_multiplier_1_adj_{region} 0.3333 (- Ki_{region} Ki_red4_{region}))))
-(param Ki_back3_{region} (+ Ki_red5_{region} (* backtonormal_multiplier_1_adj_{region} 0.6666 (- Ki_{region} Ki_red4_{region}))))
-(param Ki_back4_{region} (+ Ki_red5_{region} (* backtonormal_multiplier_1_adj_{region} 1.00 (- Ki_{region} Ki_red4_{region}))))
-(time-event gradual_reopening2 @gradual_reopening_time1@ ((Ki_{region} Ki_back2_{region})))
-(time-event gradual_reopening3 @gradual_reopening_time2@ ((Ki_{region} Ki_back3_{region})))
-(time-event gradual_reopening4 @gradual_reopening_time3@ ((Ki_{region} Ki_back4_{region})))
-        """.format(region=region)
-        gradual_reopening_str = gradual_reopening_str + temp_str
-            
 # gradual reopening from 'current' transmission level 
     gradual_reopening2_str = ""
     for region in regionList:
         temp_str = """
-(param Ki_back1_{region} (+ Ki_red6_{region} (* @reopening_multiplier_4@ 0.25 (- Ki_{region} Ki_red6_{region}))))
-(param Ki_back2_{region} (+ Ki_red6_{region} (* @reopening_multiplier_4@ 0.50 (- Ki_{region} Ki_red6_{region}))))
-(param Ki_back3_{region} (+ Ki_red6_{region} (* @reopening_multiplier_4@ 0.75 (- Ki_{region} Ki_red6_{region}))))
-(param Ki_back4_{region} (+ Ki_red6_{region} (* @reopening_multiplier_4@ 1.00 (- Ki_{region} Ki_red6_{region}))))
+(param Ki_back1_{region} (+ Ki_red7_{region} (* @reopening_multiplier_4@ 0.25 (- Ki_{region} Ki_red7_{region}))))
+(param Ki_back2_{region} (+ Ki_red7_{region} (* @reopening_multiplier_4@ 0.50 (- Ki_{region} Ki_red7_{region}))))
+(param Ki_back3_{region} (+ Ki_red7_{region} (* @reopening_multiplier_4@ 0.75 (- Ki_{region} Ki_red7_{region}))))
+(param Ki_back4_{region} (+ Ki_red7_{region} (* @reopening_multiplier_4@ 1.00 (- Ki_{region} Ki_red7_{region}))))
 (time-event gradual_reopening1 @gradual_reopening_time1@ ((Ki_{region} Ki_back1_{region})))
 (time-event gradual_reopening2 @gradual_reopening_time2@ ((Ki_{region} Ki_back2_{region})))
 (time-event gradual_reopening3 @gradual_reopening_time3@ ((Ki_{region} Ki_back3_{region})))
@@ -1063,10 +1047,10 @@ def write_interventions(regionList, ageList,total_string, scenarioName, expandMo
     gradual_reopening3_str = ""
     for region in regionList:
         temp_str = """
-(param Ki_back1_{region} (+ Ki_red6_{region} (* @reopening_multiplier_4_{region}@ 0.25 (- Ki_{region} Ki_red6_{region}))))
-(param Ki_back2_{region} (+ Ki_red6_{region} (* @reopening_multiplier_4_{region}@ 0.50 (- Ki_{region} Ki_red6_{region}))))
-(param Ki_back3_{region} (+ Ki_red6_{region} (* @reopening_multiplier_4_{region}@ 0.75 (- Ki_{region} Ki_red6_{region}))))
-(param Ki_back4_{region} (+ Ki_red6_{region} (* @reopening_multiplier_4_{region}@ 1.00 (- Ki_{region} Ki_red6_{region}))))
+(param Ki_back1_{region} (+ Ki_red7_{region} (* @reopening_multiplier_4_{region}@ 0.25 (- Ki_{region} Ki_red7_{region}))))
+(param Ki_back2_{region} (+ Ki_red7_{region} (* @reopening_multiplier_4_{region}@ 0.50 (- Ki_{region} Ki_red7_{region}))))
+(param Ki_back3_{region} (+ Ki_red7_{region} (* @reopening_multiplier_4_{region}@ 0.75 (- Ki_{region} Ki_red7_{region}))))
+(param Ki_back4_{region} (+ Ki_red7_{region} (* @reopening_multiplier_4_{region}@ 1.00 (- Ki_{region} Ki_red7_{region}))))
 (time-event gradual_reopening1 @gradual_reopening_time1@ ((Ki_{region} Ki_back1_{region})))
 (time-event gradual_reopening2 @gradual_reopening_time2@ ((Ki_{region} Ki_back2_{region})))
 (time-event gradual_reopening3 @gradual_reopening_time3@ ((Ki_{region} Ki_back3_{region})))
@@ -1140,8 +1124,6 @@ def write_interventions(regionList, ageList,total_string, scenarioName, expandMo
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + interventionSTOP_adj_str)
     if scenarioName == "interventionSTOP_adj2":
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + interventionSTOP_adj2_str)
-    if scenarioName == "gradual_reopening" :
-        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening_str)
     if scenarioName == "gradual_reopening2" :
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening2_str)
     if scenarioName == "gradual_reopening3" :
