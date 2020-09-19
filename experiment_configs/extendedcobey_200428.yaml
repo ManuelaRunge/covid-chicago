@@ -1,9 +1,9 @@
 experiment_setup_parameters:
-  'number_of_samples': 30
+  'number_of_samples': 700
   'number_of_runs': 1
   'duration': 400
   'monitoring_samples': 400 # needs to be smaller than duration
-  'random_seed': 19
+  'random_seed': 751
   'initialAs': 10
 fixed_parameters_region_specific:
   populations:
@@ -200,7 +200,7 @@ intervention_parameters:
   #  function_kwargs: {'low':0.06, 'high':0.06}
   'reopening_multiplier_4':
     np: linspace
-    function_kwargs: {'start':0.08, 'stop':0.20, 'num' : 1}
+    function_kwargs: {'start':0, 'stop':0.20, 'num' : 1}
   ### INCREASE DETECTION RATES of asymptomatic, presymptomatic and mild infections
   'd_AsP_ct1':
     np.random: uniform
@@ -223,6 +223,9 @@ intervention_parameters:
   'capacity_multiplier':
     np.random: uniform
     function_kwargs: {'low':0.75, 'high':0.75}
+  'trigger_delay_days':
+    np.random: uniform
+    function_kwargs: {'low':1, 'high':1}   
 time_parameters:
   ### TIME-VARYING PARAMETER  - DATES
   ### Reduce Ki due to stay-at-home policy 
@@ -246,6 +249,9 @@ time_parameters:
   'socialDistance_time6':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-07-25}
+  'socialDistance_time7':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-08-25}
   'socialDistance_rollback_time':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-08-30}
@@ -258,16 +264,21 @@ time_parameters:
   ### Gradual reopening (time-wise)
   'gradual_reopening_time1':
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-07-30}
+    function_kwargs: {'dates': 2020-08-30}
   'gradual_reopening_time2':
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-08-03}        
+    function_kwargs: {'dates': 2020-09-03}        
   'gradual_reopening_time3':
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-08-08}    
+    function_kwargs: {'dates': 2020-09-08}    
   'gradual_reopening_time4':
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-08-13}  
+    function_kwargs: {'dates': 2020-09-13}  
+  ### 'today' parameter used to constrain after when state events can be activated
+  ### should be set to after reopening time events are completed
+  'today' :
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-09-14}
   ### Increased testing - increased detectioon of severe symptomatic infections
   ### (only used if corresponding emodl is defined)
   ### Use fixed dates or define detection time relative to  socialDistance_time3
@@ -330,9 +341,12 @@ time_parameters:
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-08-30}
     #function_kwargs: {'dates': [2020-04-15, 2020-05-15, 2020-06-15, 2020-07-15, 2020-08-15, 2020-09-15]}
-  'triggertime' :
+  'cfr_time_1':
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-08-30}
+    function_kwargs: {'dates': 2020-06-01}   
+  'cfr_time_2':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-07-01}   
 fitted_parameters:
   Kis:
     'NMH_catchment':

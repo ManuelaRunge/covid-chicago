@@ -4,7 +4,7 @@ import logging
 import os
 import re
 import sys
-
+import subprocess
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
@@ -13,8 +13,8 @@ import yamlordereddictloader
 
 from load_paths import load_box_paths
 from simulation_helpers import (DateToTimestep, cleanup, combineTrajectories,
-                                generateSubmissionFile, makeExperimentFolder,
-                                runExp, sampleplot)
+                                generateSubmissionFile, generateSubmissionFile_quest, makeExperimentFolder,
+                                runExp, runSamplePlot)
 
 log = logging.getLogger(__name__)
 
@@ -247,36 +247,42 @@ def add_parameters(df, parameter_type, config, region, age_bins, full_factorial=
     return df
 
 
-def generateParameterSamples(samples, pop, start_dates, config, age_bins, Kivalues, region):
+def generateParameterSamples(samples, pop, start_dates, config, age_bins, Kivalues, region, generateNew):
     """ Given a yaml configuration file (e.g. ./extendedcobey.yaml),
     generate a dataframe of the parameters for a simulation run using the specified
     functions/sampling mechanisms.
     """
-    # Time-independent parameters. No full factorial across parameters.
-    df = pd.DataFrame()
-    df['sample_num'] = range(samples)
-    df['speciesS'] = pop
-    df['initialAs'] = config['experiment_setup_parameters']['initialAs']
-    df = add_fixed_parameters_region_specific(df, config, region, age_bins)
-    df = add_parameters(df, "sampled_parameters", config, region, age_bins, full_factorial=False)
+    if generateNew :
+        # Time-independent parameters. No full factorial across parameters.
+        df = pd.DataFrame()
+        df['sample_num'] = range(samples)
+        df['speciesS'] = pop
+        df['initialAs'] = config['experiment_setup_parameters']['initialAs']
+        df = add_fixed_parameters_region_specific(df, config, region, age_bins)
+        df = add_parameters(df, "sampled_parameters", config, region, age_bins, full_factorial=False)
 
-    # Time-independent parameters. Create full factorial.
-    df = add_parameters(df, "intervention_parameters", config, region, age_bins)
-    df = add_parameters(df, "fixed_parameters_global", config, region, age_bins)
-    df = _get_full_factorial_df(df, "Ki", Kivalues)
+        # Time-independent parameters. Create full factorial.
+        df = add_parameters(df, "intervention_parameters", config, region, age_bins)
+        df = add_parameters(df, "fixed_parameters_global", config, region, age_bins)
+        df = _get_full_factorial_df(df, "Ki", Kivalues)
 
-    # Time-varying parameters for each start date.
-    dfs = []
-    for start_date in start_dates:
-        df_copy = df.copy()
-        df_copy['startdate'] = start_date
-        df_copy = add_parameters(df_copy, "time_parameters", config, region, age_bins)
-        df_copy = add_computed_parameters(df_copy)
-        dfs.append(df_copy)
+        # Time-varying parameters for each start date.
+        dfs = []
+        for start_date in start_dates:
+            df_copy = df.copy()
+            df_copy['startdate'] = start_date
+            df_copy = add_parameters(df_copy, "time_parameters", config, region, age_bins)
+            df_copy = add_computed_parameters(df_copy)
+            dfs.append(df_copy)
 
-    result = pd.concat(dfs, ignore_index=True)
-    result["scen_num"] = range(1, len(result) + 1)
-    result.to_csv(os.path.join(temp_exp_dir, "sampled_parameters.csv"), index=False)
+        result = pd.concat(dfs, ignore_index=True)
+        result["scen_num"] = range(1, len(result) + 1)
+        result.to_csv(os.path.join(temp_exp_dir, "sampled_parameters.csv"), index=False)
+    else :
+        fname = args.sample_csv
+        result = pd.read_csv(os.path.join('./experiment_configs', "input_csv",fname))
+        result.to_csv(os.path.join(temp_exp_dir, "sampled_parameters.csv"), index=False)
+
     return result
 
 
@@ -319,8 +325,13 @@ def replaceParameters(df, row_i, Ki_i, emodl_template, scen_num):
 def generateScenarios(simulation_population, Kivalues, duration, monitoring_samples,
                       nruns, sub_samples, modelname, cfg_file, start_dates, Location,
                       experiment_config, age_bins, region):
+
+    generateNew = True
+    if args.load_sample_parameters :
+        generateNew = False
+
     dfparam = generateParameterSamples(samples=sub_samples, pop=simulation_population, start_dates=start_dates,
-                                       config=experiment_config, age_bins=age_bins, Kivalues=Kivalues, region=region)
+                                       config=experiment_config, age_bins=age_bins, Kivalues=Kivalues, region=region, generateNew=generateNew)
 
     for row_i, row in dfparam.iterrows():
         Ki = row['Ki']
@@ -439,20 +450,16 @@ def parse_args():
         "--emodl_template",
         type=str,
         help="Template emodl file to use",
-        default="extendedmodel_cobey.emodl"
+        default="extendedmodel.emodl"
     )
     parser.add_argument(
         "-cfg",
         "--cfg_template",
         type=str,
         help="Template cfg file to use",
-        default="model.cfg"
+        default="model_B.cfg"
     )
-    parser.add_argument(
-        "--post_process",
-        action='store_true',
-        help="Whether or not to run post-processing functions",
-    )
+
     parser.add_argument(
         "-n",
         "--name_suffix",
@@ -460,11 +467,40 @@ def parse_args():
         help="Adding custom suffix to the experiment name. Ignored if '--name' specified.",
         default= f"_test_rn{str(today.microsecond)[-2:]}"
     )
+
     parser.add_argument(
         "--exp-name",
         type=str,
         help="Experiment name; also the output directory name",
         default=None,
+    )
+
+    parser.add_argument(
+        "--post_process",
+        type=str,
+        help="Whether or not to run post-processing functions current options are 'dataComparison'  'processForCivis' 'SamplePlot' ",
+        default=None,
+    )
+
+    parser.add_argument(
+        "--noSamplePlot",
+        action='store_true',
+        help="If specified, no sample plot with main trajectories will be generated",
+    )
+
+    parser.add_argument(
+        "-s",
+        "--load_sample_parameters",
+        action='store_true',
+        help="If specified reads samples from CSV instead regenerating from config yaml files"
+    )
+
+    parser.add_argument(
+        "-csv",
+        "--sample_csv",
+        type=str,
+        help="Name of sampled_parameters.csv, only used if load_sample_parameters exists",
+        default='sampled_parameters.csv'
     )
 
     return parser.parse_args()
@@ -535,15 +571,16 @@ if __name__ == '__main__':
         region=region,
     )
 
-    generateSubmissionFile(
-        nscen, exp_name, trajectories_dir, temp_dir, temp_exp_dir,
-        exe_dir=exe_dir, docker_image=docker_image)
-
     if Location == 'NUCLUSTER':
+        generateSubmissionFile_quest(nscen, exp_name, args.experiment_config, trajectories_dir,  temp_exp_dir)
         runExp(trajectories_dir=temp_exp_dir, Location='NUCLUSTER')
 
 
     if Location == 'Local':
+        generateSubmissionFile(
+            nscen, exp_name, args.experiment_config,trajectories_dir, temp_dir, temp_exp_dir,
+            exe_dir=exe_dir, docker_image=docker_image)
+
         runExp(trajectories_dir=trajectories_dir, Location='Local')
 
         combineTrajectories(Nscenarios=nscen, trajectories_dir=trajectories_dir,
@@ -552,22 +589,36 @@ if __name__ == '__main__':
                 plot_path=plot_path, delete_temp_dir=True)
         log.info(f"Outputs are in {sim_output_path}")
 
-        if args.post_process:
-            # Once the simulations are done
-            # number_of_samples*len(Kivalues) == nscen ### to check
-            df = pd.read_csv(os.path.join(sim_output_path, 'trajectoriesDat.csv'))
+        if not args.noSamplePlot:
+            log.info("Sample plot")
+            runSamplePlot(sim_output_path=sim_output_path, plot_path=plot_path,start_dates=start_dates,channel_list_name="master")
 
-            master_channel_list = ['susceptible', 'exposed', 'asymptomatic', 'symptomatic_mild',
-                                   'hospitalized', 'detected', 'critical', 'deaths', 'recovered']
-            detection_channel_list = ['detected', 'detected_cumul', 'asymp_det_cumul', 'hosp_det_cumul']
-            custom_channel_list = ['detected_cumul', 'symp_severe_cumul', 'asymp_det_cumul', 'hosp_det_cumul',
-                                   'symp_mild_cumul', 'asymp_cumul', 'hosp_cumul', 'crit_cumul']
+        if args.post_process == 'dataComparison':
+            log.info("Compare to data")
+            p0 = os.path.join(sim_output_path, 'runDataComparison.bat')
+            subprocess.call([p0])
 
-            # FIXME: Timesteps shouldn't be all relative to start_dates[0],
-            #    especially when we have multiple first days.
-            sampleplot(df, allchannels=master_channel_list, start_date=start_dates[0],
-                       plot_fname=os.path.join(plot_path, 'main_channels.png'))
-            sampleplot(df, allchannels=detection_channel_list, start_date=start_dates[0],
-                       plot_fname=os.path.join('detection_channels.png'))
-            sampleplot(df, allchannels=custom_channel_list, start_date=start_dates[0],
-                       plot_fname=os.path.join('cumulative_channels.png'))
+        if args.post_process == 'processForCivis':
+
+            log.info("Compare to data")
+            p0 = os.path.join(sim_output_path, 'runDataComparison.bat')
+            subprocess.call([p0])
+
+            log.info("Process for civis - csv file")
+            p1 = os.path.join(sim_output_path, 'runProcessForCivis_1.bat')
+            subprocess.call([p1])
+
+            log.info("Process for civis - overflow probabilities")
+            p2 = os.path.join(sim_output_path, 'runProcessForCivis_2.bat')
+            subprocess.call([p2])
+
+            log.info("Process for civis - Rt estimation")
+            p3 = os.path.join(sim_output_path, 'runProcessForCivis_3.bat')
+            subprocess.call([p3])
+
+            log.info("Process for civis - file copy and changelog")
+            p4 = os.path.join(sim_output_path, 'runProcessForCivis_4.bat')
+            subprocess.call([p4])
+
+
+
