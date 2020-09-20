@@ -3,50 +3,57 @@ library(tidyverse)
 library(cowplot)
 library(scales)
 library(viridis)
-require(readr)
+require(data.table)
+
 source("load_paths.R")
 source("processing_helpers.R")
 
 theme_set(theme_cowplot())
 
+simdate <- "20200917"
+exp_name <- "20200917_IL_gradual_reopening"
+plot_dir <- file.path(simulation_output, exp_name, "_plots")
 
-simdate = "20200829"
-exp_name <- "20200829_IL_MR_baseline_dAsPSym_varCov"
 
-
-trajectoriesDat <- read_csv(file.path(simulation_output, exp_name, "trajectoriesDat.csv"))
-
-### Note use Ki_EMS-  or Ki_EMS.   not Ki_EMS_  (time varying vs input parameter)
-# colnames(trajectoriesDat) <- gsub("[.]", "-", colnames(trajectoriesDat))
-region_names =c("All", paste0("EMS-",c(1:11)))
+region_names <- c("All", paste0("EMS-", c(1:11)))
 outcomevars <- c(
-  paste0("hospitalized_det_", region_names),
+  paste0("hosp_det_", region_names),
   paste0("hospitalized_", region_names),
   paste0("crit_det_", region_names),
   paste0("critical_", region_names)
 )
 
-
-region_names =paste0("EMS-",c(1:11))
+region_names <- paste0("EMS-", c(1:11))
 outcomevars2 <- c(
   paste0("Ki_t_", region_names)
 )
 
+paramvars <- c("reopening_multiplier_4")
+keepvars <- c("time", "startdate", "scen_num", "sample_num", paramvars, outcomevars, outcomevars2)
 
-paramvars <- c("d_AsP_ct1")
-keepvars <- c("time", "startdate", "scen_num","sample_num",  paramvars, outcomevars,outcomevars2)
 
 
+trajectoriesDat <- fread(file.path(simulation_output, exp_name, "trajectoriesDat.csv"), select = c(keepvars))
+
+if (!("run_num" %in% colnames(trajectoriesDat))) {
+  samplesDat <- read_csv(file.path(simulation_output, exp_name, "sampled_parameters.csv"))
+  mergevars <- colnames(samplesDat)[colnames(samplesDat) %in% colnames(trajectoriesDat)]
+  trajectoriesDat <- left_join(trajectoriesDat, samplesDat, by = mergevars)
+}
+### Note use Ki_EMS-  or Ki_EMS.   not Ki_EMS_  (time varying vs input parameter)
+# colnames(trajectoriesDat) <- gsub("[.]", "-", colnames(trajectoriesDat))
+
+table(trajectoriesDat[, c("reopening_multiplier_4")])
 paramvalues <- trajectoriesDat %>%
   select(keepvars) %>%
-  filter(time>120) %>%
+  filter(time > 120) %>%
   mutate(date = as.Date(startdate) + time) %>%
-  pivot_longer(cols = -c("time", "date", "startdate", "d_AsP_ct1"), names_to = "region") %>%
+  pivot_longer(cols = -c("time", "date", "startdate", "reopening_multiplier_4"), names_to = "region") %>%
   separate(region, into = c("outcome", "region"), sep = "_EMS-") %>%
   mutate(
     exp_name = exp_name,
   ) %>%
-  group_by(date, region, exp_name, d_AsP_ct1, outcome) %>%
+  group_by(date, region, exp_name, reopening_multiplier_4, outcome) %>%
   summarize(
     median.value = median(value, na.rm = TRUE),
     q25.value = quantile(value, probs = 0.25, na.rm = TRUE),
@@ -60,83 +67,111 @@ capacityDat <- load_new_capacity() %>% mutate(region = as.character(geography_na
 
 table(paramvalues$region, exclude = NULL)
 paramvalues$region[is.na(paramvalues$region)] <- "illinois"
-paramvalues$region_label <- factor(paramvalues$region, levels = c("illinois",c(1:11)), labels = c("illinois",c(1:11)))
-capacityDat$region_label <- factor(capacityDat$region,  levels = c("illinois",c(1:11)), labels = c("illinois",c(1:11)))
-paramvalues$d_AsP_ct1 <- round(paramvalues$d_AsP_ct1, 2) * 100
+paramvalues$region_label <- factor(paramvalues$region, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
+capacityDat$region_label <- factor(capacityDat$region, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
+paramvalues$reopening_multiplier_4 <- round(paramvalues$reopening_multiplier_4, 2) * 100
 
-paramvalues <- paramvalues[!is.na(paramvalues$region_label),]
-dat=paramvalues
-save(dat, file=file.path(simulation_output, exp_name, "aggregatedDat_forR.Rdata"))
+paramvalues <- paramvalues[!is.na(paramvalues$region_label), ]
+dat <- paramvalues
+save(dat, file = file.path(simulation_output, exp_name, "aggregatedDat_forR.Rdata"))
 
-#library(RColorBrewer)
-#getPalette <- colorRampPalette(brewer.pal(9, "PuBuGn"))(12)
+# library(RColorBrewer)
+# getPalette <- colorRampPalette(brewer.pal(9, "PuBuGn"))(12)
 
 ### ---------------------------------------
 ## Timeline plot
 ### ---------------------------------------
 
 pplot <- paramvalues %>%
-  filter(outcome == "crit_det"  & date >= as.Date("2020-07-01") & date <= as.Date("2021-01-01")) %>%
-  filter(region !="illinois") %>%
-  filter(d_AsP_ct1  %in% c(0,22,44, 56, 78, 100)) %>%
-  group_by(region, d_AsP_ct1, outcome) %>%
+  filter(outcome == "crit_det" & date >= as.Date("2020-08-01") & date <= as.Date("2021-01-01")) %>%
+  filter(region != "illinois") %>%
+  # filter(reopening_multiplier_4  %in% c(0,22,44, 56, 78, 100)) %>%
+  group_by(region, reopening_multiplier_4, outcome) %>%
   left_join(capacityDat) %>%
   ggplot() +
-  geom_ribbon(aes(x = date, ymin = q2.5.value, ymax = q97.5.value, fill=as.factor(d_AsP_ct1), group=d_AsP_ct1), alpha = 0.2) +
-  geom_ribbon(aes(x = date, ymin = q25.value, ymax = q75.value, fill=as.factor(d_AsP_ct1), group=d_AsP_ct1), alpha = 0.3) +
-  geom_line(aes(x = date, y = median.value, col = as.factor(d_AsP_ct1), group=d_AsP_ct1), show.legend = F, size = 1) +
+  geom_ribbon(aes(x = date, ymin = q2.5.value, ymax = q97.5.value, fill = as.factor(reopening_multiplier_4), group = reopening_multiplier_4), alpha = 0.2) +
+  geom_ribbon(aes(x = date, ymin = q25.value, ymax = q75.value, fill = as.factor(reopening_multiplier_4), group = reopening_multiplier_4), alpha = 0.3) +
+  geom_line(aes(x = date, y = median.value, col = as.factor(reopening_multiplier_4), group = reopening_multiplier_4), show.legend = F, size = 1) +
   facet_wrap(~region_label, scales = "free") +
-  labs(color="Coverage", fill="Coverage") + 
-  scale_color_viridis_d(option="C")+
-  scale_fill_viridis_d(option="C")+
-  geom_hline(aes(yintercept = icu_available), linetype="dashed") +
-  labs(x = "Reopening multiplier (%)", y = "Peak in non-ICU census until Jan 2020") +
+  labs(color = "Reopening", fill = "Reopening") +
+  scale_color_viridis_d(option = "C") +
+  scale_fill_viridis_d(option = "C") +
+  geom_hline(aes(yintercept = icu_available), linetype = "dashed") +
+  labs(x = "", y = "predicted ICU census") +
   customThemeNoFacet
 
-ggsave(paste0("timeline_nonICU_perCovidRegion.png"),
-       plot = pplot, path = file.path(simulation_output, exp_name), width = 14, height = 8, device = "png"
+ggsave(paste0("timeline_ICU_perCovidRegion.png"),
+  plot = pplot, path = file.path(plot_dir), width = 14, height = 8, device = "png"
+)
+ggsave(paste0("timeline_ICU_perCovidRegion.pdf"),
+  plot = pplot, path = file.path(plot_dir), width = 14, height = 8, device = "pdf"
 )
 rm(pplot)
 
 
+
+### Zoomed
+
 pplot <- paramvalues %>%
-  filter(outcome == "crit_det" & date >= as.Date("2020-07-01") & date <= as.Date("2021-01-01")) %>%
-  filter(region !="illinois") %>%
-  filter(d_AsP_ct1  %in% c(0,22,44, 56, 78, 100)) %>%
-  group_by(date, d_AsP_ct1, outcome) %>%
-  summarize(median.value=sum(median.value),
-            q75.value=sum(q75.value),
-            q25.value=sum(q25.value),
-            q2.5.value=sum(q2.5.value),
-            q97.5.value=sum(q97.5.value)) %>%
-  mutate(region="illinois") %>%
+  filter(outcome == "crit_det" & date >= as.Date("2020-10-01") & date <= as.Date("2021-01-01")) %>%
+  filter(region != "illinois") %>%
+  filter(reopening_multiplier_4 >= 9) %>%
+  group_by(region, reopening_multiplier_4, outcome) %>%
   left_join(capacityDat) %>%
   ggplot() +
-  geom_ribbon(aes(x = date, ymin = q2.5.value, ymax = q97.5.value, fill=as.factor(d_AsP_ct1), group=d_AsP_ct1), alpha = 0.2) +
-  geom_ribbon(aes(x = date, ymin = q25.value, ymax = q75.value, fill=as.factor(d_AsP_ct1), group=d_AsP_ct1), alpha = 0.3) +
-  geom_line(aes(x = date, y = median.value, col = as.factor(d_AsP_ct1), group=d_AsP_ct1), show.legend = F, size = 1) +
-  labs(color="Coverage", fill="Coverage") + 
-  scale_color_viridis_d(option="C")+
-  scale_fill_viridis_d(option="C")+
- # geom_hline(aes(yintercept = icu_available), linetype="dashed") +
-  labs(x = "Reopening multiplier (%)", y = "Peak in non-ICU census until Jan 2020") +
+  geom_ribbon(aes(x = date, ymin = q2.5.value, ymax = q97.5.value, fill = as.factor(reopening_multiplier_4), group = reopening_multiplier_4), alpha = 0.2) +
+  geom_ribbon(aes(x = date, ymin = q25.value, ymax = q75.value, fill = as.factor(reopening_multiplier_4), group = reopening_multiplier_4), alpha = 0.3) +
+  geom_line(aes(x = date, y = median.value, col = as.factor(reopening_multiplier_4), group = reopening_multiplier_4), show.legend = F, size = 1) +
+  facet_wrap(~region_label, scales = "free") +
+  labs(color = "Reopening", fill = "Reopening") +
+  scale_color_viridis_d(option = "C") +
+  scale_fill_viridis_d(option = "C") +
+  geom_hline(aes(yintercept = icu_available), linetype = "dashed") +
+  labs(x = "", y = "predicted ICU census") +
   customThemeNoFacet
 
-ggsave(paste0("timeline_nonICU_IL.png"),
-       plot = pplot, path = file.path(simulation_output, exp_name), width = 10, height = 5, device = "png"
+ggsave(paste0("timeline_ICU_perCovidRegion_zoom.png"),
+  plot = pplot, path = file.path(plot_dir), width = 14, height = 8, device = "png"
+)
+ggsave(paste0("timeline_ICU_perCovidRegion_zoom.pdf"),
+  plot = pplot, path = file.path(plot_dir), width = 14, height = 8, device = "pdf"
 )
 rm(pplot)
 
+pplot <- paramvalues %>%
+  filter(outcome == "crit_det_All" & date >= as.Date("2020-09-01") & date <= as.Date("2021-01-01")) %>%
+  filter(region == "illinois") %>%
+  ggplot() +
+  geom_ribbon(aes(x = date, ymin = q2.5.value, ymax = q97.5.value, fill = as.factor(reopening_multiplier_4), group = reopening_multiplier_4), alpha = 0.2) +
+  geom_ribbon(aes(x = date, ymin = q25.value, ymax = q75.value, fill = as.factor(reopening_multiplier_4), group = reopening_multiplier_4), alpha = 0.3) +
+  geom_line(aes(x = date, y = median.value, col = as.factor(reopening_multiplier_4), group = reopening_multiplier_4), show.legend = F, size = 1) +
+  labs(color = "Coverage", fill = "Coverage") +
+  scale_color_viridis_d(option = "C") +
+  scale_fill_viridis_d(option = "C") +
+  # geom_hline(aes(yintercept = icu_available), linetype="dashed") +
+  labs(x = "Reopening multiplier (%)", y = "Peak in ICU census until Jan 2020") +
+  customThemeNoFacet
+
+ggsave(paste0("timeline_ICU_IL.png"),
+  plot = pplot, path = file.path(plot_dir), width = 10, height = 5, device = "png"
+)
+rm(pplot)
+
+###### REOPENING PLOT
+
+paramvalues$region_label <- factor(paramvalues$region, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
+capacityDat$region_label <- factor(capacityDat$region, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
+
 
 pplot <- paramvalues %>%
-  filter(date >= as.Date("2020-08-19") & outcome == "hospitalized_det") %>%
-  group_by(region, d_AsP_ct1, outcome) %>%
+  filter(date >= as.Date("2020-08-19") & outcome == "hosp_det") %>%
+  group_by(region, reopening_multiplier_4, outcome) %>%
   filter(median.value == max(median.value)) %>%
-  left_join(capacityDat) %>%
+  left_join(capacityDat, by = c("region")) %>%
   mutate(belowCapacity = ifelse(median.value <= medsurg_available, 1, 0)) %>%
   ggplot() +
-  geom_errorbar(aes(x = as.factor(reopening), ymin = q2.5.value, ymax = q97.5.value, col=as.factor(belowCapacity)), width = 0.3) +
-  geom_point(aes(x = as.factor(reopening), y = median.value, fill = as.factor(belowCapacity)), shape = 21, show.legend = F, size = 2) +
+  geom_errorbar(aes(x = as.factor(reopening_multiplier_4), ymin = q2.5.value, ymax = q97.5.value, col = as.factor(belowCapacity)), width = 0.3) +
+  geom_point(aes(x = as.factor(reopening_multiplier_4), y = median.value, fill = as.factor(belowCapacity)), shape = 21, show.legend = F, size = 2) +
   facet_wrap(~region, scales = "free") +
   scale_fill_manual(values = c("indianred", "deepskyblue3")) +
   geom_hline(aes(yintercept = medsurg_available)) +
@@ -144,20 +179,24 @@ pplot <- paramvalues %>%
   customThemeNoFacet
 
 ggsave(paste0("nonICU_reopening_perCovidRegion.png"),
-       plot = pplot, path = file.path(simulation_output, exp_name), width = 14, height = 8, device = "png"
+  plot = pplot, path = file.path(plot_dir), width = 14, height = 8, device = "png"
+)
+ggsave(paste0("nonICU_reopening_perCovidRegion.pdf"),
+  plot = pplot, path = file.path(plot_dir), width = 14, height = 8, device = "pdf"
 )
 rm(pplot)
 
 
+
 pplot <- paramvalues %>%
   filter(date >= as.Date("2020-08-19") & outcome == "crit_det") %>%
-  group_by(region, reopening, outcome) %>%
+  group_by(region, reopening_multiplier_4, outcome) %>%
   filter(median.value == max(median.value)) %>%
   left_join(capacityDat) %>%
   mutate(belowCapacity = ifelse(median.value <= icu_available, 1, 0)) %>%
   ggplot() +
-  geom_errorbar(aes(x = as.factor(reopening), ymin = q2.5.value, ymax = q97.5.value, col=as.factor(belowCapacity)), width = 0.3) +
-  geom_point(aes(x = as.factor(reopening), y = median.value, fill = as.factor(belowCapacity)), shape = 21, show.legend = F, size = 2) +
+  geom_errorbar(aes(x = as.factor(reopening_multiplier_4), ymin = q2.5.value, ymax = q97.5.value, col = as.factor(belowCapacity)), width = 0.3) +
+  geom_point(aes(x = as.factor(reopening_multiplier_4), y = median.value, fill = as.factor(belowCapacity)), shape = 21, show.legend = F, size = 2) +
   facet_wrap(~region, scales = "free") +
   scale_fill_manual(values = c("indianred", "deepskyblue3")) +
   geom_hline(aes(yintercept = icu_available)) +
@@ -165,162 +204,9 @@ pplot <- paramvalues %>%
   customThemeNoFacet
 
 ggsave(paste0("ICU_reopening_perCovidRegion.png"),
-       plot = pplot, path = file.path(simulation_output, exp_name), width = 14, height = 8, device = "png"
+  plot = pplot, path = file.path(plot_dir), width = 14, height = 8, device = "png"
+)
+ggsave(paste0("ICU_reopening_perCovidRegion.pdf"),
+  plot = pplot, path = file.path(plot_dir), width = 14, height = 8, device = "pdf"
 )
 rm(pplot)
-
-
-pplot <- paramvalues %>%
-  filter(region%in% c(4)) %>%
-  filter(reopening <=10) %>%
-  filter(date >= as.Date("2020-08-19") & date <= as.Date("2020-12-01") & outcome == "crit_det") %>%
-  group_by(region, reopening, outcome) %>%
-  filter(median.value == max(median.value)) %>%
-  group_by(region, reopening, outcome) %>%
-  filter(date == min(date)) %>%
-  left_join(capacityDat) %>%
-  mutate(belowCapacity = ifelse(median.value <= icu_available, 1, 0)) %>%
-  ggplot() +
-  geom_errorbar(aes(x = as.factor(reopening), ymin = q2.5.value, ymax = q97.5.value, col=as.factor(belowCapacity)), width = 0.2) +
-  geom_point(aes(x = as.factor(reopening), y = median.value, fill = as.factor(belowCapacity)), shape = 21, show.legend = F, size = 3) +
-  scale_fill_manual(values = c("deepskyblue3", "deepskyblue3")) +
-  geom_hline(aes(yintercept = icu_available), linetype="dashed") +
-  labs(x = "Additional relaxation of COVID-19 restrictions (%)",
-       y = "Predicted peak in ICU census until end of 2020") +
-  customThemeNoFacet+
-  background_grid()+
-  geom_hline(yintercept = c(-Inf, Inf)) + geom_vline(xintercept = c(-Inf, Inf))+
-  scale_y_continuous(breaks=seq(0,300,50), labels=seq(0,300,50))
-
-ggsave(paste0("ICU_reopening_region4.png"),
-       plot = pplot, path = file.path(simulation_output, exp_name), width = 9, height = 4, device = "png"
-)
-ggsave(paste0("ICU_reopening_region4.pdf"),
-       plot = pplot, path = file.path(simulation_output, exp_name), width = 9, height = 4, device = "pdf"
-)
-
-
-
-
-combinedPlot=F
-if(combinedPlot){
-  
-  pdat1 <- paramvalues %>%
-    filter(date >= as.Date("2020-08-19") & outcome == "hospitalized_det") %>%
-    group_by(region, reopening_multiplier_4, outcome) %>%
-    filter(median.value == max(median.value)) %>%
-    left_join(capacityDat) %>%
-    mutate(belowCapacity = ifelse(median.value <= medsurg_available, 1, 0)) %>%
-    filter(median.value <= medsurg_available & belowCapacity == 1) %>%
-    filter(reopening_multiplier_4 == max(reopening_multiplier_4)) %>%
-    filter(date == min(date))
-  
-  
-  pdat2 <- paramvalues %>%
-    filter(date >= as.Date("2020-08-19") & outcome == "crit_det") %>%
-    group_by(region, reopening_multiplier_4, outcome) %>%
-    filter(median.value == max(median.value)) %>%
-    left_join(capacityDat) %>%
-    mutate(belowCapacity = ifelse(median.value <= icu_available, 1, 0)) %>%
-    filter(median.value <= icu_available & belowCapacity == 1) %>%
-    filter(reopening_multiplier_4 == max(reopening_multiplier_4)) %>%
-    filter(date == min(date)) %>%
-    group_by(region)
-  
-  datRib <- rbind(pdat1, pdat2)  %>% group_by(region, outcome) %>% 
-    summarize(maxReopen=max(reopening_multiplier_4)) 
-  
-
-  
-  pplot <- ggplot(data = datRib) +
-    #geom_errorbar(aes(x = as.factor(reopening), ymin = q2.5.value, ymax = q97.5.value, group = outcome), width = 0.3) +
-    geom_bar(aes(x = as.factor(region), y = maxReopen, fill = as.factor(outcome), group = as.factor(outcome)), 
-             stat="identity", position="dodge", width=0.8,show.legend = F, size = 2) +
-    labs(
-      x = "Reopening multiplier (%)",
-      y = "Peak until Jan 2020",
-      title = "Reopening tolerance for ICU (blue) and non-ICU (orange) per covid region\n"
-    ) +
-    scale_color_manual(values=rev(c("orange","deepskyblue3")))+
-    scale_fill_manual(values=rev(c("orange","deepskyblue3")))+
-    background_grid() +
-    customThemeNoFacet +
-    theme(panel.grid.major.y = element_blank()) +
-    geom_hline(yintercept = c(-Inf, Inf)) +
-    geom_vline(xintercept = c(-Inf, Inf))
-  
-  
-  
-  
-  
-  ggsave(paste0("reopening_perCovidRegion.png"),
-         plot = pplot, path = file.path(simulation_output, exp_name), width = 12, height = 8, device = "png"
-  )
-  
-  
-  
-  
-  
-  
-  ########################################
-  
-  
-  ### GEt minimum date
-  pdat1 <- paramvalues %>%
-    filter(date <= as.Date("2020-12-30") ) %>%
-    filter(date >= as.Date("2020-08-19") & outcome == "hospitalized_det") %>%
-    group_by(region, reopening_multiplier_4, outcome) %>%
-    # filter(median.value == max(median.value)) %>%
-    left_join(capacityDat) %>%
-    filter(median.value >= medsurg_available ) %>%
-    filter(reopening_multiplier_4 == min(reopening_multiplier_4)) %>%
-    filter(date == min(date))
-  
-  
-  pdat2 <- paramvalues %>%
-    filter(date <= as.Date("2020-12-30") ) %>%
-    filter(date >= as.Date("2020-08-19") & outcome == "crit_det") %>%
-    group_by(region, reopening_multiplier_4, outcome) %>%
-    #filter(median.value == max(median.value)) %>%
-    left_join(capacityDat) %>%
-    filter(median.value >= icu_available) %>%
-    filter(reopening_multiplier_4 == min(reopening_multiplier_4)) %>%
-    filter(date == min(date))
-  
-  
-  datRib <- rbind(pdat1, pdat2) 
-  
-  summary(paramvalues$date)
-  summary(datRib$date)
-  summary(pdat1$date)
-  summary(pdat2$date)
-  
-  
-  pplot <- ggplot(data = datRib) +
-    # geom_errorbar(aes(x = as.factor(reopening), ymin = q2.5.value, ymax = q97.5.value, group = outcome), width = 0.3) +
-    geom_point(aes(x = date, y =reopening_multiplier_4, fill = as.factor(outcome), group = as.factor(outcome)), 
-               stat="identity", position="dodge", shape=21, width=0.8,show.legend = F, size = 3) +
-    labs(
-      x = "Date",
-      y = "Reopening multiplier (%)",
-      title = "Median date of capacity exceedance for ICU (blue) and non-ICU (orange) per covid region\n"
-    ) +
-    facet_wrap(~region)+
-    scale_color_manual(values=rev(c("orange","deepskyblue3")))+
-    scale_fill_manual(values=rev(c("orange","deepskyblue3")))+
-    background_grid() +
-    customThemeNoFacet +
-    # theme(panel.grid.major.y = element_blank()) +
-    geom_hline(yintercept = c(-Inf, Inf)) +
-    geom_vline(xintercept = c(-Inf, Inf))
-  
-  
-  
-  
-  
-  ggsave(paste0("date_of_overflow_perCovidRegion_.png"),
-         plot = pplot, path = file.path(simulation_output, exp_name), width = 12, height = 8, device = "png"
-  )
-  
-}
-
