@@ -11,7 +11,7 @@ source("load_paths.R")
 source("processing_helpers.R")
 
 
-simdates <- c(  "20200902","20200910")
+simdates <- c(  "20200902","20200910","20200916")
 scenario <- "baseline" # june1partial10  , june1partial30
 
 dat1 <- read_csv(file.path(project_path, paste0("NU_civis_outputs/", simdates[1], "/csv/nu_",  simdates[1], ".csv")))
@@ -30,6 +30,7 @@ dat1 <- dat1 %>%  dplyr::select(colnames(dat2))
 
 dat <- dat1 %>%
   rbind( dat2) %>%
+  rbind( dat3) %>%
   dplyr::mutate(date = as.Date(date)) %>%
   filter(
     date <= "2021-03-01",
