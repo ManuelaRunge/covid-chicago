@@ -63,3 +63,14 @@ emodl/extendedmodel_reopen_dSym_TD.emodl
 emodl/extendedmodel_reopen_rollback.emodl
 emodl/extendedmodel_rollback.emodl
 emodl/model_versions/extendedmodel_cobey.emodl
+emodl/model_versions/
+emodl/time_events/
+Rfiles/publication_scripts/publication_scripts_v1/
+.Rproj.user
+Rfiles/.Rhistory
+testrun/trajectories.csv
+testrun/sample_plot.png
+testrun/log.txt
+Rfiles/estimate_Rt/.Rhistory
+testrun/runSimulations_test_temp.bat
+Rfiles/hospital_model_sampleTrajectories.Rhistory
