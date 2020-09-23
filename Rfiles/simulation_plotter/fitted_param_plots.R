@@ -10,18 +10,16 @@ source("processing_helpers.R")
 
 f_plot_param <- function(exp_name, paramname, emsname, timeVarying = TRUE, SAVE = TRUE, 
                          plot_start_date="2020-03-01", plot_end_date="2020-12-30") {
-  trajectoriesDat <- read.csv(file.path(simulation_output,exp_name, "trajectoriesDat.csv"))
 
   ### Note use Ki_EMS-  or Ki_EMS.   not Ki_EMS_  (time varying vs input parameter)
-  colnames(trajectoriesDat) <- gsub("[.]", "-", colnames(trajectoriesDat))
   paramvars <- paste0(paramname, emsname, c(1:11))
   keepvars <- c("time", "startdate", paramvars)
+  
+  trajectoriesDat <- fread(file.path(simulation_output,exp_name, "trajectoriesDat.csv"), select=keepvars)
 
   ### Wide to long format and calculate date
   ### And aggregate samples
-  
   paramvalues <- trajectoriesDat %>%
-    select(keepvars) %>%
     mutate(date = as.Date(startdate) + time) %>%
     pivot_longer(cols = -c("time", "date", "startdate"), names_to = "region") %>%
     mutate(
@@ -35,7 +33,6 @@ f_plot_param <- function(exp_name, paramname, emsname, timeVarying = TRUE, SAVE 
 
   if (timeVarying == FALSE) {
     pplot <- trajectoriesDat %>%
-      select(keepvars) %>%
       mutate(date = as.Date(startdate) + time) %>%
       pivot_longer(cols = -c("time", "date", "startdate"), names_to = "region") %>%
       mutate(
@@ -62,7 +59,6 @@ f_plot_param <- function(exp_name, paramname, emsname, timeVarying = TRUE, SAVE 
   }
   if (timeVarying == TRUE) {
     pplot <- trajectoriesDat %>%
-      select(keepvars) %>%
       mutate(date = as.Date(startdate) + time) %>%
       pivot_longer(cols = -c("time", "date", "startdate"), names_to = "region") %>%
       mutate(
@@ -102,9 +98,60 @@ f_plot_param <- function(exp_name, paramname, emsname, timeVarying = TRUE, SAVE 
 }
 
 
+f_Ki_table(exp_name, paramname = "Ki_t_",emsname="EMS_"){
+  
+  paramvars <- paste0(paramname, emsname, c(1:11))
+  keepvars <- c("time", "startdate", paramvars)
+  
+  trajectoriesDat <- fread(file.path(simulation_output,exp_name, "trajectoriesDat.csv"), select=keepvars)
+  
+  kidat <- trajectoriesDat %>%
+    mutate(date = as.Date(startdate) + time) %>%
+    pivot_longer(cols = -c("time", "date", "startdate"), names_to = "region") %>%
+    mutate(
+      region = gsub(emsname, "", gsub(paramname, "", region)),
+      region = as.numeric(region),
+      exp_name = exp_name,
+    ) %>%
+    group_by(date, region,exp_name) %>%
+    summarize(ki_median = median(value),
+              ki_lower = quantile(value, probs = 0.025, na.rm = TRUE),
+              ki_upper = quantile(value, probs = 0.975, na.rm = TRUE)) %>%
+    filter(date >= as.Date(plot_start_date) & date <= as.Date(plot_end_date)) 
+  
+  initialKi <- kidat %>% 
+    filter(date >= as.Date(initialDate) & date <= as.Date(initialDate)+1) %>% 
+    select(region, date, ki_median ,ki_lower, ki_upper,date) %>%
+    mutate(Ki_type = paste0("initial"))
+  
+  lowestKi <- kidat %>%  
+    group_by(region) %>%
+    filter(date <= Sys.Date()) %>% 
+    filter(ki_median == min(ki_median)) %>% 
+    select(region, date, ki_median ) %>%
+    filter(date ==min(date) ) %>%
+    mutate(Ki_type = paste0("lowest") )
+  
+  baselineKi <- kidat %>% 
+    filter(date >= as.Date(baselineDate) & date <= as.Date(baselineDate)+1) %>% 
+    select(region,date,  ki_median ,ki_lower, ki_upper,date) %>%
+    mutate(Ki_type = paste0("baseline"))
+  
+  Kidat <- rbind(initialKi, lowestKi, baselineKi)
+  
+  Kidat <- data.table(Kidat, key =c( "region" ))
+  Kidat[,Ki_red_lockdown := 1-(ki_median[Ki_type=="lowest"] / ki_median[Ki_type=="initial"]), by = c( "region" ) ]
+  Kidat[,Ki_incr_reopen := 1-(ki_median[Ki_type=="baseline"] / ki_median[Ki_type=="lowest"]), by = c( "region" ) ]
+  Kidat[,Ki_current_initial := 1-(ki_median[Ki_type=="baseline"] / ki_median[Ki_type=="initial"]), by = c( "region" ) ]
+  
+  fwrite(Kidat, file.path(project_path,"project_notes", "estimated_baseline_Ki.csv"))
+  
+  
+}
+
 
 ### Load trajectories Dat
-exp_name <- "20200816_IL_testbaseline"
+exp_name <- "20200915_IL_RR_fitting_0"
 
 #simulation_output <-  file.path(simulation_output, "EMS/20200730_increasedSym/")
 
@@ -118,5 +165,6 @@ f_plot_param(exp_name = exp_name, paramname = "d_Sym_t_", emsname = "EMS-", time
 
 ## Additional parameters depending on the scenario
 #f_plot_param(exp_name = exp_name, paramname = "triggertime_", emsname = "EMS-", timeVarying = TRUE)
+
 
 
