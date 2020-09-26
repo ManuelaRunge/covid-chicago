@@ -4,7 +4,7 @@ library(dplyr)
 ## Define functions
 
 ### Load data
-f_loadData <- function(data_path, simdate ='200915') {
+f_loadData <- function(data_path, simdate ='200921') {
   emresource <- read.csv(file.path(data_path, "covid_IDPH/Corona virus reports/emresource_by_region.csv")) %>%
     dplyr::mutate(
       date_of_extract = as.Date(date_of_extract),
