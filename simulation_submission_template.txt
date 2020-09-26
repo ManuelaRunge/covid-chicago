@@ -91,6 +91,12 @@ python runScenarios.py -rl Local -r EMS_1 -c extendedmodel_forFitting.yaml -e ex
 python runScenarios.py -rl Local -r EMS_2 -c extendedmodel_forFitting.yaml -e extendedmodel_forFitting.emodl -n "fit_test1"
 ...
 
+###NEW
+python runScenarios.py -rl Local -mc config_initialFit.yaml -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS_initialFit.emodl -n "_test_initialFit" 
+python runScenarios.py -rl Local -mc config_lockdown.yaml -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS_lockdown.emodl -n "_test_lockdown" 
+python runScenarios.py -rl Local -mc config_reopening.yaml -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS_reopening.emodl -n "_test_reopening" 
+
+
 ## For startdate-Ki combinations
 Note: the runScenarios.py will need editing of the default yaml file form DEFAULT_CONFIG = 'extendedcobey_200428.yaml' to 'extendedcobey_200428_startdateKipair.yaml'
 python runScenarios.py -rl Local -r EMS_1 -c EMSspecific_sample_parameters.yaml -e extendedmodel.emodl -n "_startdateKi"
