@@ -32,7 +32,11 @@ source("processing_helpers.R")
 ##----------------------------------------------
 ## Experiment folder settings
 exp_name <- "20200924_IL__test_initialFit"
+exp_name <- "20200925_IL__test_reopening"
+exp_name <- "20200925_IL__test_lockdown"
+
 simdate <- str_split(exp_name, "_")[[1]][1]
+fitstep ="lockdown"
 
 exp_dir <- file.path(simulation_output, "forFitting", exp_name)
 csv_dir <-  file.path(exp_dir, "_csv")
@@ -51,20 +55,20 @@ if (!dir.exists(out_dir)) dir.create(out_dir)
 ## Helper functions
 load_sim_dat <- function(fittingParam, exp_name,i){
   
-   #fittingParam <- c("socialDistance_time7", "social_multiplier_7") ### flexible input
-   #fittingParam <- c("time_infection_import", "Ki") ### flexible input
+  #fittingParam <- c("socialDistance_time7", "social_multiplier_7") ### flexible input
+  #fittingParam <- c("time_infection_import", "Ki") ### flexible input
   
   outcomeParam <- paste0(c("death_det_cumul", "crit_det", "hosp_det", "hosp_det_cumul", "infected_cumul"), paste0("_EMS-", i))
-  KeepCols <- c("time", "startdate", "scen_num", "sample_num", fittingParam, outcomeParam)
+  KeepCols <- c("time", "start_date", "scen_num", "sample_num", fittingParam, outcomeParam)
   
   df <- fread(file.path(simulation_output, "forFitting", exp_name, "trajectoriesDat.csv"), select = KeepCols) %>%
     mutate(
       region = i,
-      startdate = as.Date(startdate),
-      date = startdate + time
+      start_date = as.Date(start_date),
+      date = start_date + time
     ) %>%
     setNames(gsub(paste0("_EMS-", i), "", names(.))) %>%
-    filter(date <= Sys.Date())
+    filter(date <= stop_date & date >= start_date)
   
   timevars <- colnames(df)[grep("time", colnames(df))]
   
@@ -91,11 +95,11 @@ load_sim_dat <- function(fittingParam, exp_name,i){
 calculate_dates <- function(df) {
   
   timevars <- colnames(df)[grep("", colnames(df))]
-  df[, ("startdate") := as.Date(get("startdate"))]
+  df[, ("start_date") := as.Date(get("start_date"))]
   for (timevar in timevars) {
     timevar_date <- gsub("time", "date", timevar)
     if (!(timevar_date %in% colnames(df))) {
-      df[, timevar_date] <- df[, "startdate"] + df[, get(timevar)]
+      df[, timevar_date] <- df[, "start_date"] + df[, get(timevar)]
     }
   }
   return(df)
@@ -188,28 +192,35 @@ f_paramplots <- function(use_values_dat, ems, fittingParam) {
   return(pplot)
 }
 
-f_post_fit_plot <- function( use_values_dat,ems,fittingParam, logscale=TRUE){
+f_post_fit_plot <- function( use_values_dat,ems,logscale=TRUE){
   
-  # fittingParam
   df <- as.data.frame(sim_ems_emresource)
   df <- subset(df, df$scen_num %in% row.names(use_values_dat))
-
+  
+  minNLL <- use_values_dat  %>%  filter(NLL == min(NLL))
+  minNLL <- minNLL[1,]
+  dfMin <- subset(df, df$scen_num %in% row.names(minNLL))
+  
+  
   length(unique(df$scen_num))
-
+  
   p1 <- ggplot(data = df) +
     geom_line(aes(x = date, y = crit_det, group = scen_num), col="deepskyblue3") +
+    geom_line(data=dfMin, aes(x = date, y = crit_det, group = scen_num), col="red", size=1.1) +
     geom_point(aes(x = date, y = confirmed_covid_icu, group = scen_num)) +
     theme(legend.position = "None") +
     labs(title = "EMSrecourse\nconfirmed_covid_icu", subtitle = "")
   
   p2 <- ggplot(data = df) +
     geom_line(aes(x = date, y = new_detected_deaths, group = scen_num), col="deepskyblue3") +
+    geom_line(data=dfMin, aes(x = date, y = new_detected_deaths, group = scen_num), col="red") +
     geom_point(aes(x = date, y = confirmed_covid_deaths_prev_24h, group = scen_num)) +
     theme(legend.position = "None") +
     labs(title = "EMSrecourse\nconfirmed_covid_deaths_prev_24h", subtitle = "")
   
   p3 <- ggplot(data = df) +
     geom_line(aes(x = date, y = hosp_det, group = scen_num), col="deepskyblue3") +
+    geom_line(data=dfMin, aes(x = date, y = hosp_det, group = scen_num), col="red") +
     geom_point(aes(x = date, y = covid_non_icu, group = scen_num)) +
     theme(legend.position = "None") +
     labs(title = "EMSrecourse\ncovid_non_icu", subtitle = "")
@@ -220,15 +231,20 @@ f_post_fit_plot <- function( use_values_dat,ems,fittingParam, logscale=TRUE){
     p3 <- p3 + scale_y_log10()
     
   }
+  
   emr_plot <- plot_grid(p1, p2, p3, nrow = 1)
   rm(p1,p2,p3, df)
   
   df <- as.data.frame(sim_ems_LL)
   df <- subset(df, df$scen_num %in% row.names(use_values_dat))
   
+  minNLL <- use_values_dat  %>%  filter(NLL == min(NLL))
+  minNLL <- minNLL[1,]
+  dfMin <- subset(df, df$scen_num %in% row.names(minNLL))
   
   p1 <- ggplot(data = df) +
     geom_line(aes(x = date, y = new_detected_deaths, group = scen_num), col="deepskyblue3") +
+    geom_line(data=dfMin, aes(x = date, y = new_detected_deaths, group = scen_num), col="red") +
     geom_point(aes(x = date, y = deaths, group = scen_num)) +
     theme(legend.position = "None") +
     labs(title = "Line List\nnew_detected_deaths", subtitle = "")
@@ -236,6 +252,7 @@ f_post_fit_plot <- function( use_values_dat,ems,fittingParam, logscale=TRUE){
   
   p2 <- ggplot(data = df) +
     geom_line(aes(x = date, y = new_detected_hospitalized,  group = scen_num), col="deepskyblue3") +
+    geom_line(data=dfMin, aes(x = date, y = new_detected_hospitalized, group = scen_num), col="red") +
     geom_point(aes(x = date, y = admissions, group = scen_num)) +
     theme(legend.position = "None") +
     labs(title = "Line List\nadmissions", subtitle = "") 
@@ -249,6 +266,12 @@ f_post_fit_plot <- function( use_values_dat,ems,fittingParam, logscale=TRUE){
   
   pplot <- plot_grid(emr_plot, ll_plot, nrow = 2)
   
+  
+  ggsave(paste0(i, "_post_fit_plot.png"),
+         plot = pplot,
+         path = plot_dir, width = 13, height = 10, device = "png"
+  )
+  
   return(pplot)
   
 }
@@ -257,10 +280,37 @@ f_post_fit_plot <- function( use_values_dat,ems,fittingParam, logscale=TRUE){
 
 
 ### Settings
-fittingParam <- c("socialDistance_time7", "social_multiplier_7") ### flexible input
-fittingParam <- c("time_infection_import", "Ki") ### flexible input
+if(fitstep =="initial"){
+  fittingParam <- c("time_infection_import", "Ki") ###  initial 
+  start_date <- as.Date("2020-01-01")
+  stop_date <- as.Date("2020-04-01")
+  
+}
+if(fitstep =="reopen"){
+  fittingParam <-  c("social_multiplier_5", "social_multiplier_6", "social_multiplier_7",
+                     "socialDistance_time5", "socialDistance_time6", "socialDistance_time7") ## reopen all
+  
+  start_date <- as.Date("2020-06-01")
+  stop_date <- as.Date("2020-10-01")
+  
+  
+}
+if(fitstep =="lockdown"){
+  fittingParam <-  c("social_multiplier_3", "social_multiplier_4",
+                     "socialDistance_time3", "socialDistance_time4") ## reopen all
+  
+  start_date <- as.Date("2020-03-01")
+  stop_date <- as.Date("2020-5-20")
+  
+  
+}
+if(fitstep =="newparam"){
+  fittingParam <- c("socialDistance_time7", "social_multiplier_7") ### reopen
+  stop_date <- as.Date("2020-04-01")
+  
+}
 
-stop_date <- as.Date("2020-04-01")
+
 
 ## loop begin over EMS regions
 use_values_list <- list()
@@ -271,18 +321,19 @@ for (i in c(1:11)) {
   sim_ems <- load_sim_dat(fittingParam, exp_name,i) 
   sim_ems <- as.data.frame(sim_ems)
   summary(sim_ems$date)
-  summary(sim_ems[, fittingParam[1]])
-  summary(sim_ems[, fittingParam[2]])
+  
+  sapply(sim_ems[fittingParam],summary)
   
   sim_ems <- sim_ems %>% filter(date <= stop_date)
   
+  sapply(sim_ems[fittingParam],unique)
   length(unique(sim_ems[, fittingParam[1]]))
   length(unique(sim_ems[, fittingParam[2]]))
   
   emresource_ems <- fread(file.path(data_path, "covid_IDPH/Corona virus reports/emresource_by_region.csv")) %>%
     filter(covid_region %in% i) %>%
     mutate(date = as.Date(date_of_extract)) %>%
-    filter(date >=as.Date("2020-01-01") & date <= stop_date) %>%
+    filter(date >=start_date & date <= stop_date) %>%
     complete(date = seq.Date(min(date), max(date), by = "day"))
   
   summary(emresource_ems$date)
@@ -292,7 +343,7 @@ for (i in c(1:11)) {
   LL_ems <- fread(file.path(data_path, "covid_IDPH", "Cleaned Data", "200921_jg_aggregated_covidregion.csv")) %>%
     filter(covid_region %in% i) %>%
     mutate(date = as.Date(date)) %>%
-    filter(date >=as.Date("2020-01-01") & date <= stop_date) %>%
+    filter(date >=start_date & date <= stop_date) %>%
     complete(date = seq.Date(min(date), max(date), by = "day"))
   
   
@@ -319,17 +370,16 @@ for (i in c(1:11)) {
   
   createPlot <- T
   if (createPlot) {
-    plot1 <- pre_fit_plot(fittingVar = fittingParam[1], logscale=TRUE)
-    plot2 <- pre_fit_plot(fittingVar = fittingParam[2], logscale = TRUE)
     
-    ggsave(paste0(i, "_pre_fit_plot1.png"),
-           plot = plot1,
-           path = plot_dir, width = 13, height = 10, device = "png"
-    )
-    ggsave(paste0(i, "_pre_fit_plot2.png"),
-           plot = plot2,
-           path = plot_dir, width = 13, height = 10, device = "png"
-    )
+    for( paramVar in fittingParam){
+      pplot <- pre_fit_plot(fittingVar =paramVar, logscale=TRUE)
+      
+      ggsave(paste0(i, "_pre_fit_plot_",paramVar,".png"),
+             plot = pplot,
+             path = plot_dir, width = 13, height = 10, device = "png"
+      )
+    }
+    
   }
   
   ## get a list of all scenario numbers run for this EMS
@@ -369,11 +419,12 @@ for (i in c(1:11)) {
     nll <- nll1 + nll2 + nll3 + (nll4 + nll5) * (length(emresource_sub$confirmed_covid_icu) / length(LL_sub$cases)) / 2
     
     # Put Likelihood values and corresponding start date and Ki in output dataframe
-    ems_output[j, 1] <- unique(emresource_sub[, fittingParam[1]])
-    ems_output[j, 2] <- unique(emresource_sub[, fittingParam[2]])
-    if (length(fittingParam) - 1 > 2) ems_output[3, j] <- unique(emresource_sub[, fittingParam[3]])
+    for( z in c(1:length(fittingParam))){
+      ems_output[j, z] <- unique(emresource_sub[, fittingParam[z]])
+    }
+    
     ems_output[j, "NLL"] <- nll
-
+    
     rm(nll,nll1,nll2,nll3,nll4,nll5,emresource_sub, LL_sub)
   }
   
@@ -390,13 +441,7 @@ for (i in c(1:11)) {
   plot_and_save=T
   if(plot_and_save){
     
-    #f_paramplots(use_values_dat = ems_output, ems = i, fittingParam)
-    pplot <- f_post_fit_plot(use_values_dat=use_values,ems=i,fittingParam, logscale=TRUE)
-    
-    ggsave(paste0(i, "_post_fit_plot.png"),
-           plot = pplot,
-           path = plot_dir, width = 13, height = 10, device = "png"
-    )
+    pplot <- f_post_fit_plot(use_values_dat=use_values,ems=i, logscale=TRUE)
     
     # Save best paramter combinations
     fwrite(use_values, file.path(csv_dir, paste0("best_parameter_ranges_ems_", i, ".csv")), quote=FALSE, row.names=FALSE)
@@ -406,10 +451,48 @@ for (i in c(1:11)) {
   
 }
 
+
+
 ### Export best parameter fit as csv for all EMS
-df_best <- do.call(rbind.data.frame, use_values_list) %>%
+do.call(rbind.data.frame, use_values_list) %>%
   group_by(region) %>%
   filter(NLL == min(NLL)) %>%
-  write.csv(file.path(exp_dir, "best_parameters_emsAll.csv"))
+  fwrite(file.path(exp_dir, "best_parameters_emsAll.csv"))
 
+
+do.call(rbind.data.frame, use_values_list) %>%
+  group_by(region) %>%
+  filter(NLL <= median(NLL) ) %>%
+  mutate(Ki_lwr = min(Ki),
+         Ki_upr = max(Ki),
+         time_infection_import_lwr = min(time_infection_import),
+         time_infection_import_upr = max(time_infection_import)) %>%
+  select(region,Ki_lwr , Ki_upr, time_infection_import_lwr, time_infection_import_upr) %>%
+  unique() %>%
+  fwrite(file.path(exp_dir, "range_parameters_emsAll.csv"))
+
+
+df_best10 <- do.call(rbind.data.frame, use_values_list) %>%
+  group_by(region) %>%
+  arrange(NLL) %>%
+  slice(1:10)  %>%
+  select(-NLL) %>% as.data.frame()
+
+
+df_best10_wide <- matrix(NA, 10, 11*length(fittingParam))
+
+cnames=c()
+count=0
+for(i in c(1:length(fittingParam))){
+  for(j in  c(1:length(unique(df_best10$region)))){
+    count=count+1
+    df_best10_wide[,count] <- df_best10[df_best10$region==j, fittingParam[i]]
+    cnames<- c(cnames, paste0( fittingParam[i], "_EMS-", j))
+    
+  }
+}
+colnames(df_best10_wide) <- cnames
+df_best10_wide <- as.data.frame(df_best10_wide)
+
+fwrite(df_best10_wide, file.path(exp_dir, "best10_parameters_emsAll.csv"))
 
