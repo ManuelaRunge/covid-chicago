@@ -36,9 +36,11 @@ fwrite(dat, file = file.path(outdir, "region_characteristics.csv"), quote = FALS
 
 ### Load simulation data
 load_sim_data <- function(exp_names) {
+  
   simdatList <- list()
+  
   for (exp_name in exp_names) {
-    trajectoriesDat <- read_csv(file = file.path(simulation_output, exp_name, "trajectoriesDat_trim.csv"))
+    trajectoriesDat <- fread(file = file.path(simulation_output, exp_name, "trajectoriesDat_trim.csv"))
     summary(trajectoriesDat$scen_num)
     summary(trajectoriesDat$sample_num)
 
@@ -170,6 +172,7 @@ get_baselineRt <- function() {
 ### Figure 3 ?
 trajectoriesPlot <- FALSE
 if (trajectoriesPlot) {
+  
   exp_combined <- "20200831_IL_regreopen_combined"
   fname <- "combined_dataframe.Rdata"
 
@@ -392,7 +395,7 @@ if (compareToBaseline) {
   loadBaseline <- TRUE
   if (loadBaseline) {
     exp_baseline <- "20200826_IL_baseline"
-    baselineDat <- read_csv(file.path(simulation_output, exp_baseline, "trajectoriesDat.csv"))
+    baselineDat <- fread(file.path(simulation_output, exp_baseline, "trajectoriesDat.csv"))
 
     ### Note use Ki_EMS-  or Ki_EMS.   not Ki_EMS_  (time varying vs input parameter)
     # colnames(trajectoriesDat) <- gsub("[.]", "-", colnames(trajectoriesDat))
@@ -550,16 +553,17 @@ if (compareToBaseline) {
 
 #### Load probabilities..
 if (probPlot) {
+  
   propDat_sim <- simdat %>%
-    filter(channel == "critical" & date > as.Date("2020-09-19") & date <= as.Date("2020-12-31")) %>%
-    group_by(scen_num, sample_num, geography_name, exp_name, reopen, delay, rollback, pop, capacity_multiplier, icu_available) %>%
-    summarize(value = max(value)) %>%
-    mutate(aboveCapacity = ifelse(value >= icu_available, 1, 0)) %>%
-    group_by(geography_name, exp_name, reopen, delay, rollback, pop, capacity_multiplier, icu_available) %>%
+    dplyr::filter(channel == "critical" & date > as.Date("2020-09-19") & date <= as.Date("2020-12-31")) %>%
+    dplyr::group_by(scen_num, sample_num, geography_name, exp_name, reopen, delay, rollback, pop, capacity_multiplier, icu_available) %>%
+    dplyr::summarize(value = max(value)) %>%
+    dplyr::mutate(aboveCapacity = ifelse(value >= icu_available, 1, 0)) %>%
+    dplyr::group_by(geography_name, exp_name, reopen, delay, rollback, pop, capacity_multiplier, icu_available) %>%
     add_tally(name = "nsamples") %>%
-    group_by(geography_name, exp_name, reopen, delay, rollback, pop, capacity_multiplier, icu_available, nsamples) %>%
-    summarize(nabove = sum(aboveCapacity)) %>%
-    mutate(prob_overflow = nabove / nsamples)
+    dplyr::group_by(geography_name, exp_name, reopen, delay, rollback, pop, capacity_multiplier, icu_available, nsamples) %>%
+    dplyr::summarize(nabove = sum(aboveCapacity)) %>%
+    dplyr::mutate(prob_overflow = nabove / nsamples)
 
   propDat_sim$geography_name <- factor(propDat_sim$geography_name, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
 
@@ -626,19 +630,30 @@ if (probPlot) {
   )
 }
 
+
+
+
 #### Figure 7 compare region specific and generic trigger
 lastFigure <- FALSE
 if (lastFigure) {
-  exp_names <- list.dirs(simulation_output, recursive = FALSE, full.names = FALSE)
-  exp_names <- exp_names[grep("regreopen", exp_names)]
-  simdat <- load_sim_data(exp_names = exp_names)
+  
+  exp_combined <- "20200831_IL_regreopen_combined"
+  fname <- "combined_dataframe.Rdata"
+  
+  if (!file.exists(file.path(simulation_output, exp_combined, fname))) {
+    exp_names <- list.dirs(simulation_output, recursive = FALSE, full.names = FALSE)
+    exp_names <- exp_names[grep("20200831_IL_regreopen", exp_names)]
+    simdat <- load_sim_data(exp_names = exp_names)
+  } else {
+    load(file.path(simulation_output, exp_combined, fname))
+  }
 
   reg_capacities <- propDat_sim %>%
     dplyr::group_by(geography_name, icu_available, exp_name, reopen, delay, rollback) %>%
     dplyr::filter(prob_overflow <= 0.4) %>%
     dplyr::filter(capacity_multiplier == max(capacity_multiplier)) %>%
-    rename(capacity_recom = capacity_multiplier) %>%
-    select(geography_name, icu_available, exp_name, reopen, delay, rollback, capacity_recom)
+    dplyr::rename(capacity_recom = capacity_multiplier) %>%
+    dplyr::select(geography_name, icu_available, exp_name, reopen, delay, rollback, capacity_recom)
 
   pplot <- ggplot(data = reg_capacities) +
     geom_point(aes(x = exp_name, y = capacity_recom, group = exp_name, col = reopen, shape = delay)) +
@@ -649,36 +664,36 @@ if (lastFigure) {
 
   ####
   simdat_generic <- simdat %>%
-    filter(capacity_multiplier == 0.8) %>%
-    mutate(scenario = "generic") %>%
-    select(scen_num, date, geography_name, icu_available, exp_name, reopen, delay, rollback, scenario, value)
+    dplyr::filter(capacity_multiplier == 0.8) %>%
+    dplyr::mutate(scenario = "generic") %>%
+    dplyr::select(scen_num, date, geography_name, icu_available, exp_name, reopen, delay, rollback, scenario, value)
 
   simdat_specific <- simdat %>%
     left_join(reg_capacities, by = c("geography_name", "icu_available", "exp_name", "reopen", "delay", "rollback")) %>%
-    filter(capacity_multiplier == capacity_recom) %>%
-    mutate(scenario = "specific") %>%
-    select(scen_num, date, geography_name, icu_available, exp_name, reopen, delay, rollback, scenario, value)
+    dplyr::filter(capacity_multiplier == capacity_recom) %>%
+    dplyr::mutate(scenario = "specific") %>%
+    dplyr::select(scen_num, date, geography_name, icu_available, exp_name, reopen, delay, rollback, scenario, value)
 
   simdat_compare <- rbind(simdat_generic, simdat_specific) %>%
-    filter(geography_name != "illinois") %>%
-    group_by(date, geography_name, icu_available, exp_name, reopen, delay, rollback, scenario) %>%
-    summarize(
+    dplyr::filter(geography_name != "illinois") %>%
+    dplyr::group_by(date, geography_name, icu_available, exp_name, reopen, delay, rollback, scenario) %>%
+    dplyr::summarize(
       median.value = median(value, na.rm = TRUE),
       q2.5.value = quantile(value, probs = 0.025, na.rm = TRUE),
       q97.5.value = quantile(value, probs = 0.975, na.rm = TRUE)
     )
 
   simdat_compare_IL <- rbind(simdat_generic, simdat_specific) %>%
-    filter(geography_name != "illinois") %>%
-    group_by(scen_num, date, exp_name, reopen, delay, rollback, scenario) %>%
-    summarize(value = sum(value)) %>%
-    group_by(date, exp_name, reopen, delay, rollback, scenario) %>%
-    summarize(
+    dplyr::filter(geography_name != "illinois") %>%
+    dplyr::group_by(scen_num, date, exp_name, reopen, delay, rollback, scenario) %>%
+    dplyr::summarize(value = sum(value)) %>%
+    dplyr::group_by(date, exp_name, reopen, delay, rollback, scenario) %>%
+    dplyr::summarize(
       median.value = median(value, na.rm = TRUE),
       q2.5.value = quantile(value, probs = 0.025, na.rm = TRUE),
       q97.5.value = quantile(value, probs = 0.975, na.rm = TRUE)
     ) %>%
-    mutate(geography_name = "illinois")
+    dplyr::mutate(geography_name = "illinois")
 
 
   simdat_compare$geography_name <- factor(simdat_compare$geography_name, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
@@ -704,9 +719,67 @@ if (lastFigure) {
 
   ##########################################
 
-  ##########################################
+  simdat_generic <- simdat %>%
+    dplyr::filter(capacity_multiplier == 0.8) %>%
+    dplyr::mutate(
+      scenario = "generic",
+      capacity_recom = 0.8,
+      risk_tolerance = "generic"
+    ) %>%
+    dplyr::select(scen_num, date, geography_name, icu_available, exp_name, reopen, delay, rollback, scenario, value, capacity_recom, risk_tolerance)
 
-  pplot <- ggplot(data = subset(simdat_compare, risk_tolerance %in% c("reg_capacities_04", "generic") & geography_name %in% c("1", "4", "11") & exp_name == "20200831_IL_regreopen100perc_0daysdelay_sm4")) +
+
+  reg_capacities_02 <- propDat_sim %>%
+    dplyr::group_by(geography_name, icu_available, exp_name, reopen, delay, rollback) %>%
+    dplyr::filter(prob_overflow <= 0.2) %>%
+    dplyr::filter(capacity_multiplier == max(capacity_multiplier)) %>%
+    dplyr::rename(capacity_recom = capacity_multiplier) %>%
+    dplyr::mutate(risk_tolerance = "reg_capacities_02") %>%
+    dplyr::select(geography_name, icu_available, exp_name, reopen, delay, rollback, capacity_recom, risk_tolerance)
+
+
+  reg_capacities_04 <- propDat_sim %>%
+    dplyr::group_by(geography_name, icu_available, exp_name, reopen, delay, rollback) %>%
+    dplyr::filter(prob_overflow <= 0.4) %>%
+    dplyr::filter(capacity_multiplier == max(capacity_multiplier)) %>%
+    dplyr::rename(capacity_recom = capacity_multiplier) %>%
+    dplyr::mutate(risk_tolerance = "reg_capacities_04") %>%
+    dplyr::select(geography_name, icu_available, exp_name, reopen, delay, rollback, capacity_recom, risk_tolerance)
+
+
+  reg_capacities_06 <- propDat_sim %>%
+    dplyr::group_by(geography_name, icu_available, exp_name, reopen, delay, rollback) %>%
+    dplyr::filter(prob_overflow <= 0.6) %>%
+    dplyr::filter(capacity_multiplier == max(capacity_multiplier)) %>%
+    dplyr::rename(capacity_recom = capacity_multiplier) %>%
+    dplyr::mutate(risk_tolerance = "reg_capacities_06") %>%
+    dplyr::select(geography_name, icu_available, exp_name, reopen, delay, rollback, capacity_recom, risk_tolerance)
+
+  reg_capacities <- rbind(reg_capacities_02, reg_capacities_04, reg_capacities_06)
+
+  simdat_specific <- simdat %>%
+    dplyr::left_join(reg_capacities, by = c("geography_name", "icu_available", "exp_name", "reopen", "delay", "rollback")) %>%
+    dplyr::filter(capacity_multiplier == capacity_recom) %>%
+    dplyr::mutate(scenario = "specific") %>%
+    dplyr::select(scen_num, date, geography_name, icu_available, exp_name, reopen, delay, rollback, scenario, value, capacity_recom, risk_tolerance)
+
+  simdat_compare <- rbind(simdat_generic, simdat_specific) %>%
+    dplyr::filter(geography_name != "illinois") %>%
+    dplyr::group_by(date, geography_name, icu_available, exp_name, reopen, delay, rollback, scenario, capacity_recom, risk_tolerance) %>%
+    dplyr::summarize(
+      median.value = median(value, na.rm = TRUE),
+      q2.5.value = quantile(value, probs = 0.025, na.rm = TRUE),
+      q97.5.value = quantile(value, probs = 0.975, na.rm = TRUE)
+    )
+  
+  
+  
+  ##########################################
+  
+  ##########################################
+  
+  pplot <- ggplot(data = subset(simdat_compare, risk_tolerance %in% c("reg_capacities_04", "generic") & 
+                                  geography_name %in% c("1", "4", "11") & exp_name == "20200831_IL_regreopen100perc_0daysdelay_sm4")) +
     geom_ribbon(aes(x = date, ymin = q2.5.value, ymax = q97.5.value, fill = as.factor(scenario)), alpha = 0.2) +
     geom_line(aes(x = date, y = median.value, col = as.factor(scenario), linetype = risk_tolerance), size = 1) +
     facet_wrap(~geography_name, scales = "free") +
@@ -714,87 +787,31 @@ if (lastFigure) {
     geom_hline(aes(yintercept = icu_available), color = "darkgrey", linetype = "dashed", size = 1) +
     labs(x = "", y = "ICU census", color = "ICU overflow", fill = "ICU overflow") +
     customThemeNoFacet
-
-
+  
+  
   ggsave(paste0("ICU_trajectories_reg_capacities_04.png"),
-    plot = pplot, path = file.path(outdir), width = 14, height = 8, device = "png"
+         plot = pplot, path = file.path(outdir), width = 14, height = 8, device = "png"
   )
   ggsave(paste0("ICU_trajectories_reg_capacities_04.pdf"),
-    plot = pplot, path = file.path(outdir), width = 14, height = 8, device = "pdf"
+         plot = pplot, path = file.path(outdir), width = 14, height = 8, device = "pdf"
   )
   rm(pplot)
-
-
-
-  ##########################################
-
-  simdat_generic <- simdat %>%
-    filter(capacity_multiplier == 0.8) %>%
-    mutate(
-      scenario = "generic",
-      capacity_recom = 0.8,
-      risk_tolerance = "generic"
-    ) %>%
-    select(scen_num, date, geography_name, icu_available, exp_name, reopen, delay, rollback, scenario, value, capacity_recom, risk_tolerance)
-
-
-  reg_capacities_02 <- propDat_sim %>%
-    dplyr::group_by(geography_name, icu_available, exp_name, reopen, delay, rollback) %>%
-    dplyr::filter(prob_overflow <= 0.2) %>%
-    dplyr::filter(capacity_multiplier == max(capacity_multiplier)) %>%
-    rename(capacity_recom = capacity_multiplier) %>%
-    mutate(risk_tolerance = "reg_capacities_02") %>%
-    select(geography_name, icu_available, exp_name, reopen, delay, rollback, capacity_recom, risk_tolerance)
-
-
-  reg_capacities_04 <- propDat_sim %>%
-    dplyr::group_by(geography_name, icu_available, exp_name, reopen, delay, rollback) %>%
-    dplyr::filter(prob_overflow <= 0.4) %>%
-    dplyr::filter(capacity_multiplier == max(capacity_multiplier)) %>%
-    rename(capacity_recom = capacity_multiplier) %>%
-    mutate(risk_tolerance = "reg_capacities_04") %>%
-    select(geography_name, icu_available, exp_name, reopen, delay, rollback, capacity_recom, risk_tolerance)
-
-
-  reg_capacities_06 <- propDat_sim %>%
-    dplyr::group_by(geography_name, icu_available, exp_name, reopen, delay, rollback) %>%
-    dplyr::filter(prob_overflow <= 0.6) %>%
-    dplyr::filter(capacity_multiplier == max(capacity_multiplier)) %>%
-    rename(capacity_recom = capacity_multiplier) %>%
-    mutate(risk_tolerance = "reg_capacities_06") %>%
-    select(geography_name, icu_available, exp_name, reopen, delay, rollback, capacity_recom, risk_tolerance)
-
-  reg_capacities <- rbind(reg_capacities_02, reg_capacities_04, reg_capacities_06)
-
-  simdat_specific <- simdat %>%
-    left_join(reg_capacities, by = c("geography_name", "icu_available", "exp_name", "reopen", "delay", "rollback")) %>%
-    filter(capacity_multiplier == capacity_recom) %>%
-    mutate(scenario = "specific") %>%
-    select(scen_num, date, geography_name, icu_available, exp_name, reopen, delay, rollback, scenario, value, capacity_recom, risk_tolerance)
-
-  simdat_compare <- rbind(simdat_generic, simdat_specific) %>%
-    filter(geography_name != "illinois") %>%
-    group_by(date, geography_name, icu_available, exp_name, reopen, delay, rollback, scenario, capacity_recom, risk_tolerance) %>%
-    summarize(
-      median.value = median(value, na.rm = TRUE),
-      q2.5.value = quantile(value, probs = 0.025, na.rm = TRUE),
-      q97.5.value = quantile(value, probs = 0.975, na.rm = TRUE)
-    )
+  
 
 
   #### Note, improve by looking at cumulative, not only peal
 
   simdat_compare_Peak <- simdat_compare %>%
-    filter(geography_name %in% c("1", "7", "11")) %>%
-    group_by(geography_name, exp_name, scenario, rollback, delay, reopen, capacity_recom, risk_tolerance) %>%
-    filter(median.value == max(median.value)) %>%
-    filter(date == min(date))
+    dplyr::filter(geography_name %in% c("1", "7", "11")) %>%
+    dplyr::group_by(geography_name, exp_name, scenario, rollback, delay, reopen, capacity_recom, risk_tolerance) %>%
+    dplyr::filter(median.value == max(median.value)) %>%
+    dplyr::filter(date == min(date))
 
   simdat_compare_Peak1 <- subset(simdat_compare_Peak, scenario != "generic")
   simdat_compare_Peak2 <- subset(simdat_compare_Peak, scenario == "generic") %>%
-    group_by() %>%
-    select(-risk_tolerance, -capacity_recom, -scenario) %>%
-    rename(
+    dplyr::group_by() %>%
+    dplyr::select(-risk_tolerance, -capacity_recom, -scenario) %>%
+    dplyr::rename(
       base_median.value = median.value,
       base_q2.5.value = q2.5.value,
       base_q97.5.value = q97.5.value
@@ -833,10 +850,11 @@ if (lastFigure) {
   ################## CUMULATIVE
 
   simdat_compare1 <- subset(simdat_compare, scenario != "generic")
+  
   simdat_compare2 <- subset(simdat_compare, scenario == "generic") %>%
-    group_by() %>%
-    select(-risk_tolerance, -capacity_recom, -scenario) %>%
-    rename(
+    dplyr::group_by() %>%
+    dplyr::select( -risk_tolerance, -capacity_recom, -scenario) %>%
+    dplyr::rename(
       base_median.value = median.value,
       base_q2.5.value = q2.5.value,
       base_q97.5.value = q97.5.value
@@ -845,9 +863,9 @@ if (lastFigure) {
   mergevars <- colnames(simdat_compare1)[colnames(simdat_compare1) %in% colnames(simdat_compare2)]
 
   simdat_compare_cum <- left_join(simdat_compare1, simdat_compare2, by = mergevars) %>%
-    filter(geography_name %in% c("1", "4", "11")) %>%
-    group_by(geography_name, exp_name, scenario, rollback, delay, reopen, capacity_recom, risk_tolerance) %>%
-    mutate(
+    dplyr::filter(geography_name %in% c("1", "4", "11")) %>%
+    dplyr::group_by(geography_name, exp_name, scenario, rollback, delay, reopen, capacity_recom, risk_tolerance) %>%
+    dplyr::mutate(
       median.value_cum = cumsum(median.value) - median.value,
       q2.5.value_cum = cumsum(q2.5.value) - q2.5.value,
       q97.5.value_cum = cumsum(q97.5.value) - q97.5.value,
@@ -855,7 +873,7 @@ if (lastFigure) {
       base_q2.5.value_cum = cumsum(base_q2.5.value) - base_q2.5.value,
       base_q97.5.value_cum = cumsum(base_q97.5.value) - base_q97.5.value
     ) %>%
-    filter(date >= as.Date("2020-12-30") & date <= as.Date("2020-12-31"))
+    dplyr::filter(date >= as.Date("2020-12-30") & date <= as.Date("2020-12-31"))
 
   simdat_compare_cum$label <- paste0(simdat_compare_cum$delay, "\n", simdat_compare_cum$rollback)
   simdat_compare_cum$median.value_diff <- simdat_compare_cum$base_median.value_cum - simdat_compare_cum$median.value_cum
@@ -865,15 +883,55 @@ if (lastFigure) {
 
   ggplot(data = simdat_compare_cum) +
     geom_pointrange(aes(
-      x = reorder(label, median.value_cum), y = base_median.value_cum,
+      x = interaction(reopen, label), y = median.value_cum,
+      ymin = q2.5.value_cum, ymax = q97.5.value_cum, shape = risk_tolerance, col = risk_tolerance
+    )) +
+    geom_pointrange(aes(
+      x = interaction(reopen, label), y = base_median.value_cum,
       ymin = base_q2.5.value_cum, ymax = base_q97.5.value_cum, group = risk_tolerance
     ), col = "red") +
+    facet_wrap( ~ geography_name, scales = "free_x", strip.position="top") +
+    coord_flip()
+  
+  
+  
+  ggplot(data = subset(simdat_compare_cum, delay=="none")) +
+   # geom_hline(aes(yintercept = base_median.value_cum))+
+    geom_point(aes(
+       x = interaction(reopen, label), y = base_median.value_cum, group = risk_tolerance
+     ), col = "red", position = position_dodge(width = 0.3)) +
     geom_pointrange(aes(
-      x = reorder(label, median.value_cum), y = median.value_cum,
-      ymin = q2.5.value_cum, ymax = q97.5.value_cum, shape = risk_tolerance
-    )) +
-    facet_wrap(reopen ~ geography_name, scales = "free")
-
+     x = interaction(reopen, label), y = median.value_cum,
+      ymin = q2.5.value_cum, ymax = q97.5.value_cum, shape = risk_tolerance, col = risk_tolerance
+    ), position = position_dodge(width = 0.3)) +
+    #geom_pointrange(aes(
+   #   x = interaction(reopen, label), y = base_median.value_cum,
+   #   ymin = base_q2.5.value_cum, ymax = base_q97.5.value_cum, group = risk_tolerance
+   # ), col = "red", position = position_dodge(width = 0.3)) +
+    facet_wrap( ~ geography_name, scales = "free_x", strip.position="top") +
+    coord_flip()
+  
+  
+  
+  ggplot(data = subset(simdat_compare_cum, delay=="none")) +
+    geom_bar(aes(
+      x = interaction(reopen, label), y = base_median.value_cum, group = risk_tolerance
+    ), stat="identity",  fill = "red", position = position_dodge(width = 0.9)) +
+    geom_bar(aes(
+      x = interaction(reopen, label), y = median.value_cum, fill = risk_tolerance
+    ), position = position_dodge(width = 0.9), stat="identity") +
+    facet_wrap( ~ geography_name, scales = "free_x", strip.position="top") 
+  
+  
+  
+  ggplot(data = simdat_compare_cum) +
+    #geom_boxplot(aes(
+    #  x = risk_tolerance, y = median.value_cum,shape = risk_tolerance, col = risk_tolerance
+   # )) +
+    geom_boxplot(aes(
+      x = risk_tolerance, y = base_median.value_cum, group = risk_tolerance
+    ), col = "red") +
+    facet_wrap( ~ geography_name, scales = "free_x", strip.position="top") 
 
   pplot <- ggplot(data = simdat_compare_cum) +
     geom_rect(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = 0, fill = "lightgrey", alpha = 0.2) +
