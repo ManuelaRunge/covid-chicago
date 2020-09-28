@@ -122,42 +122,42 @@ load_population <- function(){
 
 load_new_capacity <- function(selected_ems = NULL, simdate = "20200915") {
 
-
+  library(data.table)
   fname <- paste0("capacity_weekday_average_",simdate,".csv")
-  df <- read.csv(file.path(data_path, "covid_IDPH/Corona virus reports/hospital_capacity_thresholds_template", fname))
+  df <- fread(file.path(data_path, "covid_IDPH/Corona virus reports/hospital_capacity_thresholds_template", fname))
 
 
   df <- df %>%
-    filter(overflow_threshold_percent == 1) %>%
-    select(geography_modeled, resource_type, avg_resource_available_prev2weeks) %>%
+    dplyr::filter(overflow_threshold_percent == 1) %>%
+    dplyr::select(geography_modeled, resource_type, avg_resource_available_prev2weeks) %>%
     unique() %>%
     pivot_wider(names_from = "resource_type", values_from = "avg_resource_available_prev2weeks") %>%
-    mutate(geography_name = gsub("covidregion_", "", geography_modeled)) %>%
-    select(geography_name, icu_availforcovid, hb_availforcovid)
+    dplyr::mutate(geography_name = gsub("covidregion_", "", geography_modeled)) %>%
+    dplyr::select(geography_name, icu_availforcovid, hb_availforcovid)
 
   dfRR <- df %>%
-    rename(region = geography_name) %>%
+    dplyr::rename(region = geography_name) %>%
     f_addRestoreRegion() %>%
-    group_by(restore_region) %>%
-    summarize(
+    dplyr::group_by(restore_region) %>%
+    dplyr::summarize(
       icu_availforcovid = sum(icu_availforcovid),
       hb_availforcovid = sum(hb_availforcovid)
     ) %>%
-    mutate(geography_name = tolower(restore_region)) %>%
-    select(geography_name, icu_availforcovid, hb_availforcovid)
+    dplyr::mutate(geography_name = tolower(restore_region)) %>%
+    dplyr::select(geography_name, icu_availforcovid, hb_availforcovid)
 
   dfIL <- df %>%
-    summarize(
+    dplyr::summarize(
       icu_availforcovid = sum(icu_availforcovid),
       hb_availforcovid = sum(hb_availforcovid)
     ) %>%
-    mutate(geography_name = "illinois") %>%
-    select(geography_name, icu_availforcovid, hb_availforcovid)
+    dplyr::mutate(geography_name = "illinois") %>%
+    dplyr::select(geography_name, icu_availforcovid, hb_availforcovid)
 
 
   df <- rbind(df, dfRR, dfIL) %>%
     as.data.frame() %>%
-    rename(
+    dplyr::rename(
       icu_available = icu_availforcovid,
       medsurg_available = hb_availforcovid
     )
