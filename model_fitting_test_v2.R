@@ -455,7 +455,7 @@ for (i in c(1:11)) {
 do.call(rbind.data.frame, use_values_list) %>%
   group_by(region) %>%
   filter(NLL == min(NLL)) %>%
-  fwrite(file.path(exp_dir, "best_parameters_emsAll.csv"))
+  fwrite(file.path(exp_dir,"_csv", "best_parameters_emsAll.csv"))
 
 
 do.call(rbind.data.frame, use_values_list) %>%
@@ -469,7 +469,7 @@ do.call(rbind.data.frame, use_values_list) %>%
   ) %>%
   select(region, Ki_lwr, Ki_upr, time_infection_import_lwr, time_infection_import_upr) %>%
   unique() %>%
-  fwrite(file.path(exp_dir, "range_parameters_emsAll.csv"))
+  fwrite(file.path(exp_dir,"_csv", "range_parameters_emsAll.csv"))
 
 
 df_best10 <- do.call(rbind.data.frame, use_values_list) %>%
@@ -491,7 +491,10 @@ for (i in c(1:length(fittingParam))) {
     cnames <- c(cnames, paste0(fittingParam[i], "_EMS-", j))
   }
 }
+
 colnames(df_best10_wide) <- cnames
 df_best10_wide <- as.data.frame(df_best10_wide)
 
-fwrite(df_best10_wide, file.path(exp_dir, "best10_parameters_emsAll.csv"))
+fwrite(df_best10_wide, file.path(exp_dir,"_csv", "best10_parameters_emsAll.csv"))
+
+
