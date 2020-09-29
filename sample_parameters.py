@@ -8,6 +8,7 @@ from datetime import date, timedelta
 from load_paths import load_box_paths
 from simulation_helpers import *
 from runScenarios import *
+import itertools
 
 mpl.rcParams['pdf.fonttype'] = 42
 
@@ -83,6 +84,14 @@ def parse_args():
     )
 
     parser.add_argument(
+        "-combo",
+        "--csv_name_combo",
+        type=str,
+        help="Name of csv file with parameters to add to main sampled parameters",
+        default=None
+    )
+
+    parser.add_argument(
         "-n",
         "--nsamples",
         type=str,
@@ -90,10 +99,9 @@ def parse_args():
         default=None
     )
 
-
     return parser.parse_args()
 
-def _get_full_factorial_df(df, column_name, values):
+def get_full_factorial_df(df, column_name, values):
     dfs = []
     for value in values:
         df_copy = df.copy()
@@ -118,7 +126,7 @@ def generateParameterSamples(samples, pop, start_dates, config, age_bins, Kivalu
     # Time-independent parameters. Create full factorial.
     df = add_parameters(df, "intervention_parameters", config, region, age_bins)
     df = add_parameters(df, "fixed_parameters_global", config, region, age_bins)
-    df = _get_full_factorial_df(df, "Ki", Kivalues)
+    df = get_full_factorial_df(df, "Ki", Kivalues)
 
     # Time-varying parameters for each start date.
     dfs = []
@@ -264,9 +272,14 @@ if __name__ == '__main__':
 
         dfparam = get_parameters(from_configs=False, sample_csv_name = args.csv_name_load)
 
-    if  bool(args.param_dic) :
+    if bool(args.param_dic) and args.csv_name_combo == None :
 
         dic, dfparam = change_param(df=dfparam, param_dic=args.param_dic)
 
-    check_and_save_parameters(df=dfparam, emodl_template=emodl_name, sample_csv_name =args.csv_name_save)
+    if args.csv_name_combo != None :
+        dfparam2 = pd.read_csv(os.path.join('./experiment_configs', 'input_csv',args.csv_name_combo))
+        dfparam1 = dfparam
+        del dfparam
+        dfparam = gen_combos(csv_base=dfparam1, csv_add=dfparam2)
 
+    check_and_save_parameters(df=dfparam, emodl_template=emodl_name, sample_csv_name =args.csv_name_save)
