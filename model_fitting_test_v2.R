@@ -35,6 +35,8 @@ exp_name <- "20200924_IL__test_initialFit"
 exp_name <- "20200925_IL__test_reopening"
 exp_name <- "20200925_IL__test_lockdown"
 exp_name <- "20200927_IL__test_fitsm7"
+exp_name <- "20200928_IL__test2_fitsm7"
+exp_name <- "20200928_IL_test3_fitsm7"
 
 simdate <- str_split(exp_name, "_")[[1]][1]
 fitstep <- "newparam" # "initial"  # "reopen" #"lockdown"
@@ -71,12 +73,33 @@ load_sim_dat <- function(fittingParam, exp_name, i) {
     setNames(gsub(paste0("_EMS-", i), "", names(.))) %>%
     dplyr::filter(date <= stop_date & date >= start_date)
 
+  
+  grpVars <- c(fittingParam, 'time')
+  
+  df <- df %>% 
+    dplyr::group_by(socialDistance_time7 ,social_multiplier_7 , time, startdate) %>%
+    dplyr::summarize(
+      death_det_cumul = median(death_det_cumul), 
+      hosp_det_cumul = median(hosp_det_cumul), 
+      infected_cumul = median(infected_cumul),
+      crit_det = median(crit_det), 
+      hosp_det = median(hosp_det)
+    ) %>%
+    dplyr::group_by(socialDistance_time7 ,social_multiplier_7) %>%
+    mutate(scen_num = cur_group_id()) %>%
+    as.data.table()
+    
+  
+  summary(df$scen_num)
+  # length(unique(df$socialDistance_time7))
+  #length(unique(df$social_multiplier_7))
+
+  
   timevars <- colnames(df)[grep("time", colnames(df))]
+  df <- calculate_dates(df) %>% as.data.frame() 
+  
 
-
-  df <- calculate_dates(df)
-
-  df <- df %>% as.data.frame() %>%
+  df <- df %>% 
     dplyr::group_by(scen_num) %>%
     dplyr::arrange(time) %>%
     dplyr::mutate(
@@ -272,10 +295,11 @@ f_post_fit_plot <- function(use_values_dat, ems, logscale = TRUE) {
 
   pplot <- plot_grid(emr_plot, ll_plot, nrow = 2)
 
-
+  if(!dir.exists(file.path( exp_dir, "post_fit")))dir.create(file.path( exp_dir, "post_fit"))
+  
   ggsave(paste0(i, "_post_fit_plot.png"),
     plot = pplot,
-    path = plot_dir, width = 13, height = 10, device = "png"
+    path = file.path( exp_dir, "post_fit"), width = 13, height = 10, device = "png"
   )
 
   return(pplot)
@@ -311,8 +335,8 @@ if (fitstep == "lockdown") {
 if (fitstep == "newparam") {
   fittingParam <- c("socialDistance_time7", "social_multiplier_7") ### reopen
 
-  start_date <- as.Date("2020-07-15")
-  stop_date <- as.Date("2020-9-27")
+  start_date <- as.Date("2020-08-25")
+  stop_date <- as.Date("2020-9-30")
 }
 
 
@@ -342,7 +366,7 @@ for (i in c(1:11)) {
 
   emresource_ems[is.na(emresource_ems)] <- 0 ## TODO check
 
-  LL_ems <- fread(file.path(data_path, "covid_IDPH", "Cleaned Data", "200921_jg_aggregated_covidregion.csv")) %>%
+  LL_ems <- fread(file.path(data_path, "covid_IDPH", "Cleaned Data", "200928_jg_aggregated_covidregion.csv")) %>%
     filter(covid_region %in% i) %>%
     mutate(date = as.Date(date)) %>%
     filter(date >= start_date & date <= stop_date) %>%
@@ -372,15 +396,18 @@ for (i in c(1:11)) {
 
   createPlot <- T
   if (createPlot) {
+    if(!dir.exists(file.path( exp_dir, "pre_fit")))dir.create(file.path( exp_dir, "pre_fit"))
+    
     for (paramVar in fittingParam) {
       pplot <- pre_fit_plot(fittingVar = paramVar, logscale = TRUE)
 
       ggsave(paste0(i, "_pre_fit_plot_", paramVar, ".png"),
         plot = pplot,
-        path = plot_dir, width = 13, height = 10, device = "png"
+        path = file.path( exp_dir, "pre_fit"), width = 13, height = 10, device = "png"
       )
     }
   }
+
 
 
   ## get a list of all scenario numbers run for this EMS
@@ -472,6 +499,21 @@ do.call(rbind.data.frame, use_values_list) %>%
   fwrite(file.path(exp_dir,"_csv", "range_parameters_emsAll.csv"))
 
 
+do.call(rbind.data.frame, use_values_list) %>%
+  group_by(region) %>%
+  filter(NLL <= median(NLL)) %>%
+  mutate(
+    socialDistance_time7_lwr = min(socialDistance_time7),
+    socialDistance_time7_upr = max(socialDistance_time7),
+    social_multiplier_7_lwr = min(social_multiplier_7),
+    social_multiplier_7_upr = max(social_multiplier_7)
+  ) %>%
+  select(region, socialDistance_time7_lwr, socialDistance_time7_upr, social_multiplier_7_lwr, social_multiplier_7_upr) %>%
+  unique() %>%
+  fwrite(file.path(exp_dir,"_csv", "range_parameters_emsAll.csv"))
+
+
+
 df_best10 <- do.call(rbind.data.frame, use_values_list) %>%
   group_by(region) %>%
   arrange(NLL) %>%
@@ -495,6 +537,6 @@ for (i in c(1:length(fittingParam))) {
 colnames(df_best10_wide) <- cnames
 df_best10_wide <- as.data.frame(df_best10_wide)
 
-fwrite(df_best10_wide, file.path(exp_dir,"_csv", "best10_parameters_emsAll.csv"))
+fwrite(df_best10, file.path(exp_dir,"_csv", "best10_parameters_emsAll.csv"))
 
 
