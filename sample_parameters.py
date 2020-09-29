@@ -247,6 +247,56 @@ def check_and_save_parameters(df, emodl_template,sample_csv_name):
         print("All placeholders have been defined in the sample parameters. \n "
               f"File saved in {os.path.join('./experiment_configs', 'input_csv', sample_csv_name)}")
 
+def make_identifier(df):
+    """https://stackoverflow.com/a/44294454"""
+    str_id = df.apply(lambda x: '_'.join(map(str, x)), axis=1)
+    return pd.factorize(str_id)[0]
+
+def gen_combos(csv_base, csv_add):
+    """
+    Function takes list of csv bases, generates a master
+    csv file with all combinations of parameters contained therein.
+    Ensure that all parameters have unique names in input files
+    and that multiple input files are supplied.
+    Function adapted from Reese Richardson 'condensed workflow' for running simulations.
+    """
+
+    ## Drop columns from csv_add in csv_base, as being replaced
+    csv_base.drop(list(csv_add.columns), axis=1, inplace=True, errors='ignore')
+
+    ## Rename unique scenario identifier
+    csv_base = csv_base.rename(columns={"scen_num": "scen_num1"})
+    ## Add unique scenario identifier
+    csv_add['scen_num2'] = csv_add.reset_index().index
+
+    dfs_list = [''] * (2)
+    dfs_list[0] = csv_base.copy()
+    dfs_list[1] = csv_add.copy()
+
+    cool_list = np.array(list(itertools.product(dfs_list[0].to_numpy(), dfs_list[1].to_numpy())))
+    cool_list = np.array(list(np.concatenate(x) for x in cool_list))
+
+    # Creating a list of columns for use in the final DataFrame...
+    master_columns = []
+    for df in dfs_list:
+        master_columns.extend(np.array(df.columns))
+
+    # Isolating index columns...
+    index_columns = []
+    for col in master_columns:
+        if 'index' in col:
+            index_columns.append(col)
+
+    # Writing all data to master DataFrame...
+    master_df = pd.DataFrame(data=cool_list, columns=master_columns)
+
+    # Restructuring master DataFrame to bring index columns to front...
+    master_df = master_df[[c for c in master_df if c in index_columns] + [c for c in master_df if c not in index_columns]]
+
+    ### Generate new unique scen_num
+    master_df['scen_num'] = make_identifier(master_df[['scen_num1', 'scen_num2']])
+
+    return master_df
 
 if __name__ == '__main__':
     
