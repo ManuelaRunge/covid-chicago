@@ -10,8 +10,9 @@ require(scales)
 source("load_paths.R")
 source("processing_helpers.R")
 
+folder_dates <- list.dirs(file.path(project_path,"NU_civis_outputs" ), recursive = F, full.names = F)
 
-simdates <- c(  "20200910","20200916", "20200922")
+simdates <- tail(folder_dates, n=3)
 scenario <- "baseline" # june1partial10  , june1partial30
 
 dat1 <- read_csv(file.path(project_path, paste0("NU_civis_outputs/", simdates[1], "/csv/nu_",  simdates[1], ".csv")))
