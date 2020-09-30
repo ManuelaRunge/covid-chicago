@@ -18,7 +18,7 @@ mpl.rcParams['pdf.fonttype'] = 42
 today = datetime.today()
 #datetoday = date(2020, 10,1) # date(today.year, today.month, today.day)
 
-first_plot_day = pd.to_datetime( date(2020, 3, 1))
+first_plot_day = pd.to_datetime(date(2020, 3, 1))
 last_plot_day = pd.to_datetime(date(2020, 10,1))
 
 def parse_args():
@@ -64,7 +64,7 @@ def load_sim_data(exp_name, ems_nr, fname, input_wdir=None,  input_sim_output_pa
 
     return df
 
-def load_ref_df():
+def load_ref_df(ems_nr):
     ref_df = pd.read_csv(os.path.join(datapath, 'covid_IDPH', 'Corona virus reports', 'emresource_by_region.csv'))
 
     if ems_nr > 0:
@@ -102,7 +102,7 @@ def plot_sim_and_ref(exp_names, ems_nr,
               'New Detected\nDeaths (LL)',
               'New Deaths (LL)', 'New Detected\nHospitalizations (LL)']
 
-    ref_df = load_ref_df()
+    ref_df = load_ref_df(ems_nr)
     ref_df = ref_df[(ref_df['date'] >= first_plot_day) & (ref_df['date'] <= last_plot_day)]
 
     fig = plt.figure(figsize=(16, 8))
@@ -154,8 +154,9 @@ def plot_sim_and_ref(exp_names, ems_nr,
         ax.plot(ref_df['date'], ref_df[data_channel_names[c]], 'o', color='#303030', linewidth=0, ms=1)
         ax.plot(ref_df['date'], ref_df[data_channel_names[c]].rolling(window=7, center=True).mean(), c='k', alpha=1.0)
 
-
+    plt.suptitle(f'Covidregion {ems_nr}', y=1, fontsize=14)
     plt.tight_layout()
+    plt.subplots_adjust(top=0.88)
     plt.savefig(os.path.join(wdir, 'simulation_output', exp_names[len(exp_names)-1], 'compare_to_data_%s.png' % ems_nr))
     plt.savefig(os.path.join(wdir, 'simulation_output', exp_names[len(exp_names)-1], 'compare_to_data_%s.pdf' % ems_nr))
 

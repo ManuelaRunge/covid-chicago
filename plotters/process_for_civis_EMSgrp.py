@@ -96,6 +96,10 @@ def plot_sim(dat,suffix,channels) :
         plotname = f'{scenarioName}_{suffix}'
         plotname = plotname.replace('EMS-','covidregion_')
 
+        plt.suptitle(f'Covidregion {suffix_nr}', y=1, fontsize=14)
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.88)
+
         plt.savefig(os.path.join(plot_path, plotname + '.png'))
         plt.savefig(os.path.join(plot_path, plotname + '.pdf'), format='PDF')
         # plt.show()
