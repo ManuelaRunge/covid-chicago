@@ -354,7 +354,7 @@ if __name__ == '__main__':
         if len(dfparam1) >= len(dfparam2):
             dfparam = gen_combos(csv_base=dfparam1, csv_add=dfparam2)
         if  len(dfparam1) == len(dfparam2):
-            dfparam3 = combine_param(csv_base=dfparam1, csv_add=dfparam2)
+            dfparam = combine_param(csv_base=dfparam1, csv_add=dfparam2)
 
 
-    check_and_save_parameters(df=master_df, emodl_template=emodl_name, sample_csv_name='sampled_parameterssm7_2.csv')
+    check_and_save_parameters(df=dfparam, emodl_template=emodl_name, sample_csv_name=args.csv_name_save)
