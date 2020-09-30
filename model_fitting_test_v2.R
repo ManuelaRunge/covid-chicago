@@ -36,7 +36,6 @@ exp_name <- "20200925_IL__test_reopening"
 exp_name <- "20200925_IL__test_lockdown"
 exp_name <- "20200927_IL__test_fitsm7"
 exp_name <- "20200928_IL__test2_fitsm7"
-exp_name <- "20200928_IL_test3_fitsm7"
 
 simdate <- str_split(exp_name, "_")[[1]][1]
 fitstep <- "newparam" # "initial"  # "reopen" #"lockdown"
@@ -430,20 +429,16 @@ for (i in c(1:11)) {
     # Likelihood of simulation generating detected critical
     nll1 <- -1 * sum(dpois(emresource_sub$confirmed_covid_icu, emresource_sub$crit_det + 1e-10, log = TRUE))
 
-    # Likelihood of simulation generating detected covid deaths
-    nll2 <- -1 * sum(dpois(emresource_sub$confirmed_covid_deaths_prev_24h, emresource_sub$new_detected_deaths + 1e-10, log = TRUE))
-
     # Likelihood of simulations generating admission data
-    nll3 <- -1 * sum(dpois(emresource_sub$covid_non_icu, emresource_sub$hosp_det + 1e-10, log = TRUE))
+    nll2 <- -1 * sum(dpois(emresource_sub$covid_non_icu, emresource_sub$hosp_det + 1e-10, log = TRUE))
 
     ### Line list  data
     # Likelihood of simulations creating death data that doesn't come from EMresource.
-    nll4 <- -1 * sum(dpois(LL_sub$deaths, LL_sub$new_detected_deaths + 1e-10, log = TRUE), na.rm = TRUE)
+    nll3 <- -1 * sum(dpois(LL_sub$deaths, LL_sub$new_detected_deaths + 1e-10, log = TRUE), na.rm = TRUE)
 
-    nll5 <- -1 * sum(dpois(LL_sub$admissions, LL_sub$new_detected_hospitalized + 1e-10, log = TRUE), na.rm = TRUE)
 
     # Sum all Likelihood, weighting emresource data higher
-    nll <- nll1 + nll2 + nll3 + (nll4 + nll5) * (length(emresource_sub$confirmed_covid_icu) / length(LL_sub$cases)) / 2
+    nll <- nll1 + nll2 + nll3 
 
     # Put Likelihood values and corresponding start date and Ki in output dataframe
     for (z in c(1:length(fittingParam))) {
@@ -452,7 +447,7 @@ for (i in c(1:11)) {
 
     ems_output[j, "NLL"] <- nll
 
-    rm(nll, nll1, nll2, nll3, nll4, nll5, emresource_sub, LL_sub)
+    rm(nll, nll1, nll2, nll3, emresource_sub, LL_sub)
   }
 
 
