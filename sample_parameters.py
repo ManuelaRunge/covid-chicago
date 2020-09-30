@@ -259,6 +259,17 @@ def make_identifier(df):
     str_id = df.apply(lambda x: '_'.join(map(str, x)), axis=1)
     return pd.factorize(str_id)[0]
 
+def combine_param(csv_base, csv_add):
+    """requires both csv files to have same number of rows"""
+    csv_base = csv_base.sort_values(by='scen_num')
+    csv_add = csv_add.sort_values(by='scen_num')
+
+    ## Drop columns from csv_add in csv_base, as being replaced, including scen_num
+    channels_to_drop = list(csv_add.columns)
+    csv_base.drop(channels_to_drop, axis=1, inplace=True, errors='ignore')
+    master_df = pd.concat([csv_base, csv_add], axis=1, ignore_index=True)
+
+    return master_df
 
 def gen_combos(csv_base, csv_add):
     """
@@ -330,15 +341,20 @@ if __name__ == '__main__':
 
     else:
 
-        dfparam = get_parameters(from_configs=False, sample_csv_name=args.csv_name_load)
+        dfparam = get_parameters(from_configs=False, sample_csv_name=csv_name_load)
 
     if bool(args.param_dic) and args.csv_name_combo == None:
         dic, dfparam = change_param(df=dfparam, param_dic=args.param_dic)
 
     if args.csv_name_combo != None:
-        dfparam2 = pd.read_csv(os.path.join('./experiment_configs', 'input_csv', args.csv_name_combo))
         dfparam1 = dfparam
+        dfparam2 = pd.read_csv(os.path.join('./experiment_configs', 'input_csv', args.csv_name_combo))
         del dfparam
-        dfparam = gen_combos(csv_base=dfparam1, csv_add=dfparam2)
 
-    check_and_save_parameters(df=dfparam, emodl_template=emodl_name, sample_csv_name=args.csv_name_save)
+        if len(dfparam1) >= len(dfparam2):
+            dfparam = gen_combos(csv_base=dfparam1, csv_add=dfparam2)
+        if  len(dfparam1) == len(dfparam2):
+            dfparam3 = combine_param(csv_base=dfparam1, csv_add=dfparam2)
+
+
+    check_and_save_parameters(df=master_df, emodl_template=emodl_name, sample_csv_name='sampled_parameterssm7_2.csv')
