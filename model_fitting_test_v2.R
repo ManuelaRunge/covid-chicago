@@ -370,14 +370,14 @@ f_run_fitting <- function(sim_ems_emresource, sim_ems_LL, scens) {
 
     ### EMResource data
     # Likelihood of simulation generating detected critical
-    nll1 <- -1 * sum(dpois(emresource_sub$confirmed_covid_icu, emresource_sub$crit_det + 1e-10, log = F))
+    nll1 <- -1 * sum(dpois(emresource_sub$confirmed_covid_icu, emresource_sub$crit_det + 1e-10, log = T))
 
     # Likelihood of simulations generating admission data
-    nll2 <- -1 * sum(dpois(emresource_sub$covid_non_icu, emresource_sub$hosp_det + 1e-10, log = F))
+    nll2 <- -1 * sum(dpois(emresource_sub$covid_non_icu, emresource_sub$hosp_det + 1e-10, log = T))
 
     ### Line list  data
     # Likelihood of simulations creating death data that doesn't come from EMresource.
-    nll3 <- -1 * sum(dpois(LL_sub$deaths, LL_sub$new_detected_deaths + 1e-10, log = F), na.rm = TRUE)
+    nll3 <- -1 * sum(dpois(LL_sub$deaths, LL_sub$new_detected_deaths + 1e-10, log = T), na.rm = TRUE)
 
 
     # Sum all Likelihood, weighting emresource data higher
