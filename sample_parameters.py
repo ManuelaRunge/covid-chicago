@@ -280,11 +280,12 @@ def gen_combos(csv_base, csv_add):
     Function adapted from Reese Richardson 'condensed workflow' for running simulations.
     """
 
+    ## Rename unique scenario identifier
+    csv_base = csv_base.rename(columns={"scen_num": "scen_num1"})
+
     ## Drop columns from csv_add in csv_base, as being replaced
     csv_base.drop(list(csv_add.columns), axis=1, inplace=True, errors='ignore')
 
-    ## Rename unique scenario identifier
-    csv_base = csv_base.rename(columns={"scen_num": "scen_num1"})
     ## Add unique scenario identifier
     csv_add['scen_num2'] = csv_add.reset_index().index
 
@@ -341,7 +342,7 @@ if __name__ == '__main__':
 
     else:
 
-        dfparam = get_parameters(from_configs=False, sample_csv_name=csv_name_load)
+        dfparam = get_parameters(from_configs=False, sample_csv_name=args.csv_name_load)
 
     if bool(args.param_dic) and args.csv_name_combo == None:
         dic, dfparam = change_param(df=dfparam, param_dic=args.param_dic)
@@ -351,7 +352,7 @@ if __name__ == '__main__':
         dfparam2 = pd.read_csv(os.path.join('./experiment_configs', 'input_csv', args.csv_name_combo))
         del dfparam
 
-        if len(dfparam1) >= len(dfparam2):
+        if len(dfparam1) != len(dfparam2):
             dfparam = gen_combos(csv_base=dfparam1, csv_add=dfparam2)
         if  len(dfparam1) == len(dfparam2):
             dfparam = combine_param(csv_base=dfparam1, csv_add=dfparam2)
