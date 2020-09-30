@@ -60,7 +60,7 @@ def load_sim_data(exp_name, ems_nr,  input_wdir=None, fname= 'trajectoriesDat.cs
 
 def plot_sim_and_ref(df, ems_nr, ref_df, channels, data_channel_names, titles, first_day=date(2020, 2, 22),
                      ymax=40, plot_path=None, logscale=True):
-    fig = plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(13, 6))
     palette = sns.color_palette('husl', 8)
     k = 0
     for c, channel in enumerate(channels):
@@ -82,6 +82,7 @@ def plot_sim_and_ref(df, ems_nr, ref_df, channels, data_channel_names, titles, f
         ax.xaxis.set_major_formatter(formatter)
         ax.xaxis.set_major_locator(mdates.MonthLocator())
         ax.set_xlim(first_day, datetoday)
+        ax.grid(b=True, which='major', color='#999999', linestyle='-', alpha=0.3)
         if logscale :
             ax.set_ylim(0.1, ymax)
             ax.set_yscale('log')
