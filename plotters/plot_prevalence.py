@@ -9,7 +9,7 @@ import matplotlib.dates as mdates
 from datetime import date, timedelta, datetime
 import seaborn as sns
 from processing_helpers import *
-from plotting.colors import load_color_palette
+#from plotting.colors import load_color_palette
 
 
 mpl.rcParams['pdf.fonttype'] = 42
@@ -20,7 +20,7 @@ datapath, projectpath, wdir,exe_dir, git_dir = load_box_paths()
 
 def trim_trajectories(simpath, scenario, colnames, ems) :
 
-    df = pd.read_csv(os.path.join(simpath, 'trajectoriesDat_%s.csv' % scenario))
+    df = pd.read_csv(os.path.join(simpath, 'trajectoriesDat.csv' ))
     df = df.rename(columns={ 'N_EMS_%d' % ems_num : 'N_EMS-%d' % ems_num for ems_num in range(1,12)})
     df['N_All'] = df['susceptible_All'] + df['exposed_All'] + df['infected_All'] + df['recovered_All']
     keep_cols = ['%s_%s' % (x, y) for x in colnames for y in ems]
@@ -32,21 +32,26 @@ def trim_trajectories(simpath, scenario, colnames, ems) :
 
 if __name__ == '__main__' :
 
-    outdir = '20200624'
-    scenario = 'baseline'
+
+    exp_name = '20200929_IL_resim_sm7_refit'
+    simdate = exp_name.split("_")[0]
     ems = ['EMS-%d' % x for x in range(1, 12)] + ['All']
     colnames = ['infected', 'recovered', 'N']
 
-    simpath = os.path.join(projectpath, 'NU_civis_outputs', outdir, 'trajectories')
-    # trim_trajectories(simpath, scenario, colnames, ems)
-    df = pd.read_csv(os.path.join(simpath, 'trimmed_trajectoriesDat_%s.csv' % scenario))
-    df['date'] = pd.to_datetime(df['date'])
+    #simpath = os.path.join(projectdir, 'NU_civis_outputs', simdate,'trajectories')
+    simpath = os.path.join(wdir, 'simulation_output', exp_name)
+    #trim_trajectories(simpath, scenario, colnames, ems)
+    df = pd.read_csv(os.path.join(simpath, 'trajectoriesDat.csv'))
+    first_day = datetime.strptime(df['startdate'].unique()[0], '%Y-%m-%d')  # '%Y-%m-%d'
+    df['date'] = df['time'].apply(lambda x: first_day + timedelta(days=int(x)))
     fig = plt.figure(figsize=(16,8))
     fig.subplots_adjust(left=0.05, right=0.97, top=0.95, bottom=0.05)
-    palette = load_color_palette('wes')
+    palette =  sns.color_palette('husl', 8)
     formatter = mdates.DateFormatter("%m")
 
     for e, ems_num in enumerate(ems) :
+
+        df['N_%s' % ems_num] = df['susceptible_%s' % ems_num] + df['exposed_%s' % ems_num] + df['infected_%s' % ems_num] + df['recovered_%s' % ems_num]
 
         df['prevalence_%s' % ems_num] = df['infected_%s' % ems_num]/df['N_%s' % ems_num]
         df['seroprevalence_%s' % ems_num] = (df['infected_%s' % ems_num] + df['recovered_%s' % ems_num])/ df['N_%s' % ems_num]
