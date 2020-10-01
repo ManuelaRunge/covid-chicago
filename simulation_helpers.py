@@ -164,7 +164,7 @@ def writeTxt(txtdir, filename, textstring) :
     file.close()
 
 
-def generateSubmissionFile(scen_num, exp_name, experiment_config, trajectories_dir, temp_dir, temp_exp_dir,
+def generateSubmissionFile(scen_num, exp_name, experiment_config, trajectories_dir, temp_dir, temp_exp_dir,sim_output_path,
                            exe_dir=EXE_DIR, docker_image="cms", git_dir=GIT_DIR):
 
     fname = 'runSimulations.bat'
