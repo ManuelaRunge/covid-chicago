@@ -1,0 +1,315 @@
+experiment_setup_parameters:
+  age_bins:
+    - EMS_1
+    - EMS_2
+    - EMS_3
+    - EMS_4
+    - EMS_5
+    - EMS_6
+    - EMS_7
+    - EMS_8
+    - EMS_9
+    - EMS_10
+    - EMS_11
+fixed_parameters_region_specific:
+  N:
+    expand_by_age: True
+    'IL': [688393,1269519, 581432, 676017, 424810, 760362, 791009, 1432193, 1012222, 2477754, 2716921]
+fixed_parameters_global:
+  initialAs:
+    expand_by_age: True
+    list: [10, 10, 10, 10,10, 9, 10, 10,10,10,10]
+  speciesS:
+    expand_by_age: True
+    custom_function: subtract
+    function_kwargs: {'x1': N, 'x2': initialAs}
+sampled_parameters:
+  social_multiplier_1:
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 0.482787963, 'high': 0.482787963}
+        - {'low': 0.587175879, 'high': 0.587175879}
+        - {'low': 0.577833961, 'high': 0.577833961}
+        - {'low': 0.431888404, 'high': 0.431888404}
+        - {'low': 0.913631448, 'high': 0.913631448}
+        - {'low': 0.431888404, 'high': 0.431888404}
+        - {'low': 0.431888404, 'high': 0.431888404}
+        - {'low': 0.541614683, 'high': 0.541614683}
+        - {'low': 0.751510217, 'high': 0.751510217}
+        - {'low': 0.427120708, 'high': 0.427120708}
+        - {'low': 0.427120708, 'high': 0.427120708}
+  socialDistance_time1:
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 74.04238846, 'high': 74.04238846}
+        - {'low': 78.60101328, 'high': 78.60101328}
+        - {'low': 82.83940754, 'high': 82.83940754}
+        - {'low': 83.97386681, 'high': 83.97386681}
+        - {'low': 77.15003402, 'high': 77.15003402}
+        - {'low': 83.97386681, 'high': 83.97386681}
+        - {'low': 83.97386681, 'high': 83.97386681}
+        - {'low': 75.62751278, 'high': 75.62751278}
+        - {'low': 81.42845285, 'high': 81.42845285}
+        - {'low': 72.24283988, 'high': 72.24283988}
+        - {'low': 72.24283988, 'high': 72.24283988}
+  social_multiplier_2:
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 0.2, 'high': 0.5}
+        - {'low': 0.2, 'high': 0.5}
+        - {'low': 0.2, 'high': 0.5}
+        - {'low': 0.2, 'high': 0.5}
+        - {'low': 0.2, 'high': 0.5}
+        - {'low': 0.2, 'high': 0.5}
+        - {'low': 0.2, 'high': 0.5}
+        - {'low': 0.2, 'high': 0.5}
+        - {'low': 0.2, 'high': 0.5}
+        - {'low': 0.2, 'high': 0.5}
+        - {'low': 0.1, 'high': 0.4} 
+  social_multiplier_3:
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 0.200, 'high': 0.200}
+        - {'low': 0.160, 'high': 0.160}
+        - {'low': 0.280, 'high': 0.280}
+        - {'low': 0.155, 'high': 0.155}
+        - {'low': 0.235, 'high': 0.235}
+        - {'low': 0.180, 'high': 0.180}
+        - {'low': 0.095, 'high': 0.095}
+        - {'low': 0.105, 'high': 0.105}
+        - {'low': 0.115, 'high': 0.115}
+        - {'low': 0.130, 'high': 0.130}
+        - {'low': 0.090, 'high': 0.090}
+  social_multiplier_4:
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 0.125, 'high': 0.125}
+        - {'low': 0.110, 'high': 0.110}
+        - {'low': 0.200, 'high': 0.200}
+        - {'low': 0.135, 'high': 0.135}
+        - {'low': 0.135, 'high': 0.135}
+        - {'low': 0.180, 'high': 0.180}
+        - {'low': 0.095, 'high': 0.095}
+        - {'low': 0.085, 'high': 0.085}
+        - {'low': 0.080, 'high': 0.080}
+        - {'low': 0.100, 'high': 0.100}
+        - {'low': 0.070, 'high': 0.070}
+  social_multiplier_5:
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 0.170, 'high': 0.170}
+        - {'low': 0.230, 'high': 0.230}
+        - {'low': 0.450, 'high': 0.450}
+        - {'low': 0.245, 'high': 0.245}
+        - {'low': 0.300, 'high': 0.300}
+        - {'low': 0.240, 'high': 0.240}
+        - {'low': 0.160, 'high': 0.160}
+        - {'low': 0.120, 'high': 0.120}
+        - {'low': 0.150, 'high': 0.150}
+        - {'low': 0.150, 'high': 0.150}
+        - {'low': 0.110, 'high': 0.110}
+  social_multiplier_6:
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 0.170, 'high': 0.170}
+        - {'low': 0.167, 'high': 0.167}
+        - {'low': 0.300, 'high': 0.300}
+        - {'low': 0.195, 'high': 0.195}
+        - {'low': 0.265, 'high': 0.265}
+        - {'low': 0.240, 'high': 0.240}
+        - {'low': 0.170, 'high': 0.170}
+        - {'low': 0.120, 'high': 0.120}
+        - {'low': 0.130, 'high': 0.130}
+        - {'low': 0.150, 'high': 0.150}
+        - {'low': 0.110, 'high': 0.110}
+  social_multiplier_7:
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low':  0.20, 'high': 0.228571429}
+        - {'low':  0.160, 'high': 0.191428571}
+        - {'low':  0.191428571, 'high': 0.228571429}
+        - {'low':  0.117142857, 'high': 0.135714286}
+        - {'low':  0.135714286, 'high': 0.135714286}
+        - {'low':  0.191428571, 'high': 0.21}
+        - {'low':  0.135714286, 'high': 0.154285714}
+        - {'low':  0.117142857, 'high': 0.135714286}
+        - {'low':  0.117142857, 'high': 0.135714286}
+        - {'low':  0.135714286, 'high': 0.135714286}
+        - {'low':  0.100, 'high': 0.125714286}
+  socialDistance_time7:
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 189, 'high': 194}
+        - {'low': 189, 'high': 199}
+        - {'low': 199, 'high': 199}
+        - {'low': 189, 'high': 194}
+        - {'low': 189, 'high': 199}
+        - {'low': 189, 'high': 199}
+        - {'low': 194, 'high': 199}
+        - {'low': 194, 'high': 199}
+        - {'low': 194, 'high': 199}
+        - {'low': 194, 'high': 199}
+        - {'low': 194, 'high': 199}
+  d_Sym:  
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 0.0, 'high': 0.01}
+        - {'low': 0.0, 'high': 0.01}
+        - {'low': 0.0, 'high': 0.01}
+        - {'low': 0.0, 'high': 0.01}
+        - {'low': 0.0, 'high': 0.01}
+        - {'low': 0.0, 'high': 0.01}
+        - {'low': 0.0, 'high': 0.01}
+        - {'low': 0.0, 'high': 0.01}
+        - {'low': 0.0, 'high': 0.01}
+        - {'low': 0.0, 'high': 0.01}
+        - {'low': 0.0, 'high': 0.01}
+  d_Sym_change1:
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 0.01, 'high': 0.08}
+        - {'low': 0.01, 'high': 0.08}
+        - {'low': 0.01, 'high': 0.08}
+        - {'low': 0.01, 'high': 0.08}
+        - {'low': 0.01, 'high': 0.08}
+        - {'low': 0.01, 'high': 0.08}
+        - {'low': 0.01, 'high': 0.08}
+        - {'low': 0.01, 'high': 0.08}
+        - {'low': 0.01, 'high': 0.08}
+        - {'low': 0.01, 'high': 0.08}
+        - {'low': 0.01, 'high': 0.08}
+  d_Sym_change2:
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 0.05, 'high': 0.10}
+        - {'low': 0.05, 'high': 0.10}
+        - {'low': 0.05, 'high': 0.10}
+        - {'low': 0.05, 'high': 0.10}
+        - {'low': 0.05, 'high': 0.10}
+        - {'low': 0.05, 'high': 0.10}
+        - {'low': 0.05, 'high': 0.10}
+        - {'low': 0.05, 'high': 0.10}
+        - {'low': 0.05, 'high': 0.10}
+        - {'low': 0.05, 'high': 0.10}
+        - {'low': 0.05, 'high': 0.10}
+  d_Sym_change3:
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 0.10, 'high': 0.20}
+        - {'low': 0.10, 'high': 0.20}
+        - {'low': 0.10, 'high': 0.20}
+        - {'low': 0.10, 'high': 0.20}
+        - {'low': 0.10, 'high': 0.20}
+        - {'low': 0.10, 'high': 0.20}
+        - {'low': 0.10, 'high': 0.20}
+        - {'low': 0.10, 'high': 0.20}
+        - {'low': 0.10, 'high': 0.20}
+        - {'low': 0.10, 'high': 0.20}
+        - {'low': 0.10, 'high': 0.20}
+  d_Sym_change4:
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 0.10, 'high': 0.30}
+        - {'low': 0.10, 'high': 0.30}
+        - {'low': 0.10, 'high': 0.30}
+        - {'low': 0.10, 'high': 0.30}
+        - {'low': 0.10, 'high': 0.30}
+        - {'low': 0.10, 'high': 0.30}
+        - {'low': 0.10, 'high': 0.30}
+        - {'low': 0.10, 'high': 0.30}
+        - {'low': 0.10, 'high': 0.30}
+        - {'low': 0.10, 'high': 0.30}
+        - {'low': 0.10, 'high': 0.30}
+  d_Sym_change5:
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 0.10, 'high': 0.40}
+        - {'low': 0.10, 'high': 0.40}
+        - {'low': 0.10, 'high': 0.40}
+        - {'low': 0.10, 'high': 0.40}
+        - {'low': 0.10, 'high': 0.40}
+        - {'low': 0.10, 'high': 0.40}
+        - {'low': 0.10, 'high': 0.40}
+        - {'low': 0.10, 'high': 0.40}
+        - {'low': 0.10, 'high': 0.40}
+        - {'low': 0.10, 'high': 0.40}
+        - {'low': 0.10, 'high': 0.40}
+  d_Sym_ct1:
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 0.36, 'high': 0.36}
+        - {'low': 0.36, 'high': 0.36}
+        - {'low': 0.34, 'high': 0.34}
+        - {'low': 0.28, 'high': 0.28}
+        - {'low': 0.28, 'high': 0.28}
+        - {'low': 0.34, 'high': 0.34}
+        - {'low': 0.25, 'high': 0.25}
+        - {'low': 0.25, 'high': 0.25}
+        - {'low': 0.25, 'high': 0.25}
+        - {'low': 0.25, 'high': 0.25}
+        - {'low': 0.25, 'high': 0.25}
+  Ki:  
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 0.266269018, 'high': 0.266269018}
+        - {'low': 0.311003733, 'high': 0.311003733}
+        - {'low': 0.232404611, 'high': 0.232404611}
+        - {'low': 0.273771871, 'high': 0.273771871}
+        - {'low': 0.349637637, 'high': 0.349637637}
+        - {'low': 0.273771871, 'high': 0.273771871}
+        - {'low': 0.273771871, 'high': 0.273771871}
+        - {'low': 0.27984499,  'high': 0.27984499}
+        - {'low': 0.292739336, 'high': 0.292739336}
+        - {'low': 0.394301538, 'high': 0.394301538}
+        - {'low': 0.394301538, 'high': 0.394301538} 
+  time_infection_import:  # Relative to generic startdate set for IL 
+    IL:
+      expand_by_age: True
+      np.random: uniform
+      function_kwargs:
+        - {'low': 26.57241931   , 'high': 26.57241931}
+        - {'low': 47.63682345   , 'high': 47.63682345}
+        - {'low': 36.54244123   , 'high': 36.54244123}
+        - {'low': 36.86253393   , 'high': 36.86253393}
+        - {'low': 68.96291189   , 'high': 68.96291189}
+        - {'low': 36.86253393   , 'high': 36.86253393}
+        - {'low': 36.86253393   , 'high': 36.86253393}
+        - {'low': 28.8437127    , 'high': 28.8437127}
+        - {'low': 37.35146992   , 'high': 37.35146992}
+        - {'low': 33.98802531   , 'high': 33.98802531}
+        - {'low': 33.98802531   , 'high': 33.98802531}  
+

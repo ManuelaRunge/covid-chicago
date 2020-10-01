@@ -1629,47 +1629,27 @@
 (param Kr_a_D (/ 1 (- recovery_time_asymp time_D_As )))
 
 (param Ki_EMS_1 @Ki_EMS_1@)
-(observe Ki_t_EMS-1 Ki_EMS_1)
-(time-event time_infection_import @time_infection_import_EMS_1@ ((As::EMS_1 @initialAs_EMS_1@) (S::EMS_1 (- S::EMS_1 @initialAs_EMS_1@))))
-
 (param Ki_EMS_2 @Ki_EMS_2@)
-(observe Ki_t_EMS-2 Ki_EMS_2)
-(time-event time_infection_import @time_infection_import_EMS_2@ ((As::EMS_2 @initialAs_EMS_2@) (S::EMS_2 (- S::EMS_2 @initialAs_EMS_2@))))
-
 (param Ki_EMS_3 @Ki_EMS_3@)
-(observe Ki_t_EMS-3 Ki_EMS_3)
-(time-event time_infection_import @time_infection_import_EMS_3@ ((As::EMS_3 @initialAs_EMS_3@) (S::EMS_3 (- S::EMS_3 @initialAs_EMS_3@))))
-
 (param Ki_EMS_4 @Ki_EMS_4@)
-(observe Ki_t_EMS-4 Ki_EMS_4)
-(time-event time_infection_import @time_infection_import_EMS_4@ ((As::EMS_4 @initialAs_EMS_4@) (S::EMS_4 (- S::EMS_4 @initialAs_EMS_4@))))
-
 (param Ki_EMS_5 @Ki_EMS_5@)
-(observe Ki_t_EMS-5 Ki_EMS_5)
-(time-event time_infection_import @time_infection_import_EMS_5@ ((As::EMS_5 @initialAs_EMS_5@) (S::EMS_5 (- S::EMS_5 @initialAs_EMS_5@))))
-
 (param Ki_EMS_6 @Ki_EMS_6@)
-(observe Ki_t_EMS-6 Ki_EMS_6)
-(time-event time_infection_import @time_infection_import_EMS_6@ ((As::EMS_6 @initialAs_EMS_6@) (S::EMS_6 (- S::EMS_6 @initialAs_EMS_6@))))
-
 (param Ki_EMS_7 @Ki_EMS_7@)
-(observe Ki_t_EMS-7 Ki_EMS_7)
-(time-event time_infection_import @time_infection_import_EMS_7@ ((As::EMS_7 @initialAs_EMS_7@) (S::EMS_7 (- S::EMS_7 @initialAs_EMS_7@))))
-
 (param Ki_EMS_8 @Ki_EMS_8@)
-(observe Ki_t_EMS-8 Ki_EMS_8)
-(time-event time_infection_import @time_infection_import_EMS_8@ ((As::EMS_8 @initialAs_EMS_8@) (S::EMS_8 (- S::EMS_8 @initialAs_EMS_8@))))
-
 (param Ki_EMS_9 @Ki_EMS_9@)
-(observe Ki_t_EMS-9 Ki_EMS_9)
-(time-event time_infection_import @time_infection_import_EMS_9@ ((As::EMS_9 @initialAs_EMS_9@) (S::EMS_9 (- S::EMS_9 @initialAs_EMS_9@))))
-
 (param Ki_EMS_10 @Ki_EMS_10@)
-(observe Ki_t_EMS-10 Ki_EMS_10)
-(time-event time_infection_import @time_infection_import_EMS_10@ ((As::EMS_10 @initialAs_EMS_10@) (S::EMS_10 (- S::EMS_10 @initialAs_EMS_10@))))
-
 (param Ki_EMS_11 @Ki_EMS_11@)
-(observe Ki_t_EMS-11 Ki_EMS_11)
+
+(time-event time_infection_import @time_infection_import_EMS_1@ ((As::EMS_1 @initialAs_EMS_1@) (S::EMS_1 (- S::EMS_1 @initialAs_EMS_1@))))
+(time-event time_infection_import @time_infection_import_EMS_2@ ((As::EMS_2 @initialAs_EMS_2@) (S::EMS_2 (- S::EMS_2 @initialAs_EMS_2@))))
+(time-event time_infection_import @time_infection_import_EMS_3@ ((As::EMS_3 @initialAs_EMS_3@) (S::EMS_3 (- S::EMS_3 @initialAs_EMS_3@))))
+(time-event time_infection_import @time_infection_import_EMS_4@ ((As::EMS_4 @initialAs_EMS_4@) (S::EMS_4 (- S::EMS_4 @initialAs_EMS_4@))))
+(time-event time_infection_import @time_infection_import_EMS_5@ ((As::EMS_5 @initialAs_EMS_5@) (S::EMS_5 (- S::EMS_5 @initialAs_EMS_5@))))
+(time-event time_infection_import @time_infection_import_EMS_6@ ((As::EMS_6 @initialAs_EMS_6@) (S::EMS_6 (- S::EMS_6 @initialAs_EMS_6@))))
+(time-event time_infection_import @time_infection_import_EMS_7@ ((As::EMS_7 @initialAs_EMS_7@) (S::EMS_7 (- S::EMS_7 @initialAs_EMS_7@))))
+(time-event time_infection_import @time_infection_import_EMS_8@ ((As::EMS_8 @initialAs_EMS_8@) (S::EMS_8 (- S::EMS_8 @initialAs_EMS_8@))))
+(time-event time_infection_import @time_infection_import_EMS_9@ ((As::EMS_9 @initialAs_EMS_9@) (S::EMS_9 (- S::EMS_9 @initialAs_EMS_9@))))
+(time-event time_infection_import @time_infection_import_EMS_10@ ((As::EMS_10 @initialAs_EMS_10@) (S::EMS_10 (- S::EMS_10 @initialAs_EMS_10@))))
 (time-event time_infection_import @time_infection_import_EMS_11@ ((As::EMS_11 @initialAs_EMS_11@) (S::EMS_11 (- S::EMS_11 @initialAs_EMS_11@))))
 
 (param N_EMS_1 (+ @speciesS_EMS_1@ @initialAs_EMS_1@) )
@@ -1710,40 +1690,39 @@
 (time-event cfr_adjust1 @cfr_time_1@ ((cfr cfr_change1) (fraction_dead (/ cfr fraction_severe)) (fraction_hospitalized (- 1 (+ fraction_critical fraction_dead))) (Kh1 (/ fraction_hospitalized time_to_hospitalization)) (Kh2 (/ fraction_critical time_to_hospitalization )) (Kh1_D (/ fraction_hospitalized (- time_to_hospitalization time_D_Sys))) (Kh2_D (/ fraction_critical (- time_to_hospitalization time_D_Sys) )) )) 
 (time-event cfr_adjust2 @cfr_time_2@ ((cfr cfr_change2) (fraction_dead (/ cfr fraction_severe)) (fraction_hospitalized (- 1 (+ fraction_critical fraction_dead))) (Kh1 (/ fraction_hospitalized time_to_hospitalization)) (Kh2 (/ fraction_critical time_to_hospitalization )) (Kh1_D (/ fraction_hospitalized (- time_to_hospitalization time_D_Sys))) (Kh2_D (/ fraction_critical (- time_to_hospitalization time_D_Sys) )) )) 
 
-(param Ki_red1_EMS_1 (* Ki_EMS_1 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_1 Ki_red1_EMS_1)))
-          
-(param Ki_red1_EMS_2 (* Ki_EMS_2 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_2 Ki_red1_EMS_2)))
-          
-(param Ki_red1_EMS_3 (* Ki_EMS_3 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_3 Ki_red1_EMS_3)))
-         
-(param Ki_red1_EMS_4 (* Ki_EMS_4 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_4 Ki_red1_EMS_4)))
-        
-(param Ki_red1_EMS_5 (* Ki_EMS_5 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_5 Ki_red1_EMS_5)))
-         
-(param Ki_red1_EMS_6 (* Ki_EMS_6 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_6 Ki_red1_EMS_6)))
-        
-(param Ki_red1_EMS_7 (* Ki_EMS_7 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_7 Ki_red1_EMS_7)))
-          
-(param Ki_red1_EMS_8 (* Ki_EMS_8 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_8 Ki_red1_EMS_8)))
-          
-(param Ki_red1_EMS_9 (* Ki_EMS_9 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_9 Ki_red1_EMS_9)))
-          
-(param Ki_red1_EMS_10 (* Ki_EMS_10 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_10 Ki_red1_EMS_10)))
-            
-(param Ki_red1_EMS_11 (* Ki_EMS_11 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_11 Ki_red1_EMS_11)))
+(param Ki_red1_EMS_1 (* Ki_EMS_1 @social_multiplier_1_EMS_1@))
+(time-event socialDistance_change_1 @socialDistance_time1_EMS_1@ ((Ki_EMS_1 Ki_red1_EMS_1)))
 
-     
+(param Ki_red1_EMS_2 (* Ki_EMS_2 @social_multiplier_1_EMS_2@))
+(time-event socialDistance_change_1 @socialDistance_time1_EMS_2@ ((Ki_EMS_2 Ki_red1_EMS_2)))
+       
+(param Ki_red1_EMS_3 (* Ki_EMS_3 @social_multiplier_1_EMS_3@))
+(time-event socialDistance_change_1 @socialDistance_time1_EMS_3@ ((Ki_EMS_3 Ki_red1_EMS_3)))
+          
+(param Ki_red1_EMS_4 (* Ki_EMS_4 @social_multiplier_1_EMS_4@))
+(time-event socialDistance_change_1 @socialDistance_time1_EMS_4@ ((Ki_EMS_4 Ki_red1_EMS_4)))
+      
+(param Ki_red1_EMS_5 (* Ki_EMS_5 @social_multiplier_1_EMS_5@))
+(time-event socialDistance_change_1 @socialDistance_time1_EMS_5@ ((Ki_EMS_5 Ki_red1_EMS_5)))
+
+(param Ki_red1_EMS_6 (* Ki_EMS_6 @social_multiplier_1_EMS_6@))
+(time-event socialDistance_change_1 @socialDistance_time1_EMS_6@ ((Ki_EMS_6 Ki_red1_EMS_6)))           
+
+(param Ki_red1_EMS_7 (* Ki_EMS_7 @social_multiplier_1_EMS_7@))
+(time-event socialDistance_change_1 @socialDistance_time1_EMS_7@ ((Ki_EMS_7 Ki_red1_EMS_7)))
+
+(param Ki_red1_EMS_8 (* Ki_EMS_8 @social_multiplier_1_EMS_8@))
+(time-event socialDistance_change_1 @socialDistance_time1_EMS_8@ ((Ki_EMS_8 Ki_red1_EMS_8)))
+
+(param Ki_red1_EMS_9 (* Ki_EMS_9 @social_multiplier_1_EMS_9@))
+(time-event socialDistance_change_1 @socialDistance_time1_EMS_9@ ((Ki_EMS_9 Ki_red1_EMS_9)))
+
+(param Ki_red1_EMS_10 (* Ki_EMS_10 @social_multiplier_1_EMS_10@))
+(time-event socialDistance_change_1 @socialDistance_time1_EMS_10@ ((Ki_EMS_10 Ki_red1_EMS_10)))
+
+(param Ki_red1_EMS_11 (* Ki_EMS_11 @social_multiplier_1_EMS_11@))
+(time-event socialDistance_change_1 @socialDistance_time1_EMS_11@ ((Ki_EMS_11 Ki_red1_EMS_11)))
+
 (param d_Sym_EMS_1 @d_Sym_EMS_1@)
 (observe d_Sym_t_EMS-1 d_Sym_EMS_1)
 
@@ -1752,7 +1731,7 @@
 (time-event d_Sym_change3 @d_Sym_change_time_3@ ((d_Sym_EMS_1 @d_Sym_change3_EMS_1@)))
 (time-event d_Sym_change4 @d_Sym_change_time_4@ ((d_Sym_EMS_1 @d_Sym_change4_EMS_1@)))
 (time-event d_Sym_change5 @d_Sym_change_time_5@ ((d_Sym_EMS_1 @d_Sym_change5_EMS_1@)))
-            
+
 (param d_Sym_EMS_2 @d_Sym_EMS_2@)
 (observe d_Sym_t_EMS-2 d_Sym_EMS_2)
 
@@ -1761,7 +1740,7 @@
 (time-event d_Sym_change3 @d_Sym_change_time_3@ ((d_Sym_EMS_2 @d_Sym_change3_EMS_2@)))
 (time-event d_Sym_change4 @d_Sym_change_time_4@ ((d_Sym_EMS_2 @d_Sym_change4_EMS_2@)))
 (time-event d_Sym_change5 @d_Sym_change_time_5@ ((d_Sym_EMS_2 @d_Sym_change5_EMS_2@)))
-            
+
 (param d_Sym_EMS_3 @d_Sym_EMS_3@)
 (observe d_Sym_t_EMS-3 d_Sym_EMS_3)
 
@@ -1779,7 +1758,7 @@
 (time-event d_Sym_change3 @d_Sym_change_time_3@ ((d_Sym_EMS_4 @d_Sym_change3_EMS_4@)))
 (time-event d_Sym_change4 @d_Sym_change_time_4@ ((d_Sym_EMS_4 @d_Sym_change4_EMS_4@)))
 (time-event d_Sym_change5 @d_Sym_change_time_5@ ((d_Sym_EMS_4 @d_Sym_change5_EMS_4@)))
-            
+
 (param d_Sym_EMS_5 @d_Sym_EMS_5@)
 (observe d_Sym_t_EMS-5 d_Sym_EMS_5)
 
@@ -1788,7 +1767,7 @@
 (time-event d_Sym_change3 @d_Sym_change_time_3@ ((d_Sym_EMS_5 @d_Sym_change3_EMS_5@)))
 (time-event d_Sym_change4 @d_Sym_change_time_4@ ((d_Sym_EMS_5 @d_Sym_change4_EMS_5@)))
 (time-event d_Sym_change5 @d_Sym_change_time_5@ ((d_Sym_EMS_5 @d_Sym_change5_EMS_5@)))
-            
+
 (param d_Sym_EMS_6 @d_Sym_EMS_6@)
 (observe d_Sym_t_EMS-6 d_Sym_EMS_6)
 
@@ -1797,7 +1776,7 @@
 (time-event d_Sym_change3 @d_Sym_change_time_3@ ((d_Sym_EMS_6 @d_Sym_change3_EMS_6@)))
 (time-event d_Sym_change4 @d_Sym_change_time_4@ ((d_Sym_EMS_6 @d_Sym_change4_EMS_6@)))
 (time-event d_Sym_change5 @d_Sym_change_time_5@ ((d_Sym_EMS_6 @d_Sym_change5_EMS_6@)))
-            
+ 
 (param d_Sym_EMS_7 @d_Sym_EMS_7@)
 (observe d_Sym_t_EMS-7 d_Sym_EMS_7)
 
@@ -1806,7 +1785,7 @@
 (time-event d_Sym_change3 @d_Sym_change_time_3@ ((d_Sym_EMS_7 @d_Sym_change3_EMS_7@)))
 (time-event d_Sym_change4 @d_Sym_change_time_4@ ((d_Sym_EMS_7 @d_Sym_change4_EMS_7@)))
 (time-event d_Sym_change5 @d_Sym_change_time_5@ ((d_Sym_EMS_7 @d_Sym_change5_EMS_7@)))
-            
+  
 (param d_Sym_EMS_8 @d_Sym_EMS_8@)
 (observe d_Sym_t_EMS-8 d_Sym_EMS_8)
 
@@ -1815,7 +1794,7 @@
 (time-event d_Sym_change3 @d_Sym_change_time_3@ ((d_Sym_EMS_8 @d_Sym_change3_EMS_8@)))
 (time-event d_Sym_change4 @d_Sym_change_time_4@ ((d_Sym_EMS_8 @d_Sym_change4_EMS_8@)))
 (time-event d_Sym_change5 @d_Sym_change_time_5@ ((d_Sym_EMS_8 @d_Sym_change5_EMS_8@)))
-            
+
 (param d_Sym_EMS_9 @d_Sym_EMS_9@)
 (observe d_Sym_t_EMS-9 d_Sym_EMS_9)
 

@@ -1710,38 +1710,40 @@
 (time-event cfr_adjust1 @cfr_time_1@ ((cfr cfr_change1) (fraction_dead (/ cfr fraction_severe)) (fraction_hospitalized (- 1 (+ fraction_critical fraction_dead))) (Kh1 (/ fraction_hospitalized time_to_hospitalization)) (Kh2 (/ fraction_critical time_to_hospitalization )) (Kh1_D (/ fraction_hospitalized (- time_to_hospitalization time_D_Sys))) (Kh2_D (/ fraction_critical (- time_to_hospitalization time_D_Sys) )) )) 
 (time-event cfr_adjust2 @cfr_time_2@ ((cfr cfr_change2) (fraction_dead (/ cfr fraction_severe)) (fraction_hospitalized (- 1 (+ fraction_critical fraction_dead))) (Kh1 (/ fraction_hospitalized time_to_hospitalization)) (Kh2 (/ fraction_critical time_to_hospitalization )) (Kh1_D (/ fraction_hospitalized (- time_to_hospitalization time_D_Sys))) (Kh2_D (/ fraction_critical (- time_to_hospitalization time_D_Sys) )) )) 
 
-(param Ki_red1_EMS_1 (* Ki_EMS_1 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_1 Ki_red1_EMS_1)))
+
+(param Ki_red1_EMS_1 (* Ki_EMS_1 @Ki_multiplier_may@))
+(time-event Ki_change_may @Ki_multiplier_may_time@ ((Ki_EMS_1 Ki_red1_EMS_1)))
           
-(param Ki_red1_EMS_2 (* Ki_EMS_2 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_2 Ki_red1_EMS_2)))
+(param Ki_red1_EMS_2 (* Ki_EMS_2 @Ki_multiplier_may@))
+(time-event Ki_change_may @Ki_multiplier_may_time@ ((Ki_EMS_2 Ki_red1_EMS_2)))
           
-(param Ki_red1_EMS_3 (* Ki_EMS_3 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_3 Ki_red1_EMS_3)))
+(param Ki_red1_EMS_3 (* Ki_EMS_3 @Ki_multiplier_may@))
+(time-event Ki_change_may @Ki_multiplier_may_time@ ((Ki_EMS_3 Ki_red1_EMS_3)))
          
-(param Ki_red1_EMS_4 (* Ki_EMS_4 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_4 Ki_red1_EMS_4)))
+(param Ki_red1_EMS_4 (* Ki_EMS_4 @Ki_multiplier_may@))
+(time-event Ki_change_may @Ki_multiplier_may_time@ ((Ki_EMS_4 Ki_red1_EMS_4)))
         
-(param Ki_red1_EMS_5 (* Ki_EMS_5 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_5 Ki_red1_EMS_5)))
+(param Ki_red1_EMS_5 (* Ki_EMS_5 @Ki_multiplier_may@))
+(time-event Ki_change_may @Ki_multiplier_may_time@ ((Ki_EMS_5 Ki_red1_EMS_5)))
          
-(param Ki_red1_EMS_6 (* Ki_EMS_6 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_6 Ki_red1_EMS_6)))
+(param Ki_red1_EMS_6 (* Ki_EMS_6 @Ki_multiplier_may@))
+(time-event Ki_change_may @Ki_multiplier_may_time@ ((Ki_EMS_6 Ki_red1_EMS_6)))
         
-(param Ki_red1_EMS_7 (* Ki_EMS_7 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_7 Ki_red1_EMS_7)))
+(param Ki_red1_EMS_7 (* Ki_EMS_7 @Ki_multiplier_may@))
+(time-event Ki_change_may @Ki_multiplier_may_time@ ((Ki_EMS_7 Ki_red1_EMS_7)))
           
-(param Ki_red1_EMS_8 (* Ki_EMS_8 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_8 Ki_red1_EMS_8)))
+(param Ki_red1_EMS_8 (* Ki_EMS_8 @Ki_multiplier_may@))
+(time-event Ki_change_may @Ki_multiplier_may_time@ ((Ki_EMS_8 Ki_red1_EMS_8)))
           
-(param Ki_red1_EMS_9 (* Ki_EMS_9 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_9 Ki_red1_EMS_9)))
+(param Ki_red1_EMS_9 (* Ki_EMS_9 @Ki_multiplier_may@))
+(time-event Ki_change_may @Ki_multiplier_may_time@ ((Ki_EMS_9 Ki_red1_EMS_9)))
           
-(param Ki_red1_EMS_10 (* Ki_EMS_10 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_10 Ki_red1_EMS_10)))
+(param Ki_red1_EMS_10 (* Ki_EMS_10 @Ki_multiplier_may@))
+(time-event Ki_change_may @Ki_multiplier_may_time@ ((Ki_EMS_10 Ki_red1_EMS_10)))
             
-(param Ki_red1_EMS_11 (* Ki_EMS_11 @Ki_multiplier_april@))
-(time-event Ki_change_april @Ki_multiplier_april_time@ ((Ki_EMS_11 Ki_red1_EMS_11)))
+(param Ki_red1_EMS_11 (* Ki_EMS_11 @Ki_multiplier_may@))
+(time-event Ki_change_may @Ki_multiplier_may_time@ ((Ki_EMS_11 Ki_red1_EMS_11)))
+
 
      
 (param d_Sym_EMS_1 @d_Sym_EMS_1@)
