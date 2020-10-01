@@ -32,6 +32,7 @@ library(ggplot2)
 library(data.table)
 library(tidyverse)
 library(cowplot)
+library(zoo)
 
 theme_set(theme_cowplot())
 
@@ -121,6 +122,18 @@ load_ref_dat <- function(i, LLdate = "200928") {
   emresource_ems$date <- as.Date(as.character(emresource_ems$date))
   LL_ems$date <- as.Date(as.character(LL_ems$date))
   
+  
+  ### Add 7 day rolling average to test fitting to raw vs smoothed
+  emresource_ems <- emresource_ems %>%
+    group_by(covid_region) %>%
+    arrange(date) %>%
+    mutate(confirmed_covid_icu_7avrg = round(rollmean(confirmed_covid_icu,7,align='right',fill=0),0),
+           covid_non_icu_7avrg = round(rollmean(covid_non_icu,7,align='right',fill=0),0))
+  
+  LL_ems <- LL_ems %>%
+    group_by(covid_region) %>%
+    arrange(date) %>%
+    mutate(deaths_7avrg =round( rollmean(deaths,7,align='right',fill=0),0))
   
   ref_dat_list <- list(emresource_ems, LL_ems)
   names(ref_dat_list) <- c("emresource_ems", "LL_ems")
@@ -346,17 +359,16 @@ f_run_fitting <- function(sim_ems_emresource, sim_ems_LL, scens) {
     emresource_sub <- sim_ems_emresource[which(sim_ems_emresource$scen_num == scens[j]), ]
     LL_sub <- sim_ems_LL[which(sim_ems_LL$scen_num == scens[j]), ]
     
-    ### EMResource data
-    # Likelihood of simulation generating detected critical
-    nll1 <- -1 * sum(dpois(emresource_sub$confirmed_covid_icu, emresource_sub$crit_det + 1e-10, log = T))
-    
-    # Likelihood of simulations generating admission data
-    nll2 <- -1 * sum(dpois(emresource_sub$covid_non_icu, emresource_sub$hosp_det + 1e-10, log = T))
-    
-    ### Line list  data
-    # Likelihood of simulations creating death data that doesn't come from EMresource.
-    nll3 <- -1 * sum(dpois(LL_sub$deaths, LL_sub$new_detected_deaths + 1e-10, log = T), na.rm = TRUE)
-    
+    if(useSmoothedData==FALSE){
+      nll1 <- -1 * sum(dpois(emresource_sub$confirmed_covid_icu, emresource_sub$crit_det + 1e-10, log = T))
+      nll2 <- -1 * sum(dpois(emresource_sub$covid_non_icu, emresource_sub$hosp_det + 1e-10, log = T))
+      nll3 <- -1 * sum(dpois(LL_sub$deaths, LL_sub$new_detected_deaths + 1e-10, log = T), na.rm = TRUE)
+    }
+    if(useSmoothedData){
+      nll1 <- -1 * sum(dpois(emresource_sub$confirmed_covid_icu_7avrg, emresource_sub$crit_det + 1e-10, log = T))
+      nll2 <- -1 * sum(dpois(emresource_sub$covid_non_icu_7avrg, emresource_sub$hosp_det + 1e-10, log = T), na.rm = TRUE)
+      nll3 <- -1 * sum(dpois(LL_sub$deaths_7avrg, LL_sub$new_detected_deaths + 1e-10, log = T), na.rm = TRUE)
+    }
     
     # Sum all Likelihood, weighting emresource data higher
     nll <- nll1 + nll2 + nll3
