@@ -131,7 +131,7 @@ def combineTrajectories(Nscenarios,trajectories_dir, temp_exp_dir, deleteFiles=F
         if deleteFiles == True: os.remove(os.path.join(git_dir, input_name))
 
     dfc = pd.concat(df_list)
-    dfc.to_csv( os.path.join(temp_exp_dir,"trajectoriesDat.csv"), index=False)
+    dfc.to_csv( os.path.join(temp_exp_dir,"trajectoriesDat.csv"), index=False, date_format='%Y-%m-%d')
 
     nscenarios = sampledf['scen_num'].max()
     nscenarios_processed = len(dfc['scen_num'].unique())
