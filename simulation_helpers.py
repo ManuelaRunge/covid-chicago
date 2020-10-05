@@ -227,7 +227,7 @@ echo end""")
             file.write(f'cd {plotters_dir} \n python locale_age_postprocessing.py "{exp_name}" >> "{sim_output_path}/log/locale_age_postprocessing.txt" \n')
 
 
-def generateSubmissionFile_quest(scen_num, exp_name, experiment_config, trajectories_dir,  temp_exp_dir) :
+def generateSubmissionFile_quest(scen_num, exp_name, experiment_config, trajectories_dir, git_dir, temp_exp_dir,sim_output_path) :
         # Generic shell submission script that should run for all having access to  projects/p30781
         # submit_runSimulations.sh
         exp_name_short = exp_name[-20:]
