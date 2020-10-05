@@ -44,23 +44,26 @@ source("processing_helpers.R")
 ## --------------------------------
 #### Functions
 ## --------------------------------
-load_sim_dat <- function(fittingParam, exp_name, i) {
+load_sim_dat <- function(fittingParam, exp_name, i, fname="trajectoriesDat_trim.csv") {
   
   outcomeParam <- paste0(c("death_det_cumul", "crit_det", "hosp_det", "hosp_det_cumul", "infected_cumul"), paste0("_EMS-", i))
   KeepCols <- c("time", "startdate", "scen_num", "sample_num", fittingParam, outcomeParam)
   
-  df <- fread(file.path(simulation_output, "forFitting", exp_name, "trajectoriesDat.csv"), select = KeepCols) %>%
+  df <- fread(file.path(simulation_output, "forFitting", exp_name, fname), select = KeepCols) %>%
     dplyr::mutate(
       region = i,
-      startdate = as.Date(startdate),
+      startdate = as.Date(as.character(startdate)), #, format = "%m/%d/%Y"
+      #startdate = as.Date(as.character(startdate), format = "%m/%d/%Y"), #, format = "%m/%d/%Y"
       date = startdate + time
     ) %>%
     setNames(gsub(paste0("_EMS-", i), "", names(.))) %>%
-    dplyr::filter(date <= stop_date & date >= start_date)
-
-
-  grpVars <- c(fittingParam, "time")
-
+    dplyr::filter(date <= as.Date(stop_date) & date >= as.Date(start_date))
+  
+  #df$date = df$date - ( df$date - as.Date("2020-01-01"))
+ # df$startdate = as.Date("2020-01-01")
+  
+  grpVars <- c(fittingParam, "time", "startdate")
+  
   df <- df %>%
     dplyr::group_by_at(.vars=grpVars) %>%
     dplyr::summarize(
@@ -101,10 +104,13 @@ load_sim_dat <- function(fittingParam, exp_name, i) {
   
   df$date <- as.Date(as.character(df$date))
   
+#  df <- subset(df, social_multiplier_3 <=0.3)
+  
   return(df)
 }
 
 load_ref_dat <- function(i, LLdate = "200928") {
+  
   emresource_ems <- fread(file.path(data_path, "covid_IDPH/Corona virus reports/emresource_by_region.csv")) %>%
     dplyr::filter(covid_region %in% i) %>%
     dplyr::mutate(date = as.Date(date_of_extract)) %>%
@@ -133,7 +139,9 @@ load_ref_dat <- function(i, LLdate = "200928") {
   LL_ems <- LL_ems %>%
     group_by(covid_region) %>%
     arrange(date) %>%
-    mutate(deaths_7avrg =round( rollmean(deaths,7,align='right',fill=0),0))
+    mutate(deaths_7avrg =round(rollmean(deaths,7,align='right',fill=0),0),
+           admissions_7avrg =round(rollmean(admissions,7,align='right',fill=0),0))
+  
   
   ref_dat_list <- list(emresource_ems, LL_ems)
   names(ref_dat_list) <- c("emresource_ems", "LL_ems")
@@ -344,7 +352,7 @@ f_post_fit_plot <- function(use_values_dat, ems, logscale = TRUE) {
   return(pplot)
 }
 
-f_run_fitting <- function(sim_ems_emresource, sim_ems_LL, scens) {
+f_run_fitting <- function(sim_ems_emresource, sim_ems_LL, scens, useSmoothedData =FALSE) {
   
   # create data.frame to hold likelihood results
   ems_output <- matrix(0, length(scens), length(fittingParam) + 2)
@@ -360,18 +368,39 @@ f_run_fitting <- function(sim_ems_emresource, sim_ems_LL, scens) {
     LL_sub <- sim_ems_LL[which(sim_ems_LL$scen_num == scens[j]), ]
     
     if(useSmoothedData==FALSE){
-      nll1 <- -1 * sum(dpois(emresource_sub$confirmed_covid_icu, emresource_sub$crit_det + 1e-10, log = T))
+      nll1 <- -1 * sum(dpois(emresource_sub$confirmed_covid_icu, emresource_sub$crit_det + 1e-10, log = T), na.rm = TRUE)
       nll2 <- -1 * sum(dpois(emresource_sub$covid_non_icu, emresource_sub$hosp_det + 1e-10, log = T))
       nll3 <- -1 * sum(dpois(LL_sub$deaths, LL_sub$new_detected_deaths + 1e-10, log = T), na.rm = TRUE)
+      
+      if(fitstep == "initial"){
+        ### overwrite nll, as early on no EMR data on confirmed_covid_icu
+        nll2 <- -1 * sum(dpois(LL_sub$admissions, LL_sub$new_detected_hospitalized + 1e-10, log = T), na.rm = TRUE)
+      }
+      if(fitstep == "lockdown"){
+        ### overwrite nll, as early on no EMR data on confirmed_covid_icu
+        nll4 <- -1 * sum(dpois(LL_sub$admissions, LL_sub$new_detected_hospitalized + 1e-10, log = T), na.rm = TRUE)
+      }
     }
+    
     if(useSmoothedData){
-      nll1 <- -1 * sum(dpois(emresource_sub$confirmed_covid_icu_7avrg, emresource_sub$crit_det + 1e-10, log = T))
+      nll1 <- -1 * sum(dpois(emresource_sub$confirmed_covid_icu_7avrg, emresource_sub$crit_det + 1e-10, log = T), na.rm = TRUE)
       nll2 <- -1 * sum(dpois(emresource_sub$covid_non_icu_7avrg, emresource_sub$hosp_det + 1e-10, log = T), na.rm = TRUE)
       nll3 <- -1 * sum(dpois(LL_sub$deaths_7avrg, LL_sub$new_detected_deaths + 1e-10, log = T), na.rm = TRUE)
+      
+      if(fitstep == "initial"){
+        ### overwrite nll, as early on no EMR data on confirmed_covid_icu
+        nll2 <- -1 * sum(dpois(LL_sub$admissions_7avrg, LL_sub$new_detected_hospitalized + 1e-10, log = T), na.rm = TRUE)
+      }
+      if(fitstep == "lockdown"){
+        ### overwrite nll, as early on no EMR data on confirmed_covid_icu
+        nll4 <- -1 * sum(dpois(LL_sub$admissions_7avrg, LL_sub$new_detected_hospitalized + 1e-10, log = T), na.rm = TRUE)
+      }
+      
     }
     
     # Sum all Likelihood, weighting emresource data higher
     nll <- nll1 + nll2 + nll3
+    if(fitstep == "lockdown") nll <- nll1 + nll2 + nll3 + nll4
     
     # Put Likelihood values and corresponding start date and Ki in output dataframe
     for (z in c(1:length(fittingParam))) {
@@ -420,16 +449,25 @@ f_export_sumary_csv <- function(use_values_list, NLL, npairs = 10) {
 ## --------------------------------
 ####  Experiment folder settings
 ## --------------------------------
-exp_name <- "20200924_IL__test_initialFit"
-exp_name <- "20200925_IL__test_reopening"
-exp_name <- "20200925_IL__test_lockdown"
+#exp_name <- "20200924_IL__test_initialFit"
+#exp_name <- "20200925_IL__test_reopening"
+#exp_name <- "20200925_IL__test_lockdown"
 #exp_name <- "20200927_IL__test_fitsm7"
 #exp_name <- "20200928_IL__test2_fitsm7"
-exp_name <- "20200930_IL_mr_fit_initial"
+#exp_name <- "20200930_IL_mr_fit_initial"
+#exp_name <- "20201001_IL_mr_fit_initial"
+#exp_name <- "20201001_IL_mr_fit_initial_nosm1"
+#exp_name <- "20201001_IL_mr_fit_lockdown_quest"
+#exp_name <- "20201002_IL_mr_fitsm4"
+#exp_name <- "20201003_IL_mr_fitsm3"
+#exp_name <- "20201003_IL_mr_fitkistartsm3"
+exp_name <- "20201004_IL_mr_fitkistartsm3"
 
-simdate <- str_split(exp_name, "_")[[1]][1]
+
+
 fitstep <- "initial"#"newparam" # "initial"  # "reopen" #"lockdown"
 
+simdate <- str_split(exp_name, "_")[[1]][1]
 exp_dir <- file.path(simulation_output, "forFitting", exp_name)
 out_dir <- file.path(simulation_output, "forFitting", exp_name, "fitting")
 
@@ -445,30 +483,47 @@ if (!dir.exists(file.path(out_dir, "csv"))) dir.create(file.path(out_dir, "csv")
 ## --------------------------------
 LLdate <- "200928"
 if (fitstep == "initial") {
- # fittingParam <- c("time_infection_import", "Ki") ###  initial
-  fittingParam <- c('Ki', 'social_multiplier_1','socialDistance_time1','time_infection_import')
+  #fittingParam <- c("time_infection_import", "Ki") ###  initial
+  # fittingParam <- c('Ki', 'social_multiplier_1','socialDistance_time1','time_infection_import')
+  fittingParam <- c('Ki_fit', 'social_multiplier_3','time_infection_import')
+   
   start_date <- as.Date("2020-01-01")
-  stop_date <- as.Date("2020-04-01")
+  stop_date <- as.Date("2020-04-28")
 }
 if (fitstep == "reopen") {
   fittingParam <- c(
     "social_multiplier_5", "social_multiplier_6", "social_multiplier_7",
     "socialDistance_time5", "socialDistance_time6", "socialDistance_time7"
-  ) ## reopen all
+  ) 
+  fittingParam <- c( "social_multiplier_5","socialDistance_time5"  )
   
-  start_date <- as.Date("2020-06-01")
-  stop_date <- as.Date("2020-10-01")
+ # 2020-06-07,2020-06-14, 2020-06-21, 2020-06-28
+  start_date <- as.Date("2020-06-07")
+  stop_date <- as.Date("2020-07-07")
 }
 if (fitstep == "lockdown") {
   fittingParam <- c(
-    "social_multiplier_3", 
+    "social_multiplier_5", 
     "social_multiplier_4",
-    "socialDistance_time3", 
+    "socialDistance_time5", 
     "socialDistance_time4"
-  ) ## reopen all
+  ) 
+  
+ fittingParam <- c(
+   "social_multiplier_4", 
+    "socialDistance_time4"
+  ) 
+ fittingParam <- c(
+   "social_multiplier_3", 
+   "socialDistance_time3"
+ ) 
+  
+  #start_date <- as.Date("2020-04-01")
+  #stop_date <- as.Date("2020-6-01")
   
   start_date <- as.Date("2020-03-01")
-  stop_date <- as.Date("2020-5-20")
+  stop_date <- as.Date("2020-4-15")
+  
 }
 if (fitstep == "newparam") {
   fittingParam <- c("socialDistance_time7", "social_multiplier_7") ### reopen
@@ -482,6 +537,8 @@ if (fitstep == "newparam") {
 ## --------------------------------
 #### Pre-fit plots
 ## --------------------------------
+runPreFitPlot=FALSE
+if(runPreFitPlot){
 for (i in c(1:11)) {
   
   print(paste0("Region ", i))
@@ -511,46 +568,51 @@ for (i in c(1:11)) {
     )
   }
 }
-
+}
 
 ## --------------------------------
 ### Fitting and post-fit plots
 ## --------------------------------
 
 ## loop begin over EMS regions
-use_values_list <- list()
-for (i in c(6:11)) {
-  print(paste0("Region ", i))
-
-  sim_ems <- load_sim_dat(fittingParam, exp_name, i)
-
-  str(sim_ems)
-  summary(sim_ems$date)
-  sapply(sim_ems[fittingParam], summary)
-  sapply(sim_ems[fittingParam], unique)
-
-  ### Prepare for merge and merge ref_dat to sim_dat
-  sim_ems_emresource <- merge_sim_and_ref_dat(sim_ems, i, LLdate = LLdate)[[1]]
-  sim_ems_LL <- merge_sim_and_ref_dat(sim_ems, i, LLdate = LLdate)[[2]]
-
-  ## get a list of all scenario numbers run for this EMS
-  scens <- unique(sim_ems_emresource$scen_num)
-
-  use_values <- f_run_fitting(sim_ems_emresource, sim_ems_LL, scens)
-  use_values_list[[i]] <- use_values
-
-  #### Generate plots and save csv's
-  plot_and_save <- T
-  if (plot_and_save) {
-    pplot <- f_post_fit_plot(use_values_dat = use_values, ems = i, logscale = TRUE)
-
-    # Save best paramter combinations
-    fwrite(use_values, file.path(out_dir, "csv", paste0("best_parameter_ranges_ems_", i, ".csv")), quote = FALSE, row.names = FALSE)
+runFitting=TRUE
+if(runFitting){
+  use_values_list <- list()
+  for (i in c(1:11)) {
+    print(paste0("Region ", i))
+    
+    sim_ems <- load_sim_dat(fittingParam, exp_name, i)
+    
+    str(sim_ems)
+    summary(sim_ems$date)
+    sapply(sim_ems[fittingParam], summary)
+    sapply(sim_ems[fittingParam], unique)
+    
+    ### Prepare for merge and merge ref_dat to sim_dat
+    sim_ems_emresource <- merge_sim_and_ref_dat(sim_ems, i, LLdate = LLdate)[[1]]
+    sim_ems_LL <- merge_sim_and_ref_dat(sim_ems, i, LLdate = LLdate)[[2]]
+    
+    ## get a list of all scenario numbers run for this EMS
+    scens <- unique(sim_ems_emresource$scen_num)
+    
+    use_values <- f_run_fitting(sim_ems_emresource, sim_ems_LL, scens, useSmoothedData=FALSE)
+    
+    
+    use_values_list[[i]] <- use_values
+    
+    #### Generate plots and save csv's
+    plot_and_save <- T
+    if (plot_and_save) {
+      pplot <- f_post_fit_plot(use_values_dat = use_values, ems = i, logscale = TRUE)
+      
+      # Save best paramter combinations
+      fwrite(use_values, file.path(out_dir, "csv", paste0("best_parameter_ranges_ems_", i, ".csv")), quote = FALSE, row.names = FALSE)
+    }
+    
+    rm(sim_ems_emresource, sim_ems, scens, use_values)
   }
-
-  rm(sim_ems_emresource, sim_ems, scens, use_values)
+  
 }
-
 
 ## --------------------------------
 ### Export summary csv files with best parameter for all regions
