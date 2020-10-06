@@ -50,7 +50,7 @@ Specify post process        - {'low': 0.32, 'high': 0.32}
         - {'low': 0.41, 'high': 0.41}
         - {'low': 0.48, 'high': 0.48}
         - {'low': 0.43, 'high': 0.43} 
-python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "_testFit_sm7" --post_process "dataComparison"
+python runScenarios.py -rl NUCLUSTER -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "mr_fitsm7_quest" --post_process "dataComparison"
 python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "MR_test_run" --post_process "processForCivis"
 python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "baseline" --post_process "dataComparison" --noSamplePlot
 
