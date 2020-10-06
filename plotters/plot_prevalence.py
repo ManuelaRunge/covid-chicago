@@ -38,11 +38,18 @@ if __name__ == '__main__' :
     ems = ['EMS-%d' % x for x in range(1, 12)] + ['All']
     colnames = ['infected', 'recovered', 'N']
 
+    column_list = ['time','startdate','scen_num', 'infected_All', 'susceptible_All','exposed_All','recovered_All']
+    for ems_region in range(1, 12):
+        column_list.append('infected_EMS-' + str(ems_region))
+        column_list.append('exposed_EMS-' + str(ems_region))
+        column_list.append('recovered_EMS-' + str(ems_region))
+        column_list.append('susceptible_EMS-' + str(ems_region))
+
     #simpath = os.path.join(projectdir, 'NU_civis_outputs', simdate,'trajectories')
     simpath = os.path.join(wdir, 'simulation_output', exp_name)
     #trim_trajectories(simpath, scenario, colnames, ems)
-    df = pd.read_csv(os.path.join(simpath, 'trajectoriesDat.csv'))
-    first_day = datetime.strptime(df['startdate'].unique()[0], '%Y-%m-%d')  # '%Y-%m-%d'
+    df = pd.read_csv(os.path.join(simpath, 'trajectoriesDat.csv'), usecols=column_list)
+    first_day = datetime.strptime(df['startdate'].unique()[0], '%Y-%m-%d')
     df['date'] = df['time'].apply(lambda x: first_day + timedelta(days=int(x)))
     fig = plt.figure(figsize=(16,8))
     fig.subplots_adjust(left=0.05, right=0.97, top=0.95, bottom=0.05)
