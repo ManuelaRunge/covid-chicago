@@ -27,10 +27,10 @@ dat <- left_join(popDat, capacityDat, by = c("geography_name"))
 dat$icu_available <- as.numeric(dat$icu_available)
 dat$pop <- as.numeric(dat$pop)
 dat$popDens <- (dat$pop / 10000)
-dat$icubeds_perPop <- (dat$icu_available / dat$pop) * 10000
-dat$medsurgbeds_perPop <- (dat$medsurg_available / dat$pop) * 10000
+dat$icubeds_per10th <- (dat$icu_available / dat$pop) * 10000
+dat$medsurgbeds_per10th <- (dat$medsurg_available / dat$pop) * 10000
 
-summary(dat$icubeds_perPop)
+summary(dat$icubeds_per10th)
 
 fwrite(dat, file = file.path(outdir, "region_characteristics.csv"), quote = FALSE, row.names = FALSE)
 
@@ -130,7 +130,7 @@ get_popDensity <- function(SAVE = FALSE) {
 }
 
 get_baselineRt <- function() {
-  simdat <- fread(file.path(project_path, "NU_civis_outputs/20200916/csv/nu_20200916.csv"))
+  simdat <- fread(file.path(project_path, "NU_civis_outputs/20200929/csv/nu_20200929.csv"))
 
   initialDate <- as.Date("2020-03-01")
   baselineDate <- Sys.Date()
@@ -140,7 +140,7 @@ get_baselineRt <- function() {
     select(geography_modeled, date, rt_median, rt_lower, rt_upper) %>%
     mutate(
       geography_modeled = gsub("covidregion_", "", geography_modeled),
-      note = paste0("extracted from nu_20200916.csv"),
+      note = paste0("extracted from nu_20200929.csv"),
       rt_type = paste0("initial")
     )
 
@@ -151,7 +151,7 @@ get_baselineRt <- function() {
     select(geography_modeled, date, rt_median, rt_lower, rt_upper, date) %>%
     mutate(
       geography_modeled = gsub("covidregion_", "", geography_modeled),
-      note = paste0("extracted from nu_20200916.csv"),
+      note = paste0("extracted from nu_20200929.csv"),
       rt_type = paste0("lowest ")
     )
 
@@ -160,7 +160,7 @@ get_baselineRt <- function() {
     select(geography_modeled, date, rt_median, rt_lower, rt_upper) %>%
     mutate(
       geography_modeled = gsub("covidregion_", "", geography_modeled),
-      note = paste0("extracted from nu_20200916.csv"),
+      note = paste0("extracted from nu_20200929.csv"),
       rt_type = paste0("baseline ")
     )
 

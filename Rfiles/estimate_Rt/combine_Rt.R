@@ -3,41 +3,37 @@
 ## ============================================================
 
 library(tidyverse)
+library(data.table)
 
-f_loadAndCombine <- function(filedir, filename, identfier ){
 
-  load(file.path(filedir, paste0(identfier[1],filename,".Rdata")))
-  Rt_dat <- Rt_tempdat_All
+f_combineRT <- function(exp_name,  fname = "_estimated_Rt"){
   
-  for (i in  identfier ) {
-    load(file.path(filedir, paste0(i, filename, ".Rdata")))
-    Rt_dat <- rbind(Rt_dat, Rt_tempdat_All)
-    rm(Rt_tempdat_All)
-  }
- return(Rt_dat) 
+    Rt_dir <- file.path(simulation_output, exp_name,  "estimatedRt")
+    RtFiles <- list.files(Rt_dir)[grep(fname,list.files(Rt_dir))]
+    
+    Rt_datList <- list()
+    for (file in  RtFiles ) {
+      load(file.path(filedir, file))
+      Rt_datList[[length(Rt_datList)+1]] <-Rt_tempdat_All
+      rm(Rt_tempdat_All)
+    }
+    
+    Rt_dat <- Rt_datList %>% bind_rows() 
+    colnames(Rt_dat) <-  tolower(gsub("[(R)]","", colnames(Rt_dat)))
+    
+    
+    save(Rt_dat, file = file.path(Rt_dir, paste0("combined",fname, ".Rdata")))
+    fwrite(Rt_dat, file = file.path(Rt_dir, paste0("combined",fname, ".csv")), row.names = FALSE)
+    
 }
-
 
 ## Load directories and custom objects and functions
 Location = "LOCAL"
 if(Location == "NUCLUSTER") setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
 source("load_paths.R")
 
-
+#simulation_output <- file.path(simulation_output, "forFitting")
 exp_names = list.dirs(simulation_output, recursive = FALSE, full.names = FALSE)
-exp_names = exp_names[grep("_7daysdelay_sm6",exp_names)]
+exp_name =  '20201003_IL_mr_fitkistartsm3' # exp_names[1]
 
-for(exp_name in exp_names){
-  
-  print(exp_name)
-  fname = "_estimated_Rt"
-  
-  Rt_dir <- file.path(simulation_output, exp_name,  "estimatedRt")
-  
-  Rt_dat <- f_loadAndCombine(filedir=Rt_dir, filename=fname, identfier=c(1:11))
-  
-  save(Rt_dat, file = file.path(Rt_dir, paste0("combined",fname, ".Rdata")))
-  write.csv(Rt_dat, file = file.path(Rt_dir, paste0("combined",fname, ".csv")), row.names = FALSE)
-  
-  
-}
+f_combineRT(exp_name)
