@@ -36,9 +36,61 @@ library(zoo) ## for 7 day rolling average
 library(cowplot)
 theme_set(theme_cowplot())
 
+
+runInBatchMode <- FALSE
+
+if (runInBatchMode) {
+  cmd_agrs <- commandArgs()
+  length(cmd_agrs)
+  exp_name <- cmd_agrs[length(cmd_agrs) - 3]
+  useSmoothedData <- cmd_agrs[length(cmd_agrs) - 1]
+  Location <- cmd_agrs[length(cmd_agrs) - 2]
+  workingDir <- cmd_agrs[length(cmd_agrs)]
+  
+  if(tolower(useSmoothedData)=="false")useSmoothedData=FALSE
+  if(tolower(useSmoothedData)=="true")useSmoothedData=TRUE
+  
+} else {
+  exp_name <- "20201006_IL_mr_local_fitki8"
+
+  Location <- "Local"
+  workingDir <- getwd()
+  useSmoothedData <- FALSE
+
+}
+
+## --------------------------------
 ### Set working directory to the GitHub repository R files
+## --------------------------------
 source("load_paths.R")
 source("processing_helpers.R")
+setwd(workingDir)
+
+
+## --------------------------------
+### Experiment specifc parameters
+## --------------------------------
+source("load_paths.R")
+exp_name_split <- str_split(exp_name, "_")[[1]]
+simdate <- exp_name_split[1]
+monthnr <- gsub("fitki","",exp_name_split[length(exp_name_split)])
+
+fittingParam <- c(paste0("socialDistance_time_",monthnr), paste0("social_multiplier_",monthnr))
+start_date <- as.Date(paste0("2020-",monthnr,"-01"))
+stop_date <- start_date + 30 
+
+smooth_n_days <- 7
+
+
+exp_dir <- file.path(simulation_output, exp_name)
+out_dir <- file.path(simulation_output, exp_name, "fitting")
+
+if (!dir.exists(out_dir)) dir.create(out_dir)
+if (!dir.exists(file.path(out_dir, "pre_fit"))) dir.create(file.path(out_dir, "pre_fit"))
+if (!dir.exists(file.path(out_dir, "post_fit"))) dir.create(file.path(out_dir, "post_fit"))
+if (!dir.exists(file.path(out_dir, "csv"))) dir.create(file.path(out_dir, "csv"))
+
+
 
 ## --------------------------------
 #### Functions
@@ -492,35 +544,6 @@ prefit_plots <- function(start_date, stop_date) {
 }
 
 ## ----------------------------------------------
-
-
-## --------------------------------
-#### Define experiment and run functions
-## --------------------------------
-exp_name <- "20200928_IL__test2_fitsm7"
-
-fitstep <- "current" # "current" # "initial"  # "reopen" #"lockdown"
-
-simdate <- str_split(exp_name, "_")[[1]][1]
-exp_dir <- file.path(simulation_output, exp_name)
-out_dir <- file.path(simulation_output, exp_name, "fitting")
-
-if (!dir.exists(out_dir)) dir.create(out_dir)
-if (!dir.exists(file.path(out_dir, "pre_fit"))) dir.create(file.path(out_dir, "pre_fit"))
-if (!dir.exists(file.path(out_dir, "post_fit"))) dir.create(file.path(out_dir, "post_fit"))
-if (!dir.exists(file.path(out_dir, "csv"))) dir.create(file.path(out_dir, "csv"))
-
-## --------------------------------
-#### Settings
-## --------------------------------
-fittingParam <- c("socialDistance_time7", "social_multiplier_7")
-
-start_date <- as.Date("2020-08-20")
-stop_date <- as.Date("2020-10-05")
-
-
-useSmoothedData <- FALSE
-smooth_n_days <- 7
 
 
 ## --------------------------------
