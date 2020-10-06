@@ -1,4 +1,12 @@
 
+
+1-2-3: {'dates': [2020-03-13,2020-03-17, 2020-03-21]}
+4: {'dates': [2020-04-15,2020-04-21, 2020-05-01, 2020-05-15]}
+4b:{'dates': [2020-05-20,2020-05-30, 2020-06-01]}
+5: {'dates': [2020-06-07,2020-06-14, 2020-06-21, 2020-06-28]}
+6: {'dates': [2020-07-07,2020-07-14, 2020-07-21, 2020-07-28]}	
+7: {'dates': [2020-08-07,2020-08-14, 2020-08-21, 2020-08-28]}
+
 ## Some submission line examples for running simulations using the CMS-Python framework
 
 - specify running_location either Local or NUCLUSTER
@@ -11,11 +19,39 @@ Long form
 python runScenarios.py --running_location Local --region IL --experiment_config spatial_EMS_experiment.yaml --emodl_template extendedmodel_EMS.emodl --cfg_template model_B.cfg --name_suffix "EMS_scen3"						 
 
 Abbreviated 
-python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "scen3"						 
+python runScenarios.py -rl NUCLUSTER -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "sm7to5_counterfactual2"		  --load_sample_parameters  --sample_csv  "sampled_parameters.csv"				 
 
-Specify post process
+python runScenarios.py -rl NUCLUSTER -r IL -mc extendedcobey_fit_kistartsm3.yaml -c spatial_EMS_experiment_fit_kistartsm3.yaml -e extendedmodel_EMS_fit_kistartsm3.emodl -n "mr_fitkistartsm3"		
+  	
+
+python runScenarios.py -rl Local -r IL -mc extendedcobey_fit_fitKistart.yaml -c spatial_EMS_experiment_fit_kistartsm3.yaml -e extendedmodel_EMS_counterfactual_fitKistart.emodl -n "mr_fitkistartsm3"		
+  				 
+
+python runScenarios.py -rl NUCLUSTER -r IL -mc extendedcobey_fitsm3.yaml -c spatial_EMS_experiment_fitsm3.yaml -e extendedmodel_EMS_fitsm3.emodl -n "mr_fitsm3"		  				 
+
+python runScenarios.py -rl NUCLUSTER -r IL -mc extendedcobey_fitsm4.yaml -c spatial_EMS_experiment_fitsm4.yaml -e extendedmodel_EMS_fitsm4.emodl -n "mr_fitsm4"		  				 
+python runScenarios.py -rl NUCLUSTER -r IL -mc extendedcobey_fitsm5.yaml -c spatial_EMS_experiment_fitsm5.yaml -e extendedmodel_EMS_fitsm5.emodl -n "mr_fitsm5"		  				 
+python runScenarios.py -rl NUCLUSTER -r IL -mc extendedcobey_fitsm6.yaml -c spatial_EMS_experiment_fitsm6.yaml -e extendedmodel_EMS_fitsm6.emodl -n "mr_fitsm6"		  				 
+python runScenarios.py -rl NUCLUSTER -r IL -mc extendedcobey_fitsm7.yaml -c spatial_EMS_experiment_fitsm7.yaml -e extendedmodel_EMS_fitsm7.emodl -n "mr_fitsm7"		  				 
+
+## Resim
+python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "mr_test_resim_kistartsm3"
+
+
+
+Specify post process        - {'low': 0.32, 'high': 0.32}
+        - {'low': 0.37, 'high': 0.37}
+        - {'low': 0.40, 'high': 0.40}
+        - {'low': 0.42, 'high': 0.42}
+        - {'low': 0.45, 'high': 0.45}
+        - {'low': 0.32, 'high': 0.32}
+        - {'low': 0.40, 'high': 0.40}
+        - {'low': 0.46, 'high': 0.46}
+        - {'low': 0.41, 'high': 0.41}
+        - {'low': 0.48, 'high': 0.48}
+        - {'low': 0.43, 'high': 0.43} 
 python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "_testFit_sm7" --post_process "dataComparison"
-python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "baseline" --post_process "processForCivis"
+python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "MR_test_run" --post_process "processForCivis"
 python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "baseline" --post_process "dataComparison" --noSamplePlot
 
 
