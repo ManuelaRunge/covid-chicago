@@ -199,7 +199,9 @@ def compare_ems(exp_name, ems=0, source='EMR') :
 
     df['critical_with_suspected'] = df['critical']
     ref_df_emr = ref_df
-    ref_df = pd.read_csv(os.path.join(datapath, 'covid_IDPH', 'Cleaned Data', '200915_jg_aggregated_covidregion.csv'))
+
+    LL_file_date = get_latest_LLfiledate(file_path=os.path.join(datapath, 'covid_IDPH', 'Cleaned Data'))
+    ref_df = pd.read_csv(os.path.join(datapath, 'covid_IDPH', 'Cleaned Data', f'{LL_file_date}_jg_aggregated_covidregion.csv'))
     if ems > 0:
         ref_df = ref_df[ref_df['covid_region'] == ems]
     else:
@@ -225,11 +227,11 @@ def compare_ems(exp_name, ems=0, source='EMR') :
 
 if __name__ == '__main__' :
 
-    args = parse_args()  
+    args = parse_args()
     #Location = 'Local'
     datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location = args.Location)
 
-    stem = args.stem   
+    stem = args.stem
     exp_names = [x for x in os.listdir(os.path.join(wdir, 'simulation_output')) if stem in x]
 
     for exp_name in exp_names :

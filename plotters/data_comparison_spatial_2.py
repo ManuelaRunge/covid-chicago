@@ -76,7 +76,9 @@ def load_ref_df(ems_nr):
     ref_df = ref_df.groupby('date_of_extract')[data_channel_names_emr].agg(np.sum).reset_index()
     ref_df['date'] = pd.to_datetime(ref_df['date_of_extract'])
     ref_df_emr = ref_df
-    ref_df_ll = pd.read_csv(os.path.join(datapath, 'covid_IDPH', 'Cleaned Data', '200921_jg_aggregated_covidregion.csv'))
+
+    LL_file_date = get_latest_LLfiledate(file_path=os.path.join(datapath, 'covid_IDPH', 'Cleaned Data'))
+    ref_df_ll = pd.read_csv(os.path.join(datapath, 'covid_IDPH', 'Cleaned Data', f'{LL_file_date}_jg_aggregated_covidregion.csv'))
 
     if ems_nr > 0:
         ref_df_ll = ref_df_ll[ref_df_ll['covid_region'] == ems_nr]

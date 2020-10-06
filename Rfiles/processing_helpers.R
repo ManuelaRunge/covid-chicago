@@ -15,15 +15,22 @@ f_loadData <- function(data_path, simdate ='200928') {
       region = covid_region,
     ) %>%
     f_addRestoreRegion() %>%
-    mutate(restore_region = tolower(restore_region)) %>%
-    filter(!is.na(restore_region)) %>%
+    dplyr::mutate(restore_region = tolower(restore_region)) %>%
+    dplyr::filter(!is.na(restore_region)) %>%
     dplyr::select(
       Date, restore_region, region, suspected_and_confirmed_covid_icu,
       confirmed_covid_deaths_prev_24h, confirmed_covid_icu, covid_non_icu
     )
 
+  LLdir <- file.path(data_path, "covid_IDPH", "Cleaned Data")
+  if (is.null(LL_file_date)) {
+    LLfiles <- list.files(LLdir)[grep("aggregated_covidregion", list.files(LLdir))]
+    LL_file_dates <- as.numeric(gsub("_jg_aggregated_covidregion.csv", "", LLfiles))
+    LL_file_date <- max(LL_file_dates)
+  }
 
-  ref_df <- read.csv(file.path(data_path, "covid_IDPH/Cleaned Data", paste0(simdate, "_jg_aggregated_covidregion.csv")))
+
+  ref_df <- read.csv(file.path(LLdir, paste0(LL_file_date, "_jg_aggregated_covidregion.csv")))
 
   ref_df <- ref_df %>%
     dplyr::rename(
