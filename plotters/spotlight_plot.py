@@ -59,7 +59,7 @@ def load_sim_data(exp_name, ems_nr, input_wdir=None, fname='trajectoriesDat.csv'
     return df
 
 
-def plot_sim_and_ref(df, ems_nr, ref_df, channels, data_channel_names, titles, first_day=date(2020, 2, 22),
+def plot_sim_and_ref(df, ems_nr, ref_df, channels, data_channel_names, titles, plot_name, first_day,
                      ymax=1000,  logscale=False):
     fig = plt.figure(figsize=(13, 4))
     palette = sns.color_palette('husl', 8)
@@ -93,11 +93,11 @@ def plot_sim_and_ref(df, ems_nr, ref_df, channels, data_channel_names, titles, f
     fig.suptitle(f'Covidregion {ems_nr}',y=1, fontsize=14)
     fig.tight_layout()
     fig.subplots_adjust(top=0.88)
-    plot_name = 'forward_projection_' + str(ems_nr)
+    plot_name_full = plot_name + str(ems_nr)
     if logscale == False:
-        plot_name = plot_name + "_nolog"
-    plt.savefig(os.path.join(wdir, 'simulation_output', exp_name, plot_name + '.png'))
-    plt.savefig(os.path.join(wdir, 'simulation_output', exp_name, plot_name + '.pdf'), format='PDF')
+        plot_name_full = plot_name_full + "_nolog"
+    plt.savefig(os.path.join(wdir, 'simulation_output', exp_name, plot_name_full + '.png'))
+    plt.savefig(os.path.join(wdir, 'simulation_output', exp_name, plot_name_full + '.pdf'), format='PDF')
 
 
 def load_ref_df(ems_nr):
@@ -127,7 +127,7 @@ def load_ref_df(ems_nr):
 
     return ref_df
 
-def compare_ems(exp_name, fname, ems_nr=0):
+def compare_ems(exp_name, fname, plot_name, ems_nr=0):
 
     column_list = ['time', 'startdate', 'scen_num', 'sample_num', 'run_num']
 
@@ -151,7 +151,7 @@ def compare_ems(exp_name, fname, ems_nr=0):
     data_channel_names = ['confirmed_covid_icu', 'covid_non_icu', 'deaths']
     titles = ['ICU census\n(EMR)', 'non-ICU inpatient census\n(EMR)','daily deaths\n(LL)']
 
-    plot_sim_and_ref(df, ems_nr, ref_df, channels=channels, data_channel_names=data_channel_names, titles=titles,
+    plot_sim_and_ref(df, ems_nr, ref_df, channels=channels, data_channel_names=data_channel_names, titles=titles,plot_name=plot_name,
                      ymax=10000,first_day=first_day)
 
     # return ref_df_emr, ref_df_ll
@@ -176,4 +176,4 @@ if __name__ == '__main__':
     for exp_name in exp_names:
         for ems_nr in range(1,12):
             print("Start processing region " + str(ems_nr))
-            compare_ems(exp_name, fname=trajectoriesName, ems_nr=int(ems_nr))
+            compare_ems(exp_name, fname=trajectoriesName, ems_nr=int(ems_nr), plot_name='forward_projection')
