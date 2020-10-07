@@ -76,7 +76,6 @@ testrun/runSimulations_test_temp.bat
 Rfiles/hospital_model_sampleTrajectories.Rhistory
 experiment_configs/exp_specific_archive/
 experiment_configs/input_csv/del/
-experiment_configs/snippets/
 Rfiles/Rplots.pdf
 Rfiles/Rplot_EMS1.png
 Rfiles/nu_il_fromdata_estimated_Rt.csv
