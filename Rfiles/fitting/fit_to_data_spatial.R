@@ -37,21 +37,21 @@ library(cowplot)
 theme_set(theme_cowplot())
 
 
-runInBatchMode <- FALSE
+runInBatchMode <- TRUE
 
 if (runInBatchMode) {
   cmd_agrs <- commandArgs()
   length(cmd_agrs)
   exp_name <- cmd_agrs[length(cmd_agrs) - 3]
-  useSmoothedData <- cmd_agrs[length(cmd_agrs) - 1]
-  Location <- cmd_agrs[length(cmd_agrs) - 2]
+  useSmoothedData <- cmd_agrs[length(cmd_agrs) - 2]
+  Location <- cmd_agrs[length(cmd_agrs) - 1]
   workingDir <- cmd_agrs[length(cmd_agrs)]
   
   if(tolower(useSmoothedData)=="false")useSmoothedData=FALSE
   if(tolower(useSmoothedData)=="true")useSmoothedData=TRUE
   
 } else {
-  exp_name <- "20201006_IL_mr_local_fitki8"
+  exp_name <- "20201006_IL_mr_local_fitki8"  
 
   Location <- "Local"
   workingDir <- getwd()
@@ -59,6 +59,10 @@ if (runInBatchMode) {
 
 }
 
+## Print out for log
+print(exp_name)
+print(Location)
+print(useSmoothedData)
 ## --------------------------------
 ### Set working directory to the GitHub repository R files
 ## --------------------------------
@@ -70,12 +74,11 @@ setwd(workingDir)
 ## --------------------------------
 ### Experiment specifc parameters
 ## --------------------------------
-source("load_paths.R")
 exp_name_split <- str_split(exp_name, "_")[[1]]
 simdate <- exp_name_split[1]
 monthnr <- gsub("fitki","",exp_name_split[length(exp_name_split)])
 
-fittingParam <- c(paste0("socialDistance_time_",monthnr), paste0("social_multiplier_",monthnr))
+fittingParam <- c(paste0("ki_multiplier_time_",monthnr), paste0("ki_multiplier_",monthnr))
 start_date <- as.Date(paste0("2020-",monthnr,"-01"))
 stop_date <- start_date + 30 
 

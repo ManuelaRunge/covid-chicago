@@ -209,7 +209,7 @@ echo end""")
             file.write(f'cd {plotters_dir} \n python trim_trajectoriesDat.py "{exp_name}" "{120}" "{15}" \n')
 
             file = open(os.path.join(temp_exp_dir, 'runFittingProcess.bat'), 'w')
-            file.write(f'cd {os.path.join(rfiles_dir)} \n R --vanilla -f "fitting/fit_to_data_spatial.R" "{exp_name}" "FALSE" "Local" "{rfiles_dir}" >> "{sim_output_path}/log/runProcessForCivis_3.txt" \n')
+            file.write(f'cd {os.path.join(rfiles_dir)} \n R --vanilla -f "fitting/fit_to_data_spatial.R" "{exp_name}" "FALSE" "Local" "{rfiles_dir}" >> "{sim_output_path}/log/runFittingProcess.txt" \n')
 
             ## runProcessForCivis
             file = open(os.path.join(temp_exp_dir, 'runProcessForCivis_1.bat'), 'w')
@@ -223,6 +223,11 @@ echo end""")
 
             file = open(os.path.join(temp_exp_dir, 'runProcessForCivis_4.bat'), 'w')
             file.write(f'cd {plotters_dir} \n python "NUcivis_filecopy.py" "{exp_name}" >> "{sim_output_path}/log/runProcessForCivis_4.txt" \n')
+
+            # R Iteration comparison plot 
+            file = open(os.path.join(temp_exp_dir, 'runProcessForCivis_5_optional.bat'), 'w')
+            file.write(f'cd {os.path.join(rfiles_dir)} \n R --vanilla -f "simulation_plotter/compare_simulation_iterations.R" "Local" "{rfiles_dir}" >> "{sim_output_path}/log/runProcessForCivis_5_optional.txt" \n')
+
 
         if experiment_config != "EMSspecific_sample_parameters.yaml" :
             ## locale_age_postprocessing

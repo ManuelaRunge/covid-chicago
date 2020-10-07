@@ -19,7 +19,7 @@ today = datetime.today()
 #datetoday = date(2020, 10,1) # date(today.year, today.month, today.day)
 
 first_plot_day = pd.to_datetime(date(2020, 3, 1))
-last_plot_day = pd.to_datetime(date(2020, 10,1))
+last_plot_day = pd.to_datetime(date(2020, 5,15))
 
 def parse_args():
     description = "Simulation run for modeling Covid-19"
@@ -126,7 +126,10 @@ def plot_sim_and_ref(exp_names, ems_nr,
                 column_list.append(chn + "_EMS-" + str(ems_nr))
 
             df = load_sim_data(exp_name, ems_nr, fname=fname, column_list=column_list)
-            first_day = datetime.strptime(df['startdate'].unique()[0], '%Y-%m-%d')
+            if exp_name== '20200929_IL_mr_baseline' :   #  exp_names =['20200922_IL_RR_baseline_0','20200929_IL_mr_baseline']
+                first_day = datetime.strptime(df['startdate'].unique()[0],  '%m/%d/%Y' )  # '%Y-%m-%d'
+            if exp_name ==  '20200922_IL_RR_baseline_0':
+                first_day = datetime.strptime(df['startdate'].unique()[0],  '%Y-%m-%d' )  # '%Y-%m-%d'
             df['critical_with_suspected'] = df['critical']
             df['date'] = df['time'].apply(lambda x: first_day + timedelta(days=int(x)))
             df = df[(df['date'] >= first_plot_day) & (df['date'] <= last_plot_day)]
@@ -167,10 +170,10 @@ def plot_sim_and_ref(exp_names, ems_nr,
 
 if __name__ == '__main__':
 
-    args = parse_args()
-    exp_names = args.exp_names  # ['20200929_IL_resim_test2v5_sm7','20200929_IL_resim_sm7_refit']
-    Location = args.Location  # 'Local'
-    trajectoriesName = args.trajectoriesName #"trajectoriesDat.csv"
+   # args = parse_args()
+    exp_names =["20200929_IL_mr_baseline","20201003_IL_mr_resimsm4"]
+    Location =  'Local'
+    trajectoriesName ="trajectoriesDat.csv"
 
     datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location=Location)
 
