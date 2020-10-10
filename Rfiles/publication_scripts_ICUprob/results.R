@@ -36,14 +36,33 @@ exp_dir <- file.path(simulation_output, exp_name)
 simdat <- f_load_single_exp(exp_dir)
 picu <- f_icu_timeline(dat=simdat, selected_channel="crit_det")
 
+
 ####--------------------------------------
 ####  Counterfactual - varying reopening
 ####--------------------------------------
 exp_name ="20200919_IL_gradual_reopening_sm7"
-exp_dir <- file.path(simulation_output, exp_name)
+exp_dir <- file.path(simulation_output, 'overflow_simulations',exp_name)
 simdat <- f_load_single_exp(exp_dir=exp_dir, mainVars= c("date", "scen_num", "sample_num", "reopening_multiplier_4"))
-#picu <- f_icu_timeline(dat=simdat, selected_channel="crit_det")
+unique(simdat$geography_name)
+unique(simdat$reopening_multiplier_4)
+picu <- f_icu_timeline(dat=simdat, subregions=c("1"), selected_channel="crit_det", facetVar="reopening_multiplier_4")
 
+### Timeline plot 
+for(i in c("illinois", c(1:11))){
+  if(!dir.exists(file.path(outdir,"gradual_reopening")))dir.create(file.path(outdir,"gradual_reopening"))
+  picu <- f_icu_timeline(dat=simdat, subregions=c(i), selected_channel="crit_det", facetVar="reopening_multiplier_4")
+  ggsave(paste0("timeline_",selected_channel,"_region_",i,".png"),
+         plot = picu, path = file.path(outdir,"gradual_reopening"), width = 14, height = 8, device = "png"
+  )
+}
+
+##### Peak in ICU
+ICUcumul_out <- f_describe_ICU_cumul()
+
+
+##### More ICU beds needed at peak
+ICUpeak_out <- f_describe_ICU_peak()
+ICUpeak_out[[2]]  %>% as.data.frame()
 
 
 ####--------------------------------------
