@@ -1,0 +1,246 @@
+experiment_setup_parameters:
+  'number_of_samples': 10000
+  'number_of_runs': 1
+  'duration': 400
+  'monitoring_samples': 400 # needs to be smaller than duration
+  'random_seed': 751
+  'initialAs': 10
+fixed_parameters_region_specific:
+  populations:
+    'IL': 12830632
+  startdate:
+    'IL': 2020-02-01 
+fixed_parameters_global:
+sampled_parameters:
+  'Ki_initial':
+    np.random: uniform
+    function_kwargs: {'low': 0, 'high':1.1}
+  'ki_3':
+    np.random: uniform
+    function_kwargs: {'low': 0, 'high':1.1}
+  'ki_4':
+    np.random: uniform
+    function_kwargs: {'low': 0, 'high':1.1}
+  'ki_5':                      
+    np.random: uniform
+    function_kwargs: {'low': 0, 'high':1.1}
+  'ki_6':                      
+    np.random: uniform
+    function_kwargs: {'low': 0, 'high':1.1}
+  'ki_7':                      
+    np.random: uniform
+    function_kwargs: {'low': 0, 'high':1.1}
+  'ki_8':                      
+    np.random: uniform
+    function_kwargs: {'low': 0, 'high':1.1}
+  'ki_9':                      
+    np.random: uniform
+    function_kwargs: {'low': 0, 'high':1.1}
+  'ki_10':                      
+    np.random: uniform
+    function_kwargs: {'low': 0, 'high':1.1}
+  'ki_11':                      
+    np.random: uniform
+    function_kwargs: {'low': 0, 'high':1.1}
+  'ki_12':                      
+    np.random: uniform
+    function_kwargs: {'low': 0, 'high':1.1}
+### time
+  'time_infection_import':
+    np.random: uniform
+    function_kwargs: {'low': 1, 'high':30}
+  'ki_time_3':
+    np.random: uniform
+    function_kwargs: {'low': 30, 'high':60}
+  'ki_time_4':
+    np.random: uniform
+    function_kwargs: {'low': 61, 'high':90}
+  'ki_time_5':
+    np.random: uniform
+    function_kwargs: {'low': 91, 'high':121}
+  'ki_time_6':
+    np.random: uniform
+    function_kwargs: {'low':122, 'high':151}  
+  'ki_time_7':
+    np.random: uniform
+    function_kwargs: {'low': 152, 'high': 182}  
+  'ki_time_8':
+    np.random: uniform
+    function_kwargs: {'low': 183, 'high':213}    
+  'ki_time_9':
+    np.random: uniform
+    function_kwargs: {'low': 214, 'high':243}    
+  'ki_time_10':
+    np.random: uniform
+    function_kwargs: {'low': 244, 'high':274}    
+  'ki_time_11':
+    np.random: uniform
+    function_kwargs: {'low': 275, 'high':304}    
+  'ki_time_12':
+    np.random: uniform
+    function_kwargs: {'low': 305, 'high':335} 
+### model parameter   
+  'time_to_infectious':
+    np.random: uniform
+    function_kwargs: {'low': 3.96, 'high':3.96}
+  'time_to_symptoms':
+    np.random: uniform
+    function_kwargs: {'low': 2.94, 'high': 2.94}
+  'time_to_hospitalization':
+    np.random: uniform
+    function_kwargs: {'low':4.52, 'high':4.52}
+  'time_to_critical':
+    np.random: uniform
+    function_kwargs: {'low':5.06, 'high':5.06}
+  'time_to_death':
+    np.random: uniform
+    function_kwargs: {'low':4.96, 'high':4.96}
+  ### DELAY BETWEEN ONSET OF SYMPTOMS AND BEING TESTED 
+  ### Parameter values are substracted from the time values above and need to be >=1
+  'time_to_detection':
+    np.random: uniform
+    function_kwargs: {'low':2.0, 'high':2.0}
+  ### Optionally use separate time to detection (use matching emodl))
+  'time_to_detection_As':
+    np.random: uniform
+    function_kwargs: {'low':3.54, 'high':3.54}
+  'time_to_detection_Sym':
+    np.random: uniform
+    function_kwargs: {'low':7.0, 'high':7.0}
+    #function_kwargs: {'low':2.0, 'high':5.0}
+  'time_to_detection_Sys':
+    np.random: uniform
+    function_kwargs: {'low':2.0, 'high':2.0}
+  ### RECOVERY TIMES 
+  'recovery_time_asymp':
+    np.random: uniform
+    function_kwargs: {'low':8.56, 'high':8.56}
+  'recovery_time_mild':
+    np.random: uniform
+    function_kwargs: {'low':9, 'high':9}
+    #function_kwargs: {'low':7, 'high':10}
+  'recovery_time_hosp':
+    np.random: uniform
+    function_kwargs: {'low':5.04, 'high':5.04}
+  'recovery_time_crit':
+    np.random: uniform
+    function_kwargs: {'low':8.96, 'high':8.96}
+  'fraction_symptomatic':
+    np.random: uniform
+    function_kwargs: {'low':0.60, 'high':0.60}
+  'fraction_severe':
+    np.random: uniform
+    function_kwargs: {'low':0.08, 'high':0.08}
+  'fraction_critical':
+    np.random: uniform
+    function_kwargs: {'low':0.27, 'high':0.27}
+  'cfr': 
+    np.random: uniform
+    function_kwargs: {'low':0.02, 'high':0.02}
+  'reduced_inf_of_det_cases':
+    np.random: uniform
+    function_kwargs: {'low':0.15, 'high':0.15}
+  'd_Sys':
+    np.random: uniform
+    function_kwargs: {'low':0.01, 'high':0.01} 
+  'd_As':
+    np.random: uniform
+    function_kwargs: {'low':0, 'high':0}
+  'd_P':
+    np.random: uniform
+    function_kwargs: {'low':0, 'high':0}
+  'd_Sys_incr1':
+    np.random: uniform
+    function_kwargs: {'low':0.06, 'high':0.06}
+  'd_Sys_incr2':
+    np.random: uniform
+    function_kwargs: {'low':0.14, 'high':0.14}
+  'd_Sys_incr3':
+    np.random: uniform
+    function_kwargs: {'low':0.26, 'high':0.26}
+  'd_Sys_incr4':
+    np.random: uniform
+    function_kwargs: {'low':0.39, 'high':0.39}
+  'd_Sys_incr5':
+    np.random: uniform
+    function_kwargs: {'low':0.53, 'high':0.53}
+  'd_Sys_incr6':
+    np.random: uniform
+    function_kwargs: {'low':0.70, 'high':0.70}
+  'd_Sys_incr7':
+    np.random: uniform
+    function_kwargs: {'low':0.90, 'high':0.90}
+  'fraction_critical_incr1':
+    np.random: uniform
+    function_kwargs: {'low':0.18, 'high':0.18}
+  'fraction_critical_incr2':
+    np.random: uniform
+    function_kwargs: {'low':0.09, 'high':0.09}
+  'fraction_critical_incr3':
+    np.random: uniform
+    function_kwargs: {'low':0.07, 'high':0.07}
+intervention_parameters:
+  ### TIME-VARYING PARAMETER - EFFECT SIZE
+  ### Reset Ki to defined proporions of it's initial value  
+  ### (only used if corresponding emodl is defined)                                                          
+  'dummy':
+    np.random: uniform
+    # Add 'size' in function_kwargs to have multiple values instead of just one
+    function_kwargs: {'low':0.10, 'high':0.10}
+time_parameters:
+  'detection_time_1':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-03-07}
+  'detection_time_2':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-03-14}
+  'detection_time_3':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-03-21}
+  'detection_time_4':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-03-28}
+  'detection_time_5':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-04-04}
+  'detection_time_6':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-04-18}
+  'detection_time_7':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-06-01}
+  'crit_time_1':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-04-01} 
+  'crit_time_2':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-05-01}
+  'crit_time_3':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-06-01}
+  'd_Sym_change_time_1':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-03-15}
+  'd_Sym_change_time_2':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-04-15}
+  'd_Sym_change_time_3':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-05-01}
+  'd_Sym_change_time_4':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-06-01}
+  'd_Sym_change_time_5':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-07-01}
+  'cfr_time_1':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-06-01}
+  'cfr_time_2':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-07-01}
+fitted_parameters:
+  Kis:
+    'IL':
+      np: linspace
+      function_kwargs: {'start': 6.0e-8, 'stop': 9.0e-8, 'num': 1}
