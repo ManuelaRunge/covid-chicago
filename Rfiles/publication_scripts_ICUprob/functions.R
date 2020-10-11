@@ -36,9 +36,72 @@ f_region_characteristics <- function(SAVE = FALSE) {
 #### General helper functions
 #### --------------------------------------
 
+f_remove_legend <- function(p){
+  p= p+theme(legend.position = "none")
+  return(p)
+}
+
+f_save_plot <- function(pplot, plot_name,plot_dir,width = 14, height = 8){
+  
+  ggsave(paste0(plot_name,".png"), plot = pplot, path =plot_dir, width =width, height = height, device = "png" )
+  ggsave(paste0(plot_name,".pdf"), plot = pplot, path =plot_dir, width = width, height = height, device = "pdf" )
+  
+}
+  
+
+
+load_sim_data <- function(exp_dir) {
+  
+    trajectoriesDat <- fread(file = file.path(exp_dir, "trajectoriesDat_trim.csv"))
+
+    outcomeVars <- c("All", paste0("EMS-", c(1:11)))
+    outcomeVars <- paste0("crit_det_", outcomeVars)
+    outVars <- c("date", "scen_num", "sample_num", "capacity_multiplier", outcomeVars)
+    
+    simdat <- trajectoriesDat %>%
+      dplyr::mutate(date = as.Date(startdate) + time) %>%
+      dplyr::select(outVars) %>%
+      pivot_longer(cols = -c(date, scen_num, sample_num, capacity_multiplier)) %>%
+      separate(name, into = c("channel", "det", "geography_name"), sep = "_") %>%
+      mutate(
+        exp_name = exp_name,
+        geography_name = gsub("EMS-", "", geography_name),
+        geography_name = gsub("All", "illinois", geography_name),
+        exp_label = gsub("20200919_IL_regreopen", "", exp_name)
+      ) %>%
+      separate(exp_label, into = c("reopen", "delay", "rollback"), sep = "_")
+    
+  simdat$rollback <- factor(simdat$rollback,
+                            levels = c("sm7", "sm4"),
+                            labels = c("sm7", "sm4")
+  )
+  
+  simdat$reopen <- factor(simdat$reopen,
+                          levels = rev(c("100perc", "50perc")),
+                          labels = rev(c("100perc", "50perc"))
+  )
+  
+  simdat$delay <- factor(simdat$delay,
+                         levels = rev(c("0daysdelay", "3daysdelay", "7daysdelay")),
+                         labels = rev(c("none", "3 days", "7 days"))
+  )
+  
+  
+
+  simdat$region <- factor(simdat$geography_name,
+                          levels = c("illinois", c(1:11)),
+                          labels = c("illinois", c(1:11))
+  )
+  
+  
+  return(simdat)
+}
+  
 ## Load simulation data
 f_load_single_exp <- function(exp_dir, mainVars = NULL, summarize = TRUE, maxDate = as.Date("2020-12-31")) {
+  
   if (!(file.exists(file.path(exp_dir, "trajectoriesDat_sub_long.csv")))) {
+    
     fname <- "trajectoriesDat_trim.csv"
     if (!(file.exists(file.path(exp_dir, fname)))) fname <- "trajectoriesDat.csv"
     
@@ -57,21 +120,20 @@ f_load_single_exp <- function(exp_dir, mainVars = NULL, summarize = TRUE, maxDat
     if (is.null(mainVars)) mainVars <- c("date", "scen_num", "sample_num", "capacity_multiplier")
     outVars <- c(mainVars, outcomeVars)
     
-    
+    tic()
     dat <- dat %>%
       dplyr::mutate(date = as.Date(startdate) + time) %>%
       dplyr::select(outVars) %>%
-      pivot_longer(cols = -c(mainVars)) %>%
-      separate(name, into = c("channel", "geography_name"), sep = "_EMS-") %>%
-      dplyr::mutate(
-        exp_name = exp_name
-      ) %>%
+      pivot_longer(cols = -c(mainVars)) %>%   ##  4.8 sec elapsed
+      separate(name, into = c("channel", "geography_name"), sep = "_EMS-")  %>%  ### 27.72 sec
+      dplyr::mutate(exp_name = exp_name) %>%
       left_join(popDat, by = "geography_name")
-    
+    toc()
     
     grpVars <- c("date", "geography_name", "channel", "exp_name", mainVars[length(mainVars)])
     
     if (summarize) {
+      tic()
       dat <- dat %>%
         dplyr::group_by_at(.vars = grpVars) %>%
         dplyr::summarize(
@@ -84,6 +146,8 @@ f_load_single_exp <- function(exp_dir, mainVars = NULL, summarize = TRUE, maxDat
           q97.5.value = quantile(value, probs = 0.975, na.rm = TRUE)
         ) %>%
         left_join(popDat, by = "geography_name")
+      toc()  ### 8 min !!!
+      
     }
     
     
@@ -94,6 +158,9 @@ f_load_single_exp <- function(exp_dir, mainVars = NULL, summarize = TRUE, maxDat
   } else {
     dat <- fread(file = file.path(exp_dir, "trajectoriesDat_sub_long.csv"))
   }
+  
+  
+  dat$geography_name <- factor(dat$geography_name, levels=c("illinois",c(1:11)), labels=c("illinois",c(1:11)))
   
   return(dat)
 }
@@ -140,13 +207,13 @@ f_get_cumul_numbers <- function(dat = simdat, subregions = NULL, selected_channe
   return(subdat)
 }
 
-f_get_peak_numbers <- function(dat = simdat, subregions = NULL, selected_channel = "crit_det", facetVar = "geography_name") {
+f_get_peak_numbers <- function(dat = simdat, subregions = NULL, selected_channel = "crit_det", facetVar = "capacity_multiplier") {
   
   # unique(dat$channel)
   if (is.null(subregions)) subregions <- unique(dat$geography_name)
   
-  grpVars <- c(facetVar, "geography_name")
-  keepVars <- c(facetVar, 'geography_name', 'icu_available', 'median.value', 'q2.5.value', 'q97.5.value',
+  grpVars <- c(facetVar, "geography_name",'exp_name')
+  keepVars <- c(facetVar, 'geography_name','exp_name', 'icu_available', 'median.value', 'q2.5.value', 'q97.5.value',
                 'median.aboveICU', 'q2.5.aboveICU', 'q97.5.aboveICU',
                 'median.aboveICU_ratio', 'q2.5.aboveICU_ratio', 'q97.5.aboveICU_ratio',
                 'channel', 'exp_name')
@@ -214,17 +281,17 @@ f_get_rebound_values <- function(dat = simdat) {
 }
 
 ### using f_get_cumul_numbers
-f_describe_ICU_cumul <- function(SAVE=TRUE) {
+f_describe_ICU_cumul <- function(subfolder,SAVE=TRUE,facetVar="reopening_multiplier_4") {
   
   rebound <- f_get_rebound_values()
 
-  df1 <- f_get_cumul_numbers(dat = simdat, selected_channel = "crit_det_cumul", facetVar = "reopening_multiplier_4") %>%
+  df1 <- f_get_cumul_numbers(dat = simdat, selected_channel = "crit_det_cumul", facetVar = facetVar) %>%
     left_join(rebound, by = "geography_name") %>%
     filter(reopening_multiplier_4 == fast_rebound) %>%
     dplyr::select(-moderate_rebound, -fast_rebound) %>%
     mutate(rebound = "fast_rebound")
 
-  df2 <- f_get_cumul_numbers(dat = simdat, selected_channel = "crit_det_cumul", facetVar = "reopening_multiplier_4") %>%
+  df2 <- f_get_cumul_numbers(dat = simdat, selected_channel = "crit_det_cumul", facetVar = facetVar) %>%
     left_join(rebound, by = "geography_name") %>%
     filter(reopening_multiplier_4 == moderate_rebound) %>%
     dplyr::select(-fast_rebound, -moderate_rebound) %>%
@@ -242,11 +309,12 @@ f_describe_ICU_cumul <- function(SAVE=TRUE) {
     as.data.frame()
   
   if(SAVE){
-    ggsave(paste0("describe_ICU_cumul_rebound_counterfactual.png"),
-           plot = pplot, path = file.path(outdir,"gradual_reopening"), width = 14, height = 8, device = "png"
+    if(!dir.exists(file.path(outdir,subfolder)))dir.create(file.path(outdir,subfolder))
+    ggsave(paste0("describe_ICU_cumul_rebound.png"),
+           plot = pplot, path = file.path(outdir,subfolder), width = 14, height = 8, device = "png"
     )
     
-    fwrite(df12tab,  file.path(outdir,"gradual_reopening","describe_ICU_cumul_rebound_counterfactual.csv"))
+    fwrite(df12tab,  file.path(outdir,subfolder,"describe_ICU_cumul_rebound.csv"))
   }
   
 
@@ -254,17 +322,17 @@ f_describe_ICU_cumul <- function(SAVE=TRUE) {
 }
 
 ### using f_get_peak_numbers
-f_describe_ICU_peak <- function(SAVE=TRUE) {
+f_describe_ICU_peak <- function(subfolder,SAVE=TRUE,facetVar="reopening_multiplier_4") {
   
   rebound <- f_get_rebound_values()
   
-  df1 <- f_get_peak_numbers(dat = simdat, selected_channel = "crit_det", facetVar = "reopening_multiplier_4") %>%
+  df1 <- f_get_peak_numbers(dat = simdat, selected_channel = "crit_det", facetVar = facetVar) %>%
     left_join(rebound, by = "geography_name") %>%
     filter(reopening_multiplier_4 == fast_rebound) %>%
     dplyr::select(-moderate_rebound, -fast_rebound) %>%
     mutate(rebound = "fast_rebound")
   
-  df2 <- f_get_peak_numbers(dat = simdat, selected_channel = "crit_det", facetVar = "reopening_multiplier_4") %>%
+  df2 <- f_get_peak_numbers(dat = simdat, selected_channel = "crit_det", facetVar = facetVar) %>%
     left_join(rebound, by = "geography_name") %>%
     filter(reopening_multiplier_4 == moderate_rebound) %>%
     dplyr::select(-fast_rebound, -moderate_rebound) %>%
@@ -283,13 +351,150 @@ f_describe_ICU_peak <- function(SAVE=TRUE) {
     as.data.frame()
   
 if(SAVE){
-  ggsave(paste0("describe_ICU_peak_rebound_counterfactual.png"),
-         plot = pplot, path = file.path(outdir,"gradual_reopening"), width = 14, height = 8, device = "png"
+  if(!dir.exists(file.path(outdir,subfolder)))dir.create(file.path(outdir,subfolder))
+  ggsave(paste0("describe_ICU_peak_rebound.png"),
+         plot = pplot, path = file.path(outdir,subfolder), width = 14, height = 8, device = "png"
   )
   
-  fwrite(df12tab,  file.path(outdir,"gradual_reopening","describe_ICU_peak_rebound_counterfactual.csv"))
+  fwrite(df12tab,  file.path(outdir,subfolder,"describe_ICU_peak_rebound.csv"))
 }
   
   out <- list(df12, df12tab, pplot)
+}
+
+
+
+#### --------------------------------------
+#### Trigger simulations
+#### --------------------------------------
+
+
+f_describe_peak_and_cumul <- function(dat=simdat,subfolder,SAVE=TRUE){
+  
+  
+  tab_cumul_100 <-  f_get_cumul_numbers(dat=dat,selected_channel="crit_det_cumul")
+  #### Get peak  numbers 
+  tab_peak_100 <-  f_get_peak_numbers(dat=dat,selected_channel="crit_det")
+  
+  pplot_peak <- ggplot(data=tab_peak_100)+
+    geom_bar(aes(x=capacity_multiplier, y=median.aboveICU, fill=exp_name),position="stack",  stat="identity")+
+    facet_wrap(~geography_name, scales="free")
+  
+  pplot_cumul <- ggplot(data=tab_cumul_100)+
+    geom_bar(aes(x=capacity_multiplier, y=median.value, fill=exp_name),position="stack", stat="identity")+
+    facet_wrap(~geography_name, scales="free")
+  
+  
+  if(SAVE){
+    if(!dir.exists(file.path(outdir,subfolder)))dir.create(file.path(outdir,subfolder))
+    
+    f_save_plot(pplot=pplot_cumul, plot_name = "pplot_cumul",plot_dir = file.path(outdir,subfolder))
+    f_save_plot(pplot=pplot_peak,plot_name = "pplot_peak",plot_dir = file.path(outdir,subfolder))
+
+    fwrite(tab_cumul_100,  file.path(outdir,subfolder,"tab_cumul_100.csv"))
+    fwrite(tab_peak_100,  file.path(outdir,subfolder,"tab_peak_100.csv"))
+  }
+  
+  
+  
+  out <- list(tab_cumul_100, tab_peak_100)
+  names(out) <- c('tab_cumul_100', 'tab_peak_100')
+  return (out)
+}
+  
+
+f_stacked_barplot <- function(dflist=list_csvs, subregions =NULL, rollback="sm4",reopen="50perc" ,exp_name_sub){
+  
+
+  dflist  <-  dflist[grep("regreopen",dflist)]
+  dflist  <-  dflist[grep(rollback,dflist)]
+  dflist  <-  dflist[grep(reopen,dflist)]
+  
+  tbl_fread <- 
+    file.path(simulation_output, 'overflow_simulations',dflist) %>% 
+    map_df(~fread(.)) %>% 
+    filter(geography_name %in% subregions)
+  
+  out <- f_describe_peak_and_cumul(dat=tbl_fread,subfolder=exp_name_sub,SAVE=FALSE)
+  tab_peak <- out[[2]]
+  
+  tab_peak <-tab_peak %>% 
+    mutate(exp_name_split = exp_name) %>%
+    separate(exp_name_split, into=c("simdate","locale","reopen","delay","rollback"), sep="_") %>%
+    mutate(reopen = gsub("regreopen","",reopen) ,
+           delay = gsub("daysdelay"," days",delay) )
+  
+  tab_peak <- tab_peak %>% filter(reopen ==reopen) 
+  
+  if(reopen=="50perc")selectedCols <- c("#c6dbef","#6baed6","#2171b5")
+  if(reopen=="100perc")selectedCols <-  c("#fee0d2","#fb6a4a","#cb181d")
+
+  
+  
+  pplot_peak <- ggplot(data=tab_peak)+
+    geom_hline(yintercept = Inf)+geom_vline(xintercept = Inf)+
+    #geom_bar(aes(x=capacity_multiplier, y=median.aboveICU, fill=delay),col="azure4",position=position_dodge(width = 0.01), stat="identity")+
+   # geom_pointrange(aes(x=capacity_multiplier,  y=median.aboveICU, ymin=q2.5.aboveICU,  ymax=q97.5.aboveICU,col=delay, group=delay),position="dodge")+
+    facet_wrap(~geography_name, scales="free")+
+    labs(y="Difference between predicted\npeak ICU cases and ICU availability")+
+    customThemeNoFacet+
+    scale_fill_manual(values=selectedCols)+
+    scale_color_manual(values=selectedCols)
+  
+  
+  capacity_threshold <- tab_peak %>%  filter(median.aboveICU>=0) %>% filter(capacity_multiplier==min(capacity_multiplier)) %>% dplyr::select(capacity_multiplier) %>% as.numeric()
+  tab_peak$capacity_multiplier_fct <- as.factor(round(tab_peak$capacity_multiplier*100,0))
+    
+  pplot_peak <- ggplot(data=tab_peak)+
+    geom_hline(yintercept = Inf)+geom_vline(xintercept = Inf)+
+    geom_bar(data=subset(tab_peak,delay=="0 days"), aes(x=capacity_multiplier, y=median.aboveICU, fill=delay),col="azure4",position=position_dodge(width = 0.01), stat="identity")+
+    geom_bar(data=subset(tab_peak,delay=="3 days"),aes(x=capacity_multiplier, y=median.aboveICU, fill=delay),col="azure4",position=position_dodge(width = 0.01), stat="identity")+
+    geom_bar(data=subset(tab_peak,delay=="7 days"),aes(x=capacity_multiplier, y=median.aboveICU, fill=delay),col="azure4",position=position_dodge(width = 0.01), stat="identity")+
+    geom_bar(data=subset(tab_peak,delay=="7 days" & capacity_multiplier >capacity_threshold), aes(x=capacity_multiplier, y=median.aboveICU, fill=delay),col="azure4",position=position_dodge(width = 0.01), stat="identity")+
+    geom_bar(data=subset(tab_peak,delay=="3 days" & capacity_multiplier >capacity_threshold),aes(x=capacity_multiplier, y=median.aboveICU, fill=delay),col="azure4",position=position_dodge(width = 0.01), stat="identity")+
+    geom_bar(data=subset(tab_peak,delay=="0 days" & capacity_multiplier >capacity_threshold),aes(x=capacity_multiplier, y=median.aboveICU, fill=delay),col="azure4",position=position_dodge(width = 0.01), stat="identity")+
+    facet_wrap(~geography_name)+
+    scale_y_continuous(lim=c(-400,500), labels=seq(-400,500,150),breaks=seq(-400,500,150))+
+    labs(title=paste0(rollback," ", reopen), subtitle="",y=expression(italic(ICU[predicted_peak]-ICU[capacity])),
+         #caption="Difference between predicted\npeak ICU cases and ICU availability",
+         x="Trigger threshold")+
+    customThemeNoFacet+
+    scale_fill_manual(values=selectedCols)+
+    scale_color_manual(values=selectedCols)+
+    geom_hline(yintercept = 0, linetype="solid", size=0.75) +
+    theme(panel.grid.major.y = element_line(colour="grey", size=0.75))
+  
+  
+  #panel.grid.minor.y = element_line(colour="grey", size=0.5)
+  #y=expression(Delta*italic(ICU[capacity])),
+  out <- list(tab_peak, pplot_peak )
+  return(out)
+}
+
+
+
+
+f_get_probabilities <- function(exp_dir,SAVE=TRUE){
+  
+  simdat<- load_sim_data(exp_dir) 
+  simdat <-simdat %>% left_join(load_new_capacity(),by="geography_name") 
+  simdat <-simdat %>% left_join(load_population(),by="geography_name") 
+  
+  propDat_sim <- simdat %>%
+    dplyr::filter(channel == "crit" & date > as.Date("2020-09-19") & date <= as.Date("2020-12-31")) %>%
+    dplyr::group_by(scen_num, sample_num, geography_name, exp_name, reopen, delay, rollback, pop, capacity_multiplier, icu_available) %>%
+    dplyr::summarize(value = max(value)) %>%
+    dplyr::mutate(aboveCapacity = ifelse(value >= icu_available, 1, 0)) %>%
+    dplyr::group_by(geography_name, exp_name, reopen, delay, rollback, pop, capacity_multiplier, icu_available) %>%
+    add_tally(name = "nsamples") %>%
+    dplyr::group_by(geography_name, exp_name, reopen, delay, rollback, pop, capacity_multiplier, icu_available, nsamples) %>%
+    dplyr::summarize(nabove = sum(aboveCapacity)) %>%
+    dplyr::mutate(prob_overflow = nabove / nsamples)
+  
+  propDat_sim$geography_name <- factor(propDat_sim$geography_name, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
+  
+  if(SAVE)save(propDat_sim,file=file.path(exp_dir, "propDat_sim.Rdata"))
+  
+  return(propDat_sim)
 }
 
