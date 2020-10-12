@@ -418,7 +418,7 @@ f_stacked_barplot <- function(dflist = list_csvs, subregions = NULL, rollback = 
   dflist <- dflist[grep(reopen, dflist)]
 
   tbl_fread <-
-    file.path(simulation_output, "overflow_simulations", dflist) %>%
+    file.path(simulation_output, "_overflow_simulations", dflist) %>%
     map_df(~ fread(.)) %>%
     filter(geography_name %in% subregions)
 

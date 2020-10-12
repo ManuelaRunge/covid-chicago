@@ -41,7 +41,7 @@ picu <- f_icu_timeline(dat = simdat, selected_channel = "crit_det")
 ####  Counterfactual - varying reopening
 #### --------------------------------------
 exp_name <- "20200919_IL_gradual_reopening_sm7"
-exp_dir <- file.path(simulation_output, "overflow_simulations", exp_name)
+exp_dir <- file.path(simulation_output, "_overflow_simulations", exp_name)
 simdat <- f_load_single_exp(exp_dir = exp_dir, mainVars = c("date", "scen_num", "sample_num", "reopening_multiplier_4"))
 unique(simdat$geography_name)
 unique(simdat$reopening_multiplier_4)
@@ -84,7 +84,7 @@ exp_names <- exp_names_sm7
 
 for (exp_name in exp_names) {
   exp_name_sub <- gsub("20200919_IL_", "", exp_name)
-  exp_dir <- file.path(simulation_output, "overflow_simulations", exp_name)
+  exp_dir <- file.path(simulation_output, "_overflow_simulations", exp_name)
   simdat <- f_load_single_exp(exp_dir)
   out <- f_describe_peak_and_cumul(dat = simdat, subfolder = exp_name_sub)
   rm(out, simdat)
@@ -93,8 +93,8 @@ for (exp_name in exp_names) {
 ##### Combined plot
 exp_name <- "20200919_IL_regreopen_combined"
 exp_name_sub <- exp_name
-exp_dir <- file.path(simulation_output, "overflow_simulations", exp_name)
-list_csvs <- list.files(file.path(simulation_output, "overflow_simulations"), pattern = "trajectoriesDat_sub_long.csv", recursive = TRUE)
+exp_dir <- file.path(simulation_output, "_overflow_simulations", exp_name)
+list_csvs <- list.files(file.path(simulation_output, "_overflow_simulations"), pattern = "trajectoriesDat_sub_long.csv", recursive = TRUE)
 
 subregions <- c("11")
 out1 <- f_stacked_barplot(dflist = list_csvs, subregions = subregions, rollback = "sm4", reopen = "50perc", exp_name_sub)
@@ -156,7 +156,7 @@ exp_names <- c(exp_names_sm4, exp_names_sm7)
 
 for (exp_name in exp_names) {
   exp_name_sub <- gsub("20200919_IL_", "", exp_name)
-  exp_dir <- file.path(simulation_output, "overflow_simulations", exp_name)
+  exp_dir <- file.path(simulation_output, "_overflow_simulations", exp_name)
   simdat <- f_get_probabilities(exp_dir)
   rm(simdat)
 }
@@ -164,10 +164,10 @@ for (exp_name in exp_names) {
 ## Analyze combines probabilities
 exp_name <- "20200919_IL_regreopen_combined"
 exp_name_sub <- exp_name
-exp_dir <- file.path(simulation_output, "overflow_simulations", exp_name)
+exp_dir <- file.path(simulation_output, "_overflow_simulations", exp_name)
 
 ## Combine probability files
-exp_dirs <- list.files(file.path(simulation_output, "overflow_simulations"), pattern = "propDat_sim.Rdata", recursive = T, full.names = T)
+exp_dirs <- list.files(file.path(simulation_output, "_overflow_simulations"), pattern = "propDat_sim.Rdata", recursive = T, full.names = T)
 propDat_sim <- f_combine_Rdata(exp_dirs)
 fwrite(propDat_sim, file.path(exp_dir, "propDat_sim_combined.csv"), quote = FALSE)
 

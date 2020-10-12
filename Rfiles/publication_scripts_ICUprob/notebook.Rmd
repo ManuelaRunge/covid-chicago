@@ -58,9 +58,10 @@ picu <- f_icu_timeline(dat=simdat, selected_channel="crit_det")
 ####--------------------------------------
 
 exp_name ="20200831_IL_regreopen50perc_0daysdelay_sm4"
-exp_dir <- file.path(simulation_output, 'overflow_simulations',exp_name)
+exp_dir <- file.path(simulation_output, '_overflow_simulations',exp_name)
 simdat <- f_load_single_exp(exp_dir)
 picu <- f_icu_timeline(dat=simdat,subregions=c("1") ,selected_channel="crit_det", facetVar = "capacity_multiplier")
+
 
 
 f_get_cumul_numbers(selected_channel="crit_det_cumul")
