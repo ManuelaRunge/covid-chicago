@@ -18,7 +18,10 @@ customThemeNoFacet <- theme(
   axis.title.x = element_text(size = 18),
   axis.text.x = element_text(size = 16),
   axis.title.y = element_text(size = 18),
-  axis.text.y = element_text(size = 16)
+  axis.text.y = element_text(size = 16),
+  axis.line.x = element_blank(),
+  axis.line.y = element_blank(),
+  panel.border = element_rect(colour = "black", fill=NA, size=0.75)
 )
 
 customThemeNoFacet <- theme(
@@ -33,7 +36,10 @@ customThemeNoFacet <- theme(
   axis.title.x = element_text(size = 18),
   axis.text.x = element_text(size = 16),
   axis.title.y = element_text(size = 18),
-  axis.text.y = element_text(size = 16)
+  axis.text.y = element_text(size = 16),
+  axis.line.x = element_blank(),
+  axis.line.y = element_blank(),
+  panel.border = element_rect(colour = "black", fill=NA, size=0.75)
 )
 
 
