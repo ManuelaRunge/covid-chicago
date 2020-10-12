@@ -15,7 +15,7 @@ source("publication_scripts_ICUprob/functions.R")
 theme_set(theme_cowplot())
 
 outdir <- file.path("C:/Users/mrm9534/Box/MR_archive/testfigures2")
-# simulation_output <- file.path(simulation_output, "overflow_simulations")
+# simulation_output <- file.path(simulation_output, "_overflow_simulations")
 
 
 #### --------------------------------------
@@ -32,9 +32,41 @@ summary(dat$icubeds_per10th)
 #### --------------------------------------
 
 exp_name <- "20201006_IL_baseline_oldsm8"
-exp_dir <- file.path(simulation_output, exp_name)
+exp_dir <- file.path(simulation_output,"_simulations_for_civis", exp_name)
 simdat <- f_load_single_exp(exp_dir)
 picu <- f_icu_timeline(dat = simdat, selected_channel = "crit_det")
+
+
+#### --------------------------------------
+####  Baseline -  How often in the past did 20 happen?
+#### --------------------------------------
+
+exp_name <- "20201006_IL_baseline_oldsm8"
+exp_dir <- file.path(simulation_output,"_simulations_for_civis", exp_name)
+simdat <- f_load_single_exp(exp_dir)
+simdat$date <- as.Date(simdat$date)
+simdat <- simdat %>% filter(date <= Sys.Date())
+(ndates <- length(unique(simdat$date)))
+
+ICU_threshold_past <- list()
+for(capacity_threshold in seq(0.2,1,0.2)){
+ICU_threshold_past[[length(ICU_threshold_past)+1]] <- simdat %>% 
+                      group_by(geography_name) %>% 
+                      filter(channel=="crit_det") %>% 
+                      mutate(capacity_multiplier=capacity_threshold) %>% 
+                      filter(median.value >= icu_available*capacity_multiplier) %>%
+                      add_tally() 
+}
+ICU_threshold_past <- ICU_threshold_past %>% bind_rows()
+table(ICU_threshold_past$capacity_multiplier, ICU_threshold_past$geography_name)
+
+ICU_threshold_past %>%  dplyr::select(geography_name, capacity_multiplier, date) %>% arrange(geography_name, capacity_multiplier, date)
+
+pplot <- ggplot(data=ICU_threshold_past)+
+  geom_point(aes(x=date, y=capacity_multiplier)) +
+  facet_wrap(~geography_name)
+f_save_plot(pplot=pplot,plot_name = "ICUcapacity_thresholds_in_the_past",plot_dir = file.path(outdir))
+
 
 
 #### --------------------------------------
@@ -169,12 +201,33 @@ exp_dir <- file.path(simulation_output, "_overflow_simulations", exp_name)
 ## Combine probability files
 exp_dirs <- list.files(file.path(simulation_output, "_overflow_simulations"), pattern = "propDat_sim.Rdata", recursive = T, full.names = T)
 propDat_sim <- f_combine_Rdata(exp_dirs)
+
+
+## Create custom grouping variable for delay and reopen
+propDat_sim$grpVar <- paste0(gsub("none","0days",gsub(" ","",propDat_sim$delay)),"-", propDat_sim$reopen)
+
+delay_reopen = c("7days-100perc","3days-100perc","0days-100perc",
+                  "7days-50perc","3days-50perc","0days-50perc")
+
+propDat_sim$grpVar <- factor(propDat_sim$grpVar, levels=delay_reopen, labels=delay_reopen)
+
 fwrite(propDat_sim, file.path(exp_dir, "propDat_sim_combined.csv"), quote = FALSE)
 
 
+### Differences across regions
+f_custom_prob_plot2(
+  dat = subset(propDat_sim), exp_dir = exp_dir,
+  plot_name = "ICUoverflow_proball_compare_regions"
+)
+f_custom_prob_plot2(
+  dat = subset(propDat_sim), exp_dir = exp_dir, subregions = c(1,4,11),
+  plot_name = "ICUoverflow_proball_compare_regions1-4-11", width=12, height=8
+)
+
+### Probability plots
 f_custom_prob_plot(
   dat = subset(propDat_sim), exp_dir = exp_dir,
-  plot_name = "ICUoverflow_proball_perCovidRegion"
+  plot_name = "ICUoverflow_proball_perCovidRegion", reopenFacet = FALSE
 )
 
 f_custom_prob_plot(
@@ -187,3 +240,72 @@ f_custom_prob_plot(
   dat = subset(propDat_sim, geography_name %in% c("1", "4", "11")), exp_dir = exp_dir,
   plot_name = "ICUoverflow_proball_perCovidRegion_sub2", width = 15, height = 9
 )
+
+
+
+#### COmpare with characteristics
+propDat_sim <- fread(file.path(exp_dir, "propDat_sim_combined.csv"))
+propDat_sim <- propDat_sim %>% dplyr::select(-pop,-icu_available) %>% left_join(f_region_characteristics(), by=c("geography_name"))
+
+ICU_threshold_future <- list()
+for(riskTolerance in seq(0.1,1,0.1)){
+  
+  ICU_threshold_future[[length(ICU_threshold_future)+1]] <- propDat_sim %>%
+    filter( prob_overflow<=riskTolerance) %>%
+    group_by(geography_name, exp_name) %>%
+    mutate(risk_tolerance=riskTolerance)%>%
+    filter(prob_overflow==max(prob_overflow)) %>%
+    filter(capacity_multiplier==max(capacity_multiplier))
+}
+ICU_threshold_future <- ICU_threshold_future %>% bind_rows()
+
+ICU_threshold_future$grpVar <- paste0(gsub("none","0days",gsub(" ","",ICU_threshold_future$delay)),"-", ICU_threshold_future$reopen)
+
+delay_reopen = c("7days-100perc","3days-100perc","0days-100perc",
+                 "7days-50perc","3days-50perc","0days-50perc")
+
+ICU_threshold_future$grpVar <- factor(ICU_threshold_future$grpVar, levels=delay_reopen, labels=delay_reopen)
+
+custom_cols <- c("0days-50perc"="#c6dbef", "3days-50perc"="#6baed6","7days-50perc"="#2171b5", 
+                 "0days-100perc"="#fee0d2","3days-100perc"="#fb6a4a", "7days-100perc"="#cb181d")
+
+ICU_threshold_future$reopen_label <- NA
+ICU_threshold_future$reopen_label[ICU_threshold_future$reopen=="100perc"] <- "Fast rebound"
+ICU_threshold_future$reopen_label[ICU_threshold_future$reopen=="50perc"] <- "Moderate rebound"
+
+table(ICU_threshold_future$risk_tolerance, ICU_threshold_future$geography_name)
+unique(ICU_threshold_future$risk_tolerance)
+
+ggplot(data=subset(ICU_threshold_future, risk_tolerance<0.9)) +
+  geom_jitter(aes(x=icubeds_per10th, y=capacity_multiplier, col=as.factor(risk_tolerance), group=geography_name),size=3)+
+  facet_wrap(~exp_name)
+
+
+pplot <- ggplot(data=subset(ICU_threshold_future, risk_tolerance<0.9)) +
+  geom_smooth(aes(x=risk_tolerance, y=capacity_multiplier,group=exp_name, col=grpVar, linetype=rollback),size=1, se=F)+
+  scale_color_manual(values = custom_cols) +
+  scale_fill_manual(values = custom_cols) +
+  facet_wrap(~reopen_label) + 
+  customThemeNoFacet+
+  background_grid()+
+  labs(x="Probability of ICU overflow (risk tolerance)", 
+       y="Trigger threshold\n(% of ICU COVID availability)",
+       color="delay")
+
+
+f_save_plot(pplot=pplot,plot_name = "risk-tolerance_capacity_overall",plot_dir = file.path(outdir), width =8, height=3)
+
+
+
+##### Export for map in QGIS
+# exp="20200919_IL_regreopen100perc_0daysdelay_sm4"
+# subdat <- propDat_sim %>% 
+#           filter(exp_name==exp, prob_overflow<=0.5) %>% 
+#           group_by(geography_name) %>% 
+#           filter(prob_overflow==max(prob_overflow)) %>% 
+#           filter(capacity_multiplier==max(capacity_multiplier))
+# 
+# fwrite(subdat, file.path(exp_dir,"regreopen100perc_0daysdelay_sm4_riskTolerance_5.csv"),quote=FALSE)
+# 
+
+

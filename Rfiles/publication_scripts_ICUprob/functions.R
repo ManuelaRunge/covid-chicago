@@ -15,20 +15,33 @@ rollback_cols <- c("#d0d1e6", "#1d91c0")
 #### --------------------------------------
 
 f_region_characteristics <- function(SAVE = FALSE) {
-  popDat <- load_population()
-  capacityDat <- load_new_capacity()
+  
+  if(SAVE==FALSE & file.exists( file.path(outdir, "region_characteristics.csv"))){
+    
+    dat <- fread(file.path(outdir, "region_characteristics.csv"))
+    print(paste0("File loaded from ", outdir, "region_characteristics.csv"))
+  }
+  
+  if(!(file.exists( file.path(outdir, "region_characteristics.csv")))){
+    
+    popDat <- load_population()
+    capacityDat <- load_new_capacity()
+    
+    dat <- left_join(popDat, capacityDat, by = c("geography_name"))
+    dat$icu_available <- as.numeric(dat$icu_available)
+    dat$pop <- as.numeric(dat$pop)
+    dat$popDens <- (dat$pop / 10000)
+    dat$icubeds_per10th <- (dat$icu_available / dat$pop) * 10000
+    dat$medsurgbeds_per10th <- (dat$medsurg_available / dat$pop) * 10000
+  }
+  
 
-  dat <- left_join(popDat, capacityDat, by = c("geography_name"))
-  dat$icu_available <- as.numeric(dat$icu_available)
-  dat$pop <- as.numeric(dat$pop)
-  dat$popDens <- (dat$pop / 10000)
-  dat$icubeds_per10th <- (dat$icu_available / dat$pop) * 10000
-  dat$medsurgbeds_per10th <- (dat$medsurg_available / dat$pop) * 10000
-
-
+  if (SAVE) {
+    fwrite(dat, file = file.path(outdir, "region_characteristics.csv"), quote = FALSE, row.names = FALSE)
+    print(paste0("File written to ", outdir, "region_characteristics.csv"))
+  }
+  
   return(dat)
-
-  if (SAVE) fwrite(dat, file = file.path(outdir, "region_characteristics.csv"), quote = FALSE, row.names = FALSE)
 }
 
 
@@ -549,3 +562,26 @@ f_custom_prob_plot <- function(dat, plot_name,exp_dir, SAVE=TRUE, showPoints=FAL
   return(pplot)
 }
 
+
+f_custom_prob_plot2 <- function(dat, subregions=NULL, exp_dir, plot_name,width = 15, height=10){
+  
+  
+  if(is.null(subregions))subregions = unique(dat$geography_name)
+  
+  pplot <- ggplot(data = subset(dat,geography_name %in% subregions)) +
+    geom_vline(xintercept =c(-Inf,Inf)) +geom_hline(yintercept = c(-Inf,Inf)) +
+    geom_rect(ymin=-Inf, ymax=Inf, xmin=0.8, xmax=Inf, fill="grey", alpha=0.01)+
+    geom_rect(ymin=0.5, ymax=Inf, xmin=-Inf, xmax=0.8, fill="grey", alpha=0.01)+
+    geom_line(aes(x = capacity_multiplier, y = prob_overflow, group = geography_name, col = geography_name), size = 1.1) +
+    #geom_hline(yintercept = 0.2) +
+    geom_vline(xintercept = 0.8, linetype="dashed") +
+    scale_color_viridis_d()+
+    scale_y_continuous(lim=c(0,1))+
+    customThemeNoFacet +
+    background_grid()+
+    facet_grid(reopen+rollback~delay)+
+    theme(panel.spacing = unit(2, "lines"))
+  
+  f_save_plot(pplot=pplot,plot_name = plot_name,plot_dir = file.path(exp_dir), width =width, height=height)
+  
+}
