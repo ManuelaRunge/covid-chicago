@@ -39,20 +39,10 @@ python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extende
 
 
 
-Specify post process        - {'low': 0.32, 'high': 0.32}
-        - {'low': 0.37, 'high': 0.37}
-        - {'low': 0.40, 'high': 0.40}
-        - {'low': 0.42, 'high': 0.42}
-        - {'low': 0.45, 'high': 0.45}
-        - {'low': 0.32, 'high': 0.32}
-        - {'low': 0.40, 'high': 0.40}
-        - {'low': 0.46, 'high': 0.46}
-        - {'low': 0.41, 'high': 0.41}
-        - {'low': 0.48, 'high': 0.48}
-        - {'low': 0.43, 'high': 0.43} 
+Specify post process      
 python runScenarios.py -rl NUCLUSTER -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "mr_fitsm7_quest" --post_process "dataComparison"
-python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "MR_test_run" --post_process "processForCivis"
-python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "baseline" --post_process "dataComparison" --noSamplePlot
+python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "mr_resim_multiplier_1sample_fitkiall" --post_process "dataComparison"
+python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "baseline" --post_process "processForCivis" --noSamplePlot
 
 
 ## Current and past scenarios to submit for weekly updates
