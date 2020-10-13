@@ -32,12 +32,12 @@ if(!dir.exists(out_dir))dir.create(out_dir)
 simdate = "20200525"
 
 ## Read in simulations
-exp_names <- list.dirs(file.path(simulation_output,"forFitting"), recursive = FALSE, full.names = FALSE)
+exp_names <- list.dirs(file.path(simulation_output,"_forFitting"), recursive = FALSE, full.names = FALSE)
 exp_names <- exp_names[grep("_test1",exp_names)]
 
 simulationslist <- list()
 for(exp_name in exp_names){
-  simulationslist[[length(simulationslist)+1]] <- fread(file.path(simulation_output,"forFitting", exp_name,"trajectoriesDat.csv" ))
+  simulationslist[[length(simulationslist)+1]] <- fread(file.path(simulation_output,"_forFitting", exp_name,"trajectoriesDat.csv" ))
 }
 
 ### Read in 
