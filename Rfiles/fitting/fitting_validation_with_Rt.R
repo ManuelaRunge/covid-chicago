@@ -12,7 +12,7 @@ source("processing_helpers.R")
 
 exp_name <-  '20201003_IL_mr_fitkistartsm3' # exp_names[1]
 
-simulation_output <- file.path(simulation_output, "forFitting")
+simulation_output <- file.path(simulation_output, "_forFitting")
 exp_names <- list.dirs(simulation_output, recursive = FALSE, full.names = FALSE)
 exp_dir <- file.path(simulation_output, exp_name)  
 Rt_dir <- file.path(simulation_output, exp_name,  "estimatedRt")  
