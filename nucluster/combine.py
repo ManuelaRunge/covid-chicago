@@ -47,9 +47,9 @@ def reprocess(input_fname='trajectories.csv', output_fname=None):
 def combineTrajectories(Nscenarios, trajectories_dir, temp_exp_dir, deleteFiles=False, addSamples=True):
     sampledf = pd.read_csv(os.path.join(temp_exp_dir, "sampled_parameters.csv"))
     if addSamples == False:
-        sampledf = sampledf[["scen_num", "sample_num", "startdate"]]
+        sampledf = sampledf[["scen_num", "sample_num", "startdate","social_multiplier_9","social_multiplier_time_9"]]
     df_list = []
-    for scen_i in range(Nscenarios + 1):
+    for scen_i in range(900,1000 + 1):
         input_name = "trajectories_scen" + str(scen_i) + ".csv"
         try:
             df_i = reprocess(os.path.join(trajectories_dir, input_name))
@@ -62,7 +62,7 @@ def combineTrajectories(Nscenarios, trajectories_dir, temp_exp_dir, deleteFiles=
         if deleteFiles == True: os.remove(os.path.join(git_dir, input_name))
 
     dfc = pd.concat(df_list)
-    dfc.to_csv(os.path.join(temp_exp_dir, "trajectoriesDat.csv"), index=False)
+    dfc.to_csv(os.path.join(temp_exp_dir, "trajectoriesDat_1000.csv"), index=False)
 
     nscenarios = sampledf['scen_num'].max()
     nscenarios_processed = len(dfc['scen_num'].unique())
@@ -91,45 +91,15 @@ def trim_trajectories_Dat(df, exp_dir, VarsToKeep=None, keepTimes='today', lagti
                     'crit_cumul', 'crit_det_cumul', 'crit_det', 'critical',
                     'death_det_cumul', 'deaths']
 
-    if grpspecific_params == None:
-        grpspecific_params = ['Ki_t']  # ['Ki_t_', 'triggertime_','reopening_multiplier_4_']
-
     column_list = VarsToKeep
 
-    if 'IL' in exp_name:
-
-        if grpnames == None:
-            grpnames = ['All', 'EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9',
+    grpnames = ['All', 'EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9',
                         'EMS-10', 'EMS-11']
-            grpnames_ki = ['EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10',
-                           'EMS-11']
 
-        for channel in channels:
-            for grp in grpnames:
-                column_list.append(channel + "_" + str(grp))
 
-        for grpspecific_param in grpspecific_params:
-            for grp in grpnames_ki:
-                column_list.append(grpspecific_param + "_" + str(grp))
-
-    if 'age' in exp_name:
-
-        if grpnames == None:
-            grpnames = ['All', "age0to9", "age10to19", "age20to29", "age30to39", "age40to49", "age50to59", "age60to69",
-                        "age70to100"]
-
-        for channel in channels:
-            for grp in grpnames:
-                column_list.append(channel + "_" + str(grp))
-
-        for grpspecific_param in grpspecific_params:
-            column_list.append(grpspecific_param)
-
-    else:
-        for channel in channels:
-            column_list.append(channel)
-        for grpspecific_param in grpspecific_params:
-            column_list.append(grpspecific_param)
+    for channel in channels:
+        for grp in grpnames:
+            column_list.append(channel + "_" + str(grp))
 
     df = df[column_list]
 
@@ -153,26 +123,24 @@ def trim_trajectories_Dat(df, exp_dir, VarsToKeep=None, keepTimes='today', lagti
 if __name__ == '__main__':
 
     sim_out_dir = "/projects/p30781/covidproject/covid-chicago/_temp/"
-    stem = sys.argv[1]
-    keepTimes = sys.argv[2]
-    lagtime_days = sys.argv[3]
+    sim_out_dir = "C:/Users/mrm9534/gitrepos/covid-chicago/_temp"
+
+    exp_name = "20201006_IL_local_fitki9"
+    keepTimes = 1
+    lagtime_days =1
 
     add_samples = True
 
-    # stem = "20200525_EMS_11"
-    exp_names = [x for x in os.listdir(sim_out_dir) if stem in x]
+    print(exp_name)
+    temp_exp_dir = os.path.join(sim_out_dir, exp_name)
+    trajectories_dir = os.path.join(temp_exp_dir, 'trajectories')
+    sampledf = pd.read_csv(os.path.join(temp_exp_dir, "sampled_parameters.csv"))
+    Nscenarios = sampledf['scen_num'].max()
 
-    for exp_name in exp_names:
-        print(exp_name)
-        temp_exp_dir = os.path.join(sim_out_dir, exp_name)
-        trajectories_dir = os.path.join(temp_exp_dir, 'trajectories')
-        sampledf = pd.read_csv(os.path.join(temp_exp_dir, "sampled_parameters.csv"))
-        Nscenarios = sampledf['scen_num'].max()
+    dfc = combineTrajectories(Nscenarios=Nscenarios, trajectories_dir=trajectories_dir, temp_exp_dir=temp_exp_dir,
+                              addSamples=add_samples)
 
-        dfc = combineTrajectories(Nscenarios=Nscenarios, trajectories_dir=trajectories_dir, temp_exp_dir=temp_exp_dir,
-                                  addSamples=add_samples)
-
-        dfctrim = trim_trajectories_Dat(df=dfc, exp_dir=temp_exp_dir, keepTimes=keepTimes,
-                                        lagtime_days=int(lagtime_days))
-        dfctrim.to_csv(os.path.join(temp_exp_dir, 'trajectoriesDat_trim.csv'), index=False)
+    dfctrim = trim_trajectories_Dat(df=dfc, exp_dir=temp_exp_dir, keepTimes=keepTimes,
+                                    lagtime_days=int(lagtime_days))
+    dfctrim.to_csv(os.path.join(temp_exp_dir, 'trajectoriesDat_trim.csv'), index=False)
 
