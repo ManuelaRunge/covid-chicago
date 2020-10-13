@@ -183,7 +183,7 @@ if (trajectoriesPlot) {
   if (!file.exists(file.path(simulation_output, exp_combined, fname))) {
     exp_names <- list.dirs(simulation_output, recursive = FALSE, full.names = FALSE)
     exp_names <- exp_names[grep("20200919_IL_regreopen", exp_names)]
-    exp_names <- exp_names[!(exp_names =="20200919_IL_regreopen100perc_0daysdelay_sm4")]
+     exp_names <- exp_names[!(exp_names %in% c("20200831_IL_regreopen_combined", "20200919_IL_regreopen_combined"))]
     
     simdat <- load_sim_data(exp_names = exp_names)
     save(simdat,file=file.path(simulation_output, exp_combined, fname) )
@@ -207,7 +207,7 @@ if (trajectoriesPlot) {
       facet_wrap(~reopen, scales = "free", ncol = 1) +
       labs(color = "", x = "", y = "predicted ICU census") +
       theme(legend.position = "none") +
-      scale_color_manual(values = rollback_cols) +
+     # scale_color_manual(values = rollback_cols) +
       customThemeNoFacet
     
     
@@ -217,7 +217,7 @@ if (trajectoriesPlot) {
       facet_wrap(~reopen, scales = "free", ncol = 1) +
       labs(color = "", x = "", y = "predicted ICU census") +
       theme(legend.position = "none") +
-      scale_color_manual(values = delay_cols) +
+     # scale_color_manual(values = delay_cols) +
       customThemeNoFacet
     
     p3 <- ggplot(data = subset(simdat, geography_name == "illinois" & !is.na(capacity_multiplier) & delay == "none" & rollback == "sm4")) +
@@ -248,7 +248,7 @@ if (trajectoriesPlot) {
       facet_wrap(~region, scales = "free", nrow = 1) +
       labs(color = "", x = "", y = "predicted ICU census") +
       theme(legend.position = "none") +
-      scale_color_manual(values = rollback_cols) +
+    #  scale_color_manual(values = rollback_cols) +
       customThemeNoFacet
     
     
@@ -258,7 +258,7 @@ if (trajectoriesPlot) {
       facet_wrap(~region, scales = "free", nrow = 1) +
       labs(color = "", x = "", y = "predicted ICU census") +
       theme(legend.position = "none") +
-      scale_color_manual(values = delay_cols) +
+     # scale_color_manual(values = delay_cols) +
       customThemeNoFacet
     
     
@@ -269,7 +269,7 @@ if (trajectoriesPlot) {
       facet_wrap(~region, scales = "free", nrow = 1) +
       labs(color = "", x = "", y = "predicted ICU census") +
       theme(legend.position = "none") +
-      scale_color_manual(values = capacity_multiplier2_cols) +
+     # scale_color_manual(values = capacity_multiplier2_cols) +
       customThemeNoFacet
     
     pplot <- plot_grid(p1, p2, p3, ncol = 1)
@@ -287,7 +287,7 @@ if (trajectoriesPlot) {
   trajectoriesPlot_3 <- function() {
     simdatAggr <- simdat %>%
       filter(geography_name == "1" & date >= as.Date("2020-09-01") & date <= as.Date("2020-12-31")) %>%
-      filter(capacity_multiplier == 0.8 & delay == "none") %>%
+      filter(capacity_multiplier > 0.8 & delay == "none") %>%
       group_by(date, rollback, reopen) %>%
       summarize(
         min.value = min(value, na.rm = TRUE),
@@ -325,7 +325,7 @@ if (trajectoriesPlot) {
     
     simdatAggr <- simdat %>%
       filter(geography_name == "11" & date >= as.Date("2020-09-01") & date <= as.Date("2020-12-31")) %>%
-      filter(capacity_multiplier == 0.8 & rollback == "sm4") %>%
+      filter(capacity_multiplier> 0.8 & rollback == "sm4") %>%
       group_by(date, delay, reopen) %>%
       summarize(
         min.value = min(value, na.rm = TRUE),
@@ -364,10 +364,7 @@ if (trajectoriesPlot) {
         icu_available = mean(icu_available)
       )
     
-    simdatAggr$capacity_multiplier2 <- factor(simdatAggr$capacity_multiplier,
-                                              levels = rev(c("0.4", "0.6", "0.8", "1")),
-                                              labels = rev(c("0.4", "0.6", " 0.8", "1"))
-    )
+    simdatAggr$capacity_multiplier2 <- cut(simdatAggr$capacity_multiplier, quantile(simdatAggr$capacity_multiplier))
     
     
     
@@ -398,6 +395,7 @@ if (trajectoriesPlot) {
 
 
 #### Addition to method figure ? Not needed
+
 compareToBaseline <- FALSE
 if (compareToBaseline) {
   loadBaseline <- TRUE
@@ -559,11 +557,11 @@ if (compareToBaseline) {
 }
 
 
-#### Load probabilities..
+#### probabilities..
 if (probPlot) {
   
   propDat_sim <- simdat %>%
-    dplyr::filter(channel == "critical" & date > as.Date("2020-09-19") & date <= as.Date("2020-12-31")) %>%
+    dplyr::filter(channel == "crit" & date > as.Date("2020-09-19") & date <= as.Date("2020-12-31")) %>%
     dplyr::group_by(scen_num, sample_num, geography_name, exp_name, reopen, delay, rollback, pop, capacity_multiplier, icu_available) %>%
     dplyr::summarize(value = max(value)) %>%
     dplyr::mutate(aboveCapacity = ifelse(value >= icu_available, 1, 0)) %>%
@@ -574,6 +572,8 @@ if (probPlot) {
     dplyr::mutate(prob_overflow = nabove / nsamples)
   
   propDat_sim$geography_name <- factor(propDat_sim$geography_name, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
+  
+  save(propDat_sim,file=file.path(simulation_output, exp_combined, "propDat_sim.Rdata"))
   
   pplot <- ggplot(data = subset(propDat_sim)) +
     geom_line(aes(x = capacity_multiplier, y = prob_overflow, group = exp_name, col = reopen, linetype = rollback, alpha = delay), size = 1.1) +
@@ -587,13 +587,38 @@ if (probPlot) {
     background_grid()
   
   ggsave(paste0("ICUoverflow_proball_perCovidRegion.png"),
-         plot = pplot, path = file.path(simulation_output, exp_name), width = 14, height = 8, device = "png"
+         plot = pplot, path = file.path(simulation_output, exp_combined), width = 14, height = 8, device = "png"
   )
   ggsave(paste0("ICUoverflow_proball_perCovidRegion.pdf"),
-         plot = pplot, path = file.path(simulation_output, exp_name), width = 14, height = 8, device = "pdf"
+         plot = pplot, path = file.path(simulation_output, exp_combined), width = 14, height = 8, device = "pdf"
   )
   
   rm(pplot)
+  
+  
+  
+  #### Subset 
+  pplot <- ggplot(data = subset(propDat_sim, geography_name %in% c("1","4","11")) ) +
+    geom_line(aes(x = capacity_multiplier, y = prob_overflow, group = exp_name, col = reopen, linetype = rollback, alpha = delay), size = 1.1) +
+    # geom_point(aes(x=capacity_multiplier, y=prob_overflow, group=exp_name, fill=reopen),col="white",shape=21, size=2) +
+    geom_hline(yintercept = 0.2) +
+    scale_alpha_manual(values = c(1, 0.6, 0.3)) +
+    scale_color_manual(values = c("deepskyblue3", "orange")) +
+    scale_fill_manual(values = c("deepskyblue3", "orange")) +
+    facet_wrap(~geography_name, scales = "free") +
+    customThemeNoFacet +
+    background_grid()
+  
+  ggsave(paste0("ICUoverflow_proball_perCovidRegion_sub.png"),
+         plot = pplot, path = file.path(outdir), width = 15, height = 6, device = "png"
+  )
+  ggsave(paste0("ICUoverflow_proball_perCovidRegion_sub.pdf"),
+         plot = pplot, path = file.path(outdir), width = 15, height = 6, device = "pdf"
+  )
+  
+  rm(pplot)
+  
+  
   
   
   ##### Separate
@@ -602,8 +627,8 @@ if (probPlot) {
     # geom_point(aes(x=capacity_multiplier, y=prob_overflow, group=exp_name, fill=reopen),col="white",shape=21, size=2) +
     geom_hline(yintercept = 0.2) +
     scale_alpha_manual(values = c(1, 0.6, 0.3)) +
-    scale_color_manual(values = delay_cols) +
-    scale_fill_manual(values = delay_cols) +
+   # scale_color_manual(values = delay_cols) +
+   # scale_fill_manual(values = delay_cols) +
     facet_wrap(~geography_name, scales = "free") +
     customThemeNoFacet +
     background_grid()
@@ -612,8 +637,8 @@ if (probPlot) {
     geom_line(aes(x = capacity_multiplier, y = prob_overflow, group = exp_name, col = rollback, linetype = reopen), size = 1.1) +
     geom_hline(yintercept = 0.2) +
     scale_alpha_manual(values = c(1, 0.6, 0.3)) +
-    scale_color_manual(values = rollback_cols) +
-    scale_fill_manual(values = rollback_cols) +
+   # scale_color_manual(values = rollback_cols) +
+   # scale_fill_manual(values = rollback_cols) +
     facet_wrap(~geography_name, scales = "free") +
     customThemeNoFacet +
     background_grid()
@@ -623,19 +648,13 @@ if (probPlot) {
   
   
   ggsave(paste0("ICUoverflow_probability.png"),
-         plot = p12, path = file.path(simulation_output, exp_name), width = 14, height = 8, device = "png"
-  )
-  ggsave(paste0("ICUoverflow_probability.pdf"),
-         plot = p12, path = file.path(simulation_output, exp_name), width = 14, height = 8, device = "pdf"
-  )
-  
-  
-  ggsave(paste0("ICUoverflow_probability.png"),
          plot = p12, path = file.path(outdir), width = 14, height = 8, device = "png"
   )
   ggsave(paste0("ICUoverflow_probability.pdf"),
          plot = p12, path = file.path(outdir), width = 14, height = 8, device = "pdf"
   )
+  
+  
 }
 
 
@@ -961,3 +980,59 @@ if (lastFigure) {
   )
   rm(pplot)
 }
+
+
+
+
+
+
+
+##### Extract results for text
+extractResultsForText=TRUE
+if(extractResultsForText){
+  exp_combined <- "20200919_IL_regreopen_combined"
+  fname <- "combined_dataframe.Rdata"
+  load(file.path(simulation_output, exp_combined, fname))
+  
+  
+  load(file.path(simulation_output, exp_combined, "propDat_sim.Rdata"))
+  head(propDat_sim)
+  
+  simdatAggr <- simdat %>%
+    filter(geography_name == "1" & date >= as.Date("2020-09-01") & date <= as.Date("2020-12-31")) %>%
+    filter(capacity_multiplier > 0.8 & delay == "none") %>%
+    group_by(date, rollback, reopen) %>%
+    summarize(
+      min.value = min(value, na.rm = TRUE),
+      max.value = max(value, na.rm = TRUE),
+      median.value = median(value, na.rm = TRUE),
+      q25.value = quantile(value, probs = 0.25, na.rm = TRUE),
+      q75.value = quantile(value, probs = 0.75, na.rm = TRUE),
+      q2.5.value = quantile(value, probs = 0.025, na.rm = TRUE),
+      q97.5.value = quantile(value, probs = 0.975, na.rm = TRUE),
+      icu_available = mean(icu_available)
+    )
+  
+  
+  simdatAggr <- simdat %>%
+    filter(date >= as.Date("2020-09-01") & date <= as.Date("2020-12-31")) %>%
+    group_by(date, geography_name, rollback, delay, reopen, capacity_multiplier) %>%
+    summarize(
+      min.value = min(value, na.rm = TRUE),
+      max.value = max(value, na.rm = TRUE),
+      median.value = median(value, na.rm = TRUE),
+      q25.value = quantile(value, probs = 0.25, na.rm = TRUE),
+      q75.value = quantile(value, probs = 0.75, na.rm = TRUE),
+      q2.5.value = quantile(value, probs = 0.025, na.rm = TRUE),
+      q97.5.value = quantile(value, probs = 0.975, na.rm = TRUE),
+      icu_available = mean(icu_available)
+    )
+  
+  
+  baselineSimdat <- simdat %>% filter(delay=="none")
+  
+}
+
+
+
+
