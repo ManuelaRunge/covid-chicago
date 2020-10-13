@@ -22,7 +22,7 @@ source("publication_scripts_ICUprob/functions.R")
 theme_set(theme_cowplot())
 
 outdir <- file.path("C:/Users/mrm9534/Box/MR_archive/testfigures2")
-#simulation_output <- file.path(simulation_output, "overflow_simulations")
+#simulation_output <- file.path(simulation_output, "_overflow_simulations")
 
 
 ```
@@ -37,6 +37,9 @@ dat <- f_region_characteristics()
 summary(dat$icubeds_per10th)
 ```
 
+## Baseline
+### Continue current trend
+
 ```{r}
 
 
@@ -48,6 +51,35 @@ exp_name ="20201006_IL_baseline_oldsm8"
 exp_dir <- file.path(simulation_output, exp_name)
 simdat <- f_load_single_exp(exp_dir)
 picu <- f_icu_timeline(dat=simdat, selected_channel="crit_det")
+```
+
+## Counterfactual
+###  varying reopening
+
+```{r}
+
+####--------------------------------------
+####  Counterfactual - varying reopening
+####--------------------------------------
+exp_name ="20200919_IL_gradual_reopening_sm7"
+exp_dir <- file.path(simulation_output, '_overflow_simulations',exp_name)
+simdat <- f_load_single_exp(exp_dir=exp_dir, mainVars= c("date", "scen_num", "sample_num", "reopening_multiplier_4"))
+unique(simdat$geography_name)
+unique(simdat$reopening_multiplier_4)
+picu <- f_icu_timeline(dat=simdat, subregions=c("1"), selected_channel="crit_det", facetVar="reopening_multiplier_4")
+
+
+f_get_cumul_numbers(selected_channel="crit_det_cumul", facetVar="reopening_multiplier_4")
+
+
+```
+
+```{r}
+for(i in c("illinois", c(1:11))){
+  picu <- f_icu_timeline(dat=simdat, subregions=c(i), selected_channel="crit_det", facetVar="reopening_multiplier_4")
+  print(picu)
+  
+}
 ```
 
 
