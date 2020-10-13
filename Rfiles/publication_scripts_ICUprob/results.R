@@ -25,7 +25,7 @@ outdir <- file.path("C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago
 dat <- f_region_characteristics()
 summary(dat$icubeds_per10th)
 
-
+customTheme <- f_getCustomTheme(fontscl=0)
 
 #### --------------------------------------
 ####  Baseline - get characteristics
@@ -308,7 +308,7 @@ pplot <- ggplot(data = subset(ICU_threshold_future, risk_tolerance < 0.9)) +
   scale_color_manual(values = custom_cols) +
   scale_fill_manual(values = custom_cols) +
   facet_wrap(~reopen_label) +
-  customThemeNoFacet +
+  customTheme +
   background_grid() +
   labs(
     x = "Probability of ICU overflow (risk tolerance)",
@@ -326,7 +326,7 @@ for (reg in unique(ICU_threshold_future$geography_name)) {
     scale_color_manual(values = custom_cols) +
     scale_fill_manual(values = custom_cols) +
     facet_wrap(~reopen_label) +
-    customThemeNoFacet2 +
+    customTheme +
     background_grid() +
     labs(
       title = paste0("Region ", reg),
@@ -360,7 +360,7 @@ simdat_compare <- f_generate_generic_recommended_dat()
 ggplot(data = subset(simdat_compare, exp_name == "20200919_IL_regreopen100perc_0daysdelay_sm7")) +
   geom_line(aes(x = date, y = median.value, col = risk_tolerance)) +
   facet_wrap(~geography_name, scales = "free") +
-  customThemeNoFacet
+  customTheme
 
 simdat_comparePeak <- simdat_compare %>%
   group_by(geography_name, risk_tolerance, exp_name) %>%
@@ -369,7 +369,7 @@ simdat_comparePeak <- simdat_compare %>%
 
 ggplot(data = subset(simdat_comparePeak, geography_name != "illinois")) +
   geom_boxplot(aes(x = geography_name, y = median.value, col = risk_tolerance, group = interaction(risk_tolerance, geography_name))) +
-  customThemeNoFacet
+  customTheme
 
 
 ##### Export for map in QGIS

@@ -9,6 +9,24 @@ delay_cols <- c("#d0d1e6", "#7fcdbb", "#1d91c0")
 rollback_cols <- c("#d0d1e6", "#1d91c0")
 
 
+f_getCustomTheme <- function(fontscl = 0) {
+  customTheme <- theme(
+    strip.text.x = element_text(size = 12 + fontscl, face = "bold"),
+    strip.text.y = element_text(size = 12 + fontscl, face = "bold"),
+    strip.background = element_blank(),
+    plot.title = element_text(size = 16 + fontscl, vjust = -1, hjust = 0),
+    plot.subtitle = element_text(size = 14 + fontscl),
+    plot.caption = element_text(size = 10 + fontscl),
+    legend.title = element_text(size = 12 + fontscl),
+    legend.text = element_text(size = 12 + fontscl),
+    axis.text.x = element_text(size = 11 + fontscl),
+    axis.text.y = element_text(size = 11 + fontscl),
+    axis.title.x = element_text(size = 12 + fontscl),
+    axis.title.y = element_text(size = 12 + fontscl)
+  )
+  return(customTheme)
+}
+
 
 #### --------------------------------------
 #### Region characteristics
@@ -247,6 +265,7 @@ f_load_single_exp <- function(exp_dir, mainVars = NULL, summarize = TRUE, maxDat
 #### ICU timeline
 f_icu_timeline <- function(dat, subregions = NULL, selected_channel = "crit_det", facetVar = "geography_name") {
 
+  if(!exists("customTheme"))customTheme<- f_getCustomTheme()
   # unique(dat$channel)
   if (is.null(subregions)) subregions <- unique(dat$geography_name)
 
@@ -261,7 +280,7 @@ f_icu_timeline <- function(dat, subregions = NULL, selected_channel = "crit_det"
     geom_line(aes(x = date, y = median.value)) +
     geom_hline(aes(yintercept = icu_available), col = "red", linetype = "dashed") +
     scale_x_date(date_breaks = "60 days", date_labels = "%b") +
-    customThemeNoFacet +
+    customTheme +
     geom_hline(yintercept = c(Inf)) +
     geom_vline(xintercept = c(Inf)) +
     facet_wrap(~facetVar, scales = "free") +
@@ -480,6 +499,10 @@ f_describe_peak_and_cumul <- function(dat = simdat, subfolder, SAVE = TRUE) {
 
 
 f_stacked_barplot <- function(dflist = list_csvs, subregions = NULL, rollback = "sm4", reopen = "50perc", exp_name_sub) {
+  
+  if(!exists("customTheme"))customTheme<- f_getCustomTheme()
+  
+  
   dflist <- dflist[grep("regreopen", dflist)]
   dflist <- dflist[grep(rollback, dflist)]
   dflist <- dflist[grep(reopen, dflist)]
@@ -513,7 +536,7 @@ f_stacked_barplot <- function(dflist = list_csvs, subregions = NULL, rollback = 
   #   # geom_pointrange(aes(x=capacity_multiplier,  y=median.aboveICU, ymin=q2.5.aboveICU,  ymax=q97.5.aboveICU,col=delay, group=delay),position="dodge")+
   #   facet_wrap(~geography_name, scales = "free") +
   #   labs(y = "Difference between predicted\npeak ICU cases and ICU availability") +
-  #   customThemeNoFacet +
+  #   customTheme +
   #   scale_fill_manual(values = selectedCols) +
   #   scale_color_manual(values = selectedCols)
 
@@ -544,7 +567,7 @@ f_stacked_barplot <- function(dflist = list_csvs, subregions = NULL, rollback = 
       # caption="Difference between predicted\npeak ICU cases and ICU availability",
       x = "Trigger threshold"
     ) +
-    customThemeNoFacet +
+    customTheme +
     scale_fill_manual(values = selectedCols) +
     scale_color_manual(values = selectedCols) +
     geom_hline(yintercept = 0, linetype = "solid", size = 0.75) +
@@ -608,7 +631,7 @@ f_custom_prob_plot <- function(dat, plot_name, exp_dir, SAVE = TRUE, showPoints 
     scale_color_manual(values = custom_cols) +
     scale_fill_manual(values = custom_cols) +
     scale_y_continuous(lim = c(0, 1)) +
-    customThemeNoFacet +
+    customTheme +
     background_grid()
 
 
@@ -623,6 +646,8 @@ f_custom_prob_plot <- function(dat, plot_name, exp_dir, SAVE = TRUE, showPoints 
 
 
 f_custom_prob_plot2 <- function(dat, subregions = NULL, exp_dir, plot_name, width = 15, height = 10) {
+  
+  if(!exists("customTheme"))customTheme<- f_getCustomTheme()
   if (is.null(subregions)) subregions <- unique(dat$geography_name)
 
   pplot <- ggplot(data = subset(dat, geography_name %in% subregions)) +
@@ -635,7 +660,7 @@ f_custom_prob_plot2 <- function(dat, subregions = NULL, exp_dir, plot_name, widt
     geom_vline(xintercept = 0.8, linetype = "dashed") +
     scale_color_viridis_d() +
     scale_y_continuous(lim = c(0, 1)) +
-    customThemeNoFacet +
+    customTheme +
     background_grid() +
     facet_grid(reopen + rollback ~ delay) +
     theme(panel.spacing = unit(2, "lines"))
