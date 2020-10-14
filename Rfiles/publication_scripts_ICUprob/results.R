@@ -383,3 +383,23 @@ ggplot(data = subset(simdat_comparePeak, geography_name != "illinois")) +
 #
 # fwrite(subdat, file.path(exp_dir,"regreopen100perc_0daysdelay_sm4_riskTolerance_5.csv"),quote=FALSE)
 #
+
+
+
+
+##--------------------------------
+### Rt comparison
+##--------------------------------
+
+### Load Rt files 
+exp_name <- "20200919_IL_regreopen_combined"
+exp_name_sub <- exp_name
+exp_dir <- file.path(simulation_output, "_overflow_simulations", exp_name)
+list_csvs <- list.files(file.path(simulation_output, "_overflow_simulations"), pattern = "combined_Rt_aggregated_scen_num.Rdata", recursive = T, full.names = T)
+
+
+Rtdat <- f_combine_Rdata(Rdata_files=list_csvs)
+
+
+
+
