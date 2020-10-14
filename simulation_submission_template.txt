@@ -15,7 +15,7 @@ python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extende
 
 Specify post process
 python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "baseline" --post_process "dataComparison"
-python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "baseline" --post_process "processForCivis"
+python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "mr_v1_restorefit" --post_process "dataComparison"
 python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "baseline" --post_process "dataComparison" --noSamplePlot
 
 

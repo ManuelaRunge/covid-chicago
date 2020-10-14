@@ -1,5 +1,5 @@
 experiment_setup_parameters:
-  'number_of_samples': 50
+  'number_of_samples': 400
   'number_of_runs': 1
   'duration': 400
   'monitoring_samples': 400 # needs to be smaller than duration
@@ -243,6 +243,9 @@ time_parameters:
   'ki_multiplier_time_4':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-04-21}
+  'ki_multiplier_time_5':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-05-21}
   'ki_multiplier_time_6':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-06-21}

@@ -126,10 +126,8 @@ def plot_sim_and_ref(exp_names, ems_nr,
                 column_list.append(chn + "_EMS-" + str(ems_nr))
 
             df = load_sim_data(exp_name, ems_nr, fname=fname, column_list=column_list)
-            if exp_name== '20200929_IL_mr_baseline' :   #  exp_names =['20200922_IL_RR_baseline_0','20200929_IL_mr_baseline']
-                first_day = datetime.strptime(df['startdate'].unique()[0],  '%m/%d/%Y' )  # '%Y-%m-%d'
-            if exp_name ==  '20200922_IL_RR_baseline_0':
-                first_day = datetime.strptime(df['startdate'].unique()[0],  '%Y-%m-%d' )  # '%Y-%m-%d'
+            # first_day = datetime.strptime(df['startdate'].unique()[0],  '%m/%d/%Y' )  # '%Y-%m-%d'
+            first_day = datetime.strptime(df['startdate'].unique()[0],  '%Y-%m-%d' )  # '%Y-%m-%d'
             df['critical_with_suspected'] = df['critical']
             df['date'] = df['time'].apply(lambda x: first_day + timedelta(days=int(x)))
             df = df[(df['date'] >= first_plot_day) & (df['date'] <= last_plot_day)]
@@ -171,7 +169,7 @@ def plot_sim_and_ref(exp_names, ems_nr,
 if __name__ == '__main__':
 
    # args = parse_args()
-    exp_names =["20200929_IL_mr_baseline","20201003_IL_mr_resimsm4"]
+    exp_names =["20201013_IL_mr_v0_restorefit","20201013_IL_mr_v0_sameSeed_restorefit"]
     Location =  'Local'
     trajectoriesName ="trajectoriesDat.csv"
 
