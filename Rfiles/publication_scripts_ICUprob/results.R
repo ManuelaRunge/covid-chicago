@@ -145,7 +145,8 @@ exp_name_sub <- exp_name
 exp_dir <- file.path(simulation_output, "_overflow_simulations", exp_name)
 list_csvs <- list.files(file.path(simulation_output, "_overflow_simulations"), pattern = "trajectoriesDat_sub_long.csv", recursive = TRUE)
 
-for (subregion in unique(unique(simdat$geography_name))) {
+for (subregion in c(1:11)) {
+  print(subregion)
   # subregion <- c("11")
   out1 <- f_stacked_barplot(dflist = list_csvs, subregions = subregion, rollback = "sm4", reopen = "50perc", exp_name_sub)
   out2 <- f_stacked_barplot(dflist = list_csvs, subregions = subregion, rollback = "sm4", reopen = "100perc", exp_name_sub)
@@ -154,7 +155,7 @@ for (subregion in unique(unique(simdat$geography_name))) {
 
   pplot <- plot_grid(f_remove_legend(out1[[2]]), f_remove_legend(out3[[2]]), f_remove_legend(out2[[2]]), f_remove_legend(out4[[2]]))
 
-  f_save_plot(pplot = pplot, plot_name = paste0("barplot_reg_", subregion), plot_dir = file.path(outdir), width = 7, height = 7)
+  f_save_plot(pplot = pplot, plot_name = paste0("barplot_reg_", subregion), plot_dir = file.path(outdir), width = 8, height = 7)
 
   rm(pplot, subregion)
 }

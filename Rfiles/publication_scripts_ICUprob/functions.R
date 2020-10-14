@@ -22,7 +22,10 @@ f_getCustomTheme <- function(fontscl = 0) {
     axis.text.x = element_text(size = 11 + fontscl),
     axis.text.y = element_text(size = 11 + fontscl),
     axis.title.x = element_text(size = 12 + fontscl),
-    axis.title.y = element_text(size = 12 + fontscl)
+    axis.title.y = element_text(size = 12 + fontscl),
+    axis.line.x = element_blank(),
+    axis.line.y = element_blank(),
+    panel.border = element_rect(colour = "black", fill=NA, size=0.75)
   )
   return(customTheme)
 }
@@ -264,8 +267,7 @@ f_load_single_exp <- function(exp_dir, mainVars = NULL, summarize = TRUE, maxDat
 
 #### ICU timeline
 f_icu_timeline <- function(dat, subregions = NULL, selected_channel = "crit_det", facetVar = "geography_name") {
-
-  if(!exists("customTheme"))customTheme<- f_getCustomTheme()
+  if (!exists("customTheme")) customTheme <- f_getCustomTheme()
   # unique(dat$channel)
   if (is.null(subregions)) subregions <- unique(dat$geography_name)
 
@@ -498,20 +500,21 @@ f_describe_peak_and_cumul <- function(dat = simdat, subfolder, SAVE = TRUE) {
 }
 
 
-f_stacked_barplot <- function(dflist = list_csvs, subregions = NULL, rollback = "sm4", reopen = "50perc", exp_name_sub) {
+f_stacked_barplot <- function(dflist = list_csvs, subregions = NULL, rollback = "sm4", reopen = "50perc", exp_name_sub, stackLike = FALSE) {
   
-  if(!exists("customTheme"))customTheme<- f_getCustomTheme()
+  library(dplyr)
+  library(plyr)
   
+  if (!exists("customTheme")) customTheme <- f_getCustomTheme()
+  # customTheme <- f_getCustomTheme(fontscl = -3)
   
   dflist <- dflist[grep("regreopen", dflist)]
-  dflist <- dflist[grep(rollback, dflist)]
-  dflist <- dflist[grep(reopen, dflist)]
 
   tbl_fread <-
     file.path(simulation_output, "_overflow_simulations", dflist) %>%
     map_df(~ fread(.)) %>%
     filter(geography_name %in% subregions)
-
+  
   out <- f_describe_peak_and_cumul(dat = tbl_fread, subfolder = exp_name_sub, SAVE = FALSE)
   tab_peak <- out[[2]]
 
@@ -523,22 +526,18 @@ f_stacked_barplot <- function(dflist = list_csvs, subregions = NULL, rollback = 
       delay = gsub("daysdelay", " days", delay)
     )
 
-  tab_peak <- tab_peak %>% filter(reopen == reopen)
+  y_lu <-  round_any(min(tab_peak$median.aboveICU), 10, f = ceiling)   
+  y_up <-  round_any(max(tab_peak$median.aboveICU), 10, f = ceiling)  
+  if(y_up <0)y_up=0
+  y_step <- round_any(max(abs(y_lu),abs(y_up))/3, 10, f = ceiling)
+  labels_and_breaks = seq(y_lu, y_up, y_step)
+  
+  tab_peak <- tab_peak[tab_peak$reopen==reopen,]
+  tab_peak <- tab_peak[tab_peak$rollback==rollback,]
 
   if (reopen == "50perc") selectedCols <- c("#c6dbef", "#6baed6", "#2171b5")
   if (reopen == "100perc") selectedCols <- c("#fee0d2", "#fb6a4a", "#cb181d")
 
-
-  # pplot_peak <- ggplot(data = tab_peak) +
-  #   geom_hline(yintercept = Inf) +
-  #   geom_vline(xintercept = Inf) +
-  #   # geom_bar(aes(x=capacity_multiplier, y=median.aboveICU, fill=delay),col="azure4",position=position_dodge(width = 0.01), stat="identity")+
-  #   # geom_pointrange(aes(x=capacity_multiplier,  y=median.aboveICU, ymin=q2.5.aboveICU,  ymax=q97.5.aboveICU,col=delay, group=delay),position="dodge")+
-  #   facet_wrap(~geography_name, scales = "free") +
-  #   labs(y = "Difference between predicted\npeak ICU cases and ICU availability") +
-  #   customTheme +
-  #   scale_fill_manual(values = selectedCols) +
-  #   scale_color_manual(values = selectedCols)
 
   suppressWarnings(capacity_threshold <- tab_peak %>%
     dplyr::filter(median.aboveICU >= 0) %>%
@@ -550,29 +549,52 @@ f_stacked_barplot <- function(dflist = list_csvs, subregions = NULL, rollback = 
   if (is.na(capacity_threshold)) capacity_threshold <- 1
 
   tab_peak$capacity_multiplier_fct <- as.factor(round(tab_peak$capacity_multiplier * 100, 0))
-
+  # tab_peak$delay_rev <- factor(tab_peak$delay, levels=rev(c("0 days","3 days","7 days")), labels=rev(c("0 days","3 days","7 days")))
+  
   pplot_peak <- ggplot(data = tab_peak) +
     geom_hline(yintercept = Inf) +
     geom_vline(xintercept = Inf) +
-    geom_bar(data = subset(tab_peak, delay == "0 days"), aes(x = capacity_multiplier, y = median.aboveICU, fill = delay), col = "azure4", position = position_dodge(width = 0.01), stat = "identity") +
-    geom_bar(data = subset(tab_peak, delay == "3 days"), aes(x = capacity_multiplier, y = median.aboveICU, fill = delay), col = "azure4", position = position_dodge(width = 0.01), stat = "identity") +
-    geom_bar(data = subset(tab_peak, delay == "7 days"), aes(x = capacity_multiplier, y = median.aboveICU, fill = delay), col = "azure4", position = position_dodge(width = 0.01), stat = "identity") +
-    geom_bar(data = subset(tab_peak, delay == "7 days" & capacity_multiplier > capacity_threshold), aes(x = capacity_multiplier, y = median.aboveICU, fill = delay), col = "azure4", position = position_dodge(width = 0.01), stat = "identity") +
-    geom_bar(data = subset(tab_peak, delay == "3 days" & capacity_multiplier > capacity_threshold), aes(x = capacity_multiplier, y = median.aboveICU, fill = delay), col = "azure4", position = position_dodge(width = 0.01), stat = "identity") +
-    geom_bar(data = subset(tab_peak, delay == "0 days" & capacity_multiplier > capacity_threshold), aes(x = capacity_multiplier, y = median.aboveICU, fill = delay), col = "azure4", position = position_dodge(width = 0.01), stat = "identity") +
-    facet_wrap(~ rollback + reopen) +
-    scale_y_continuous(lim = c(-400, 500), labels = seq(-400, 500, 150), breaks = seq(-400, 500, 150)) +
+    geom_bar(data = subset(tab_peak), aes(x = capacity_multiplier_fct, y = median.aboveICU, fill = delay, group = interaction(delay, capacity_multiplier)), 
+             col = "azure4", position = position_dodge(width = 0.5), stat = "identity") +
+    # geom_bar(data = subset(tab_peak, capacity_multiplier < capacity_threshold), aes(x = as.factor(capacity_multiplier), y = median.aboveICU, fill = delay, group=interaction(delay,capacity_multiplier)), col = "azure4", position = position_dodge(width = 0.5), stat = "identity") +
+    # geom_bar(data = subset(tab_peak, capacity_multiplier > capacity_threshold), aes(x = as.factor(capacity_multiplier), y = median.aboveICU, fill = delay_rev, group=interaction(delay,capacity_multiplier)), col = "azure4", position = position_dodge(width = 0.5), stat = "identity") +
+    scale_y_continuous(lim = c(y_lu, y_up), labels = labels_and_breaks, breaks = labels_and_breaks) +
     labs(
       subtitle = "", y = expression(italic(ICU[predicted_peak] - ICU[capacity])),
       # caption="Difference between predicted\npeak ICU cases and ICU availability",
       x = "Trigger threshold"
     ) +
+    facet_wrap(~ rollback + reopen) +
     customTheme +
     scale_fill_manual(values = selectedCols) +
     scale_color_manual(values = selectedCols) +
     geom_hline(yintercept = 0, linetype = "solid", size = 0.75) +
     theme(panel.grid.major.y = element_line(colour = "grey", size = 0.75))
 
+
+  if (stackLike) {
+    pplot_peak <- ggplot(data = tab_peak) +
+      geom_hline(yintercept = Inf) +
+      geom_vline(xintercept = Inf) +
+      geom_bar(data = subset(tab_peak, delay == "0 days"), aes(x = capacity_multiplier, y = median.aboveICU, fill = delay), col = "azure4", position = position_dodge(width = 0.01), stat = "identity") +
+      geom_bar(data = subset(tab_peak, delay == "3 days"), aes(x = capacity_multiplier, y = median.aboveICU, fill = delay), col = "azure4", position = position_dodge(width = 0.01), stat = "identity") +
+      geom_bar(data = subset(tab_peak, delay == "7 days"), aes(x = capacity_multiplier, y = median.aboveICU, fill = delay), col = "azure4", position = position_dodge(width = 0.01), stat = "identity") +
+      geom_bar(data = subset(tab_peak, delay == "7 days" & capacity_multiplier > capacity_threshold), aes(x = capacity_multiplier, y = median.aboveICU, fill = delay), col = "azure4", position = position_dodge(width = 0.01), stat = "identity") +
+      geom_bar(data = subset(tab_peak, delay == "3 days" & capacity_multiplier > capacity_threshold), aes(x = capacity_multiplier, y = median.aboveICU, fill = delay), col = "azure4", position = position_dodge(width = 0.01), stat = "identity") +
+      geom_bar(data = subset(tab_peak, delay == "0 days" & capacity_multiplier > capacity_threshold), aes(x = capacity_multiplier, y = median.aboveICU, fill = delay), col = "azure4", position = position_dodge(width = 0.01), stat = "identity") +
+      facet_wrap(~ rollback + reopen) +
+      scale_y_continuous(lim = c(-400, 500), labels = seq(-400, 500, 150), breaks = seq(-400, 500, 150)) +
+      labs(
+        subtitle = "", y = expression(italic(ICU[predicted_peak] - ICU[capacity])),
+        # caption="Difference between predicted\npeak ICU cases and ICU availability",
+        x = "Trigger threshold"
+      ) +
+      customTheme +
+      scale_fill_manual(values = selectedCols) +
+      scale_color_manual(values = selectedCols) +
+      geom_hline(yintercept = 0, linetype = "solid", size = 0.75) +
+      theme(panel.grid.major.y = element_line(colour = "grey", size = 0.75))
+  }
 
   # panel.grid.minor.y = element_line(colour="grey", size=0.5)
   # y=expression(Delta*italic(ICU[capacity])),
@@ -646,8 +668,7 @@ f_custom_prob_plot <- function(dat, plot_name, exp_dir, SAVE = TRUE, showPoints 
 
 
 f_custom_prob_plot2 <- function(dat, subregions = NULL, exp_dir, plot_name, width = 15, height = 10) {
-  
-  if(!exists("customTheme"))customTheme<- f_getCustomTheme()
+  if (!exists("customTheme")) customTheme <- f_getCustomTheme()
   if (is.null(subregions)) subregions <- unique(dat$geography_name)
 
   pplot <- ggplot(data = subset(dat, geography_name %in% subregions)) +
