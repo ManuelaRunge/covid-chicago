@@ -189,3 +189,4 @@ testrun/log.txt
 testrun/runSimulations_test_temp.bat
 testrun/sample_plot.png
 testrun/trajectories.csv
+*.csv
