@@ -426,4 +426,67 @@ if(exploreRt_baseline_ICUprob){
     mutate(rt_ratio = rt_median_peak/rt_median_base, rt_diff=rt_median_peak-rt_median_base) %>%
     mutate(reopen = ifelse(rebound=="fast", "100perc","50perc"))
   
+  
+  ### Get baseline ICU
+  exp_name <- "20200919_IL_regreopen_combined"
+  exp_name_sub <- exp_name
+  exp_dir <- file.path(simulation_output, "_overflow_simulations", exp_name)
+  list_csvs <- list.files(file.path(simulation_output, "_overflow_simulations"), pattern = "trajectoriesDat_sub_long.csv", recursive = T, full.names = T)
+  simdat <- f_combine_csv_from_list(list_csvs) %>%
+    dplyr::filter(channel == "crit_det") %>%
+    dplyr::filter(exp_name != "20200919_IL_gradual_reopening_sm7") %>%
+    dplyr::filter(date  > as.Date("2020-09-30") & date <= as.Date("2020-10-01")) %>%
+    dplyr::select(geography_name, date,exp_name,median.value, pop,icu_available ) %>%
+    mutate(icu_ratio = median.value/icu_available , 
+           icu_diff = median.value-icu_available,
+           icu_available_per10th = (icu_available/pop) *10000,
+           median.value_per10th = (median.value/pop) *10000,
+           icu_diff_per10th =median.value_per10th-icu_available_per10th) 
+  
+  summary(as.Date(simdat$date))
+  summary(simdat$icu_ratio)
+  summary(simdat$icu_diff)
+  summary(simdat$icu_diff_per10th)
+  
+  ### add overflow probabilities
+  propDat_sim <- fread(file.path(exp_dir= file.path(simulation_output, "_overflow_simulations", "20200919_IL_regreopen_combined"), "propDat_sim_combined.csv"))
+  propDat_sim <- propDat_sim %>% left_join(Rtdat_compare, by=c('geography_name','reopen'))
+  propDat_sim <- propDat_sim %>% left_join(simdat, by=c('geography_name','exp_name'))
+  
+  
+  
+  ## Explorative plots 
+  ggplot(data=subset(propDat_sim ,geography_name %in% c(1:11) & capacity_multiplier== unique(propDat_sim$capacity_multiplier)[6])) +
+    geom_point(aes(x=rt_ratio, y=prob_overflow, group=exp_name)) 
+  ggplot(data=subset(propDat_sim,prob_overflow >=0.45 & prob_overflow <=0.5  )) +
+    geom_jitter(aes(x=rt_ratio, y=capacity_multiplier, col=reopen))
+  ggplot(data=subset(propDat_sim,prob_overflow >=0.45 & prob_overflow <=0.5  )) +
+    geom_jitter(aes(x=rt_ratio, y=capacity_multiplier, col=delay))
+  ggplot(data=subset(propDat_sim,prob_overflow >=0.45 & prob_overflow <=0.5  )) +
+    geom_jitter(aes(x=rt_ratio, y=capacity_multiplier, col=rollback))
+  
+  
+  ggplot(data=subset(propDat_sim ,geography_name %in% c(1:11) & capacity_multiplier== unique(propDat_sim$capacity_multiplier)[6])) +
+    geom_point(aes(x=icu_diff_per10th, y=prob_overflow, group=exp_name)) 
+  ggplot(data=subset(propDat_sim,prob_overflow >=0.45 & prob_overflow <=0.5  )) +
+    geom_jitter(aes(x=icu_diff_per10th, y=capacity_multiplier, col=reopen))
+  ggplot(data=subset(propDat_sim,prob_overflow >=0.45 & prob_overflow <=0.5  )) +
+    geom_jitter(aes(x=icu_diff_per10th, y=capacity_multiplier, col=delay))
+  ggplot(data=subset(propDat_sim,prob_overflow >=0.45 & prob_overflow <=0.5  )) +
+    geom_jitter(aes(x=icu_diff_per10th, y=capacity_multiplier, col=rollback))
+  
+  
+  ggplot(data=subset(propDat_sim ,geography_name %in% c(1:11) & capacity_multiplier== unique(propDat_sim$capacity_multiplier)[6])) +
+    geom_point(aes(x=icu_available_per10th, y=prob_overflow, group=exp_name)) 
+  ggplot(data=subset(propDat_sim,prob_overflow >=0.45 & prob_overflow <=0.5  )) +
+    geom_jitter(aes(x=icu_available_per10th, y=capacity_multiplier, col=reopen))
+  ggplot(data=subset(propDat_sim,prob_overflow >=0.45 & prob_overflow <=0.5  )) +
+    geom_jitter(aes(x=icu_available_per10th, y=capacity_multiplier, col=delay))
+  ggplot(data=subset(propDat_sim,prob_overflow >=0.45 & prob_overflow <=0.5  )) +
+    geom_jitter(aes(x=icu_available_per10th, y=capacity_multiplier, col=rollback))
+  
+  
+  ggplot(data=subset(propDat_sim ,geography_name %in% c(1:11) & capacity_multiplier== unique(propDat_sim$capacity_multiplier)[6])) +
+    geom_point(aes(x=icu_diff_per10th, y=rt_ratio, group=exp_name,col=prob_overflow)) 
+}
 
