@@ -136,6 +136,7 @@ f_combine_Rdata <- function(Rdata_files) {
   datList <- list()
   for (Rdata_file in Rdata_files) {
     load.Rdata(filename = file.path(Rdata_file), objname = "tempdat")
+    tempdat$filesource <- Rdata_file
     datList[[length(datList) + 1]] <- tempdat
     rm(tempdat)
   }
