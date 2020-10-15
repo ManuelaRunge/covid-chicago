@@ -93,7 +93,7 @@ unique(simdat$reopening_multiplier_4)
 picu <- f_icu_timeline(dat = simdat, subregions = c("1"), selected_channel = "crit_det", facetVar = "reopening_multiplier_4")
 
 ## Rebound values
-rebound <- f_get_rebound_values()
+rebound <- f_get_rebound_values(dat=simdat)
 
 
 ### Timeline plot
