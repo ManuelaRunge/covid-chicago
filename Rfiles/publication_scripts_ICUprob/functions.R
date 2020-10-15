@@ -304,6 +304,37 @@ f_icu_timeline <- function(dat, subregions = NULL, selected_channel = "crit_det"
   return(pplot)
 }
 
+#### Rt timeline
+f_rt_timeline <- function(dat, subregions = NULL, selected_channel = "crit_det", facetVar = "geography_name") {
+  if (!exists("customTheme")) customTheme <- f_getCustomTheme()
+  # unique(dat$channel)
+  if (is.null(subregions)) subregions <- unique(dat$geography_name)
+  
+  
+  dat <- dat %>% filter(geography_name %in% subregions)
+  dat$date <- as.Date(dat$date)
+  dat[, "selected_channel"] <- dat[, which(colnames(dat) == selected_channel)]
+  dat[, "facetVar"] <- dat[, which(colnames(dat) == facetVar)]
+  
+  pplot <- ggplot(data = dat) +
+    background_grid() +
+    geom_ribbon(aes(x = date, ymin = rt_lower, ymax = rt_upper, fill=as.factor(rebound)), alpha = 0.3) +
+   # geom_ribbon(aes(x = date, ymin = q25.value, ymax = q75.value), alpha = 0.3) +
+    geom_line(aes(x = date, y = rt_median, col=as.factor(rebound))) +
+    geom_hline(aes(yintercept = 1), col = "red", linetype = "dashed") +
+    scale_x_date(date_breaks = "60 days", date_labels = "%b") +
+    customTheme +
+    geom_hline(yintercept = c(Inf)) +
+    geom_vline(xintercept = c(Inf)) +
+    facet_wrap(~facetVar, scales = "free") +
+    labs(title = paste0("subregions: ", subregions), subtitle = "", x = "", y = selected_channel) +
+    theme(legend.position = "none")
+  
+  return(pplot)
+}
+
+
+
 f_get_cumul_numbers <- function(dat = simdat, subregions = NULL, selected_channel = "crit_det_cumul", facetVar = "capacity_multiplier") {
 
   # unique(dat$channel)

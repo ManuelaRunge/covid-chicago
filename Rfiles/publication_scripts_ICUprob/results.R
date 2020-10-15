@@ -391,15 +391,40 @@ ggplot(data = subset(simdat_comparePeak, geography_name != "illinois")) +
 ### Rt comparison
 ##--------------------------------
 
-### Load Rt files 
-exp_name <- "20200919_IL_regreopen_combined"
-exp_name_sub <- exp_name
-exp_dir <- file.path(simulation_output, "_overflow_simulations", exp_name)
-list_csvs <- list.files(file.path(simulation_output, "_overflow_simulations"), pattern = "combined_Rt_aggregated_scen_num.Rdata", recursive = T, full.names = T)
-
-
-Rtdat <- f_combine_Rdata(Rdata_files=list_csvs)
-
-
-
+exploreRt_baseline_ICUprob=FALSE
+if(exploreRt_baseline_ICUprob){
+  ## Get Rt
+  ## Get rebound and combine
+  ## Get probabilities and combine
+  ## Get starting value and combine 
+  
+  
+  ### Load Rt files 
+  exp_name <- "20200917_IL_gradual_reopening"
+  Rtdat  <- fread(file.path(simulation_output, "_overflow_simulations", exp_name,"estimatedRt","combined_estimated_Rt.csv"))
+  
+  ###+ 120 as trimmed trajectories was used 
+  Rtdat <-  Rtdat %>% rename(       rt_median = `Median(R)`,
+                                    rt_lower = `Quantile.0.025(R)`,
+                                    rt_upper = `Quantile.0.975(R)`) %>%
+    mutate(date=as.Date("2020-02-13") + t_end+120,
+           geography_name= gsub("EMS-","",region),
+           geography_name= gsub("All","illinois",geography_name)) %>% 
+    filter(date >= as.Date("2020-09-01") & date <= as.Date("2020-12-01")) %>%
+    as.data.frame()
+  
+  rebound <- f_get_rebound_values()
+  Rtdat <- Rtdat %>% left_join(rebound , by="geography_name")
+  
+  Rtdat_fast <- Rtdat %>% filter(reopening_multiplier_4==fast_rebound) %>% mutate(rebound="fast") %>% dplyr::select(-fast_rebound)
+  Rtdat_moderate <- Rtdat %>% filter(reopening_multiplier_4==moderate_rebound) %>% mutate(rebound="moderate") %>% dplyr::select(colnames(Rtdat_fast))
+  Rtdat <- rbind(Rtdat_fast,Rtdat_moderate)
+  f_rt_timeline(dat=Rtdat, subregions = c(1,2,3), selected_channel = "median_rt", facetVar = "geography_name")
+  
+  Rtdat_peak <-  Rtdat %>% group_by(geography_name, rebound) %>% filter(rt_median==max(rt_median)) %>% filter(date == min(date))%>% rename(rt_median_peak=rt_median) %>%dplyr::select(geography_name,rebound,rt_median_peak)
+  Rtdat_baseline <-Rtdat %>% filter(date > as.Date("2020-09-30") & date <= as.Date("2020-10-01")) %>% rename(rt_median_base=rt_median) %>%dplyr::select(geography_name,rebound,rt_median_base)
+  Rtdat_compare <- Rtdat_peak %>% left_join(Rtdat_baseline, by=c('geography_name', 'rebound')) %>% 
+    mutate(rt_ratio = rt_median_peak/rt_median_base, rt_diff=rt_median_peak-rt_median_base) %>%
+    mutate(reopen = ifelse(rebound=="fast", "100perc","50perc"))
+  
 
