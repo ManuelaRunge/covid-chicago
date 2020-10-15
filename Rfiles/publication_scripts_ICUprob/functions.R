@@ -7,7 +7,19 @@
 capacity_multiplier2_cols <- c("#d0d1e6", "#c7e9b4", "#7fcdbb", "#41b6c4", "#1d91c0")
 delay_cols <- c("#d0d1e6", "#7fcdbb", "#1d91c0")
 rollback_cols <- c("#d0d1e6", "#1d91c0")
-
+custom_cols <- c(
+  "0days-50perc" = "#c6dbef", "3days-50perc" = "#6baed6", "7days-50perc" = "#2171b5",
+  "0days-100perc" = "#fee0d2", "3days-100perc" = "#fb6a4a", "7days-100perc" = "#cb181d"
+)
+custom_cols_delay_50perc <- c(
+  "0 days" = "#c6dbef", "3 days" = "#6baed6", "7 days" = "#2171b5"
+)
+custom_cols_delay_100perc <- c(
+  "0 days" = "#fee0d2", "3 days" = "#fb6a4a", "7 days" = "#cb181d"
+)
+custom_cols_reopen <- c(
+  "100perc" = "#cb181d", "50perc" = "#2171b5"
+)
 
 f_getCustomTheme <- function(fontscl = 0) {
   customTheme <- theme(
