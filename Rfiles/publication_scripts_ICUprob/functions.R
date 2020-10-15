@@ -654,6 +654,49 @@ f_stacked_barplot <- function(dflist = list_csvs, subregions = NULL, rollback = 
 }
 
 
+f_ICU_tolerance_plot <- function(dat=ICU_threshold_future,reg =NULL,riskTolerance =0.9, byRollback=TRUE){
+  
+  if(is.null(reg))reg <- unique(dat$geography_name)[!(unique(dat$geography_name) %in% "illinois")]
+  
+  if(byRollback==TRUE){
+    pplot <-  ggplot(data = subset(dat,  geography_name %in% c(reg) & risk_tolerance < riskTolerance)) +
+      geom_smooth(aes(x = risk_tolerance, y = capacity_multiplier, col = grpVar, fill=grpVar), size = 1, se = T) +
+      scale_color_manual(values = custom_cols) +
+      scale_fill_manual(values = custom_cols) +
+      facet_wrap(~reopen_label) +
+      customTheme +
+      background_grid() +
+      labs(
+        x = "Probability of ICU overflow (risk tolerance)",
+        y = "Trigger threshold\n(% of ICU COVID availability)",
+        color = "delay",
+        fill = "delay"
+      )
+    
+  }
+  
+  if(byRollback==FALSE){
+    pplot <-  ggplot(data = subset(dat,  geography_name %in% c(reg) & risk_tolerance < riskTolerance)) +
+      geom_smooth(aes(x = risk_tolerance, y = capacity_multiplier,  col = reopen, fill=reopen, linetype=rollback), size = 1, se = T) +
+      scale_color_manual(values = custom_cols_reopen) +
+      scale_fill_manual(values = custom_cols_reopen) +
+      facet_wrap(~reopen_label) +
+      customTheme +
+      background_grid() +
+      labs(
+        x = "Probability of ICU overflow (risk tolerance)",
+        y = "Trigger threshold\n(% of ICU COVID availability)",
+        linetype="rollback"
+      )+
+      guides(colour=FALSE,fill=FALSE)
+  }
+  
+  
+  return(pplot)
+  
+}
+
+
 f_get_probabilities <- function(exp_dir, SAVE = TRUE) {
   simdat <- load_sim_data(exp_dir)
   simdat <- simdat %>% left_join(load_new_capacity(), by = "geography_name")
