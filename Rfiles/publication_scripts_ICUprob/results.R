@@ -304,47 +304,28 @@ ggplot(data = subset(ICU_threshold_future, risk_tolerance < 0.9)) +
 ####  Triggered reopening - Probability - risk tolerance plot
 #### --------------------------------------
 
-pplot <- ggplot(data = subset(ICU_threshold_future, risk_tolerance < 0.9)) +
-  geom_smooth(aes(x = risk_tolerance, y = capacity_multiplier, group = exp_name, col = grpVar, linetype = rollback), size = 1, se = F) +
-  scale_color_manual(values = custom_cols) +
-  scale_fill_manual(values = custom_cols) +
-  facet_wrap(~reopen_label) +
-  customTheme +
-  background_grid() +
-  labs(
-    x = "Probability of ICU overflow (risk tolerance)",
-    y = "Trigger threshold\n(% of ICU COVID availability)",
-    color = "delay"
-  )
-
-f_save_plot(pplot = pplot, plot_name = "risk-tolerance_capacity_overall", plot_dir = file.path(outdir), width = 8, height = 3)
+pplot <- f_ICU_tolerance_plot(dat=subset(ICU_threshold_future),byRollback=T)
+pplot2 <- f_ICU_tolerance_plot(dat=subset(ICU_threshold_future),byRollback=F)
+f_save_plot(pplot = pplot, plot_name = "risk-tolerance_capacity_delay", plot_dir = file.path(outdir), width = 8, height = 3)
+f_save_plot(pplot = pplot2, plot_name = "risk-tolerance_capacity_rollback", plot_dir = file.path(outdir), width = 8, height = 3)
 
 
-### For supplemen and description, plots per region
+### For supplement and description, plots per region
 for (reg in unique(ICU_threshold_future$geography_name)) {
-  pplot <- ggplot(data = subset(ICU_threshold_future, geography_name %in% c(reg) & risk_tolerance < 0.9)) +
-    geom_smooth(aes(x = risk_tolerance, y = capacity_multiplier, group = exp_name, col = grpVar, linetype = rollback), size = 1, se = F) +
-    scale_color_manual(values = custom_cols) +
-    scale_fill_manual(values = custom_cols) +
-    facet_wrap(~reopen_label) +
-    customTheme +
-    background_grid() +
-    labs(
-      title = paste0("Region ", reg),
-      subtitle = "",
-      x = "Probability of ICU overflow (risk tolerance)",
-      y = "Trigger threshold\n(% of ICU COVID availability)",
-      color = "delay"
-    )
-
+  
+  f_ICU_tolerance_plot(dat=subset(ICU_threshold_future, rollback=="sm7"),reg=reg)
+  
   f_save_plot(pplot = pplot, plot_name = paste0("risk-tolerance_capacity_overall_reg_", reg), plot_dir = file.path(outdir), width = 8, height = 3)
   rm(pplot)
 }
 
+
 #### --------------------------------------
 ####  Triggered reopening - Compare recommendation vs generic
 #### --------------------------------------
-
+## Already covered in stacked barplot like figure
+compare_recommended_vs_generic =FALSE
+if(compare_recommended_vs_generic){
 exp_name <- "20200919_IL_regreopen_combined"
 exp_name_sub <- exp_name
 exp_dir <- file.path(simulation_output, "_overflow_simulations", exp_name)
