@@ -372,21 +372,20 @@ ggplot(data = subset(simdat_comparePeak, geography_name != "illinois")) +
   geom_boxplot(aes(x = geography_name, y = median.value, col = risk_tolerance, group = interaction(risk_tolerance, geography_name))) +
   customTheme
 
-
-##### Export for map in QGIS
-# exp="20200919_IL_regreopen100perc_0daysdelay_sm4"
-# subdat <- propDat_sim %>%
-#           filter(exp_name==exp, prob_overflow<=0.5) %>%
-#           group_by(geography_name) %>%
-#           filter(prob_overflow==max(prob_overflow)) %>%
-#           filter(capacity_multiplier==max(capacity_multiplier))
-#
-# fwrite(subdat, file.path(exp_dir,"regreopen100perc_0daysdelay_sm4_riskTolerance_5.csv"),quote=FALSE)
-#
-
-
-
-
+exportForQgis=F
+if(exportForQgis){
+  ##### Export for map in QGIS
+  # exp="20200919_IL_regreopen100perc_0daysdelay_sm4"
+  # subdat <- propDat_sim %>%
+  #           filter(exp_name==exp, prob_overflow<=0.5) %>%
+  #           group_by(geography_name) %>%
+  #           filter(prob_overflow==max(prob_overflow)) %>%
+  #           filter(capacity_multiplier==max(capacity_multiplier))
+  #
+  # fwrite(subdat, file.path(exp_dir,"regreopen100perc_0daysdelay_sm4_riskTolerance_5.csv"),quote=FALSE)
+  #
+  
+}
 ##--------------------------------
 ### Rt comparison
 ##--------------------------------
