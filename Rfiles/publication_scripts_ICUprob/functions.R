@@ -396,7 +396,14 @@ f_get_peak_numbers <- function(dat = simdat, subregions = NULL, selected_channel
 #### Counterfactual - rebound scenarios
 #### --------------------------------------
 
-f_get_rebound_values <- function(dat = simdat) {
+f_get_rebound_values <- function(dat = NULL) {
+  
+  if(is.null(dat)){
+    exp_name <- "20200919_IL_gradual_reopening_sm7"
+    exp_dir <- file.path(simulation_output, "_overflow_simulations", exp_name)
+    dat <- f_load_single_exp(exp_dir = exp_dir, mainVars = c("date", "scen_num", "sample_num", "reopening_multiplier_4"))
+    
+  }
   moderate_rebound <- dat %>%
     dplyr::group_by(geography_name, reopening_multiplier_4) %>%
     filter(channel == "crit_det") %>%
