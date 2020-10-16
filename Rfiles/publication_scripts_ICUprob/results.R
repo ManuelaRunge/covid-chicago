@@ -46,8 +46,6 @@ exp_dir <- file.path(simulation_output, "_simulations_for_civis", exp_name)
 simdat <- f_load_single_exp(exp_dir)
 picu <- f_icu_timeline(dat = simdat, selected_channel = "crit_det")
 
-
-
 #### --------------------------------------
 ####  Baseline -  How often in the past did 20 happen?
 #### --------------------------------------
@@ -154,9 +152,15 @@ for (subregion in c(1:11)) {
   out4 <- f_stacked_barplot(dflist = list_csvs, subregions = subregion, rollback = "sm7", reopen = "100perc", exp_name_sub)
 
   pplot <- plot_grid(f_remove_legend(out1[[2]]), f_remove_legend(out3[[2]]), f_remove_legend(out2[[2]]), f_remove_legend(out4[[2]]))
-
   f_save_plot(pplot = pplot, plot_name = paste0("barplot_reg_", subregion), plot_dir = file.path(outdir), width = 8, height = 7)
 
+  
+  out3 <- f_stacked_barplot(dflist = list_csvs, subregions = subregion, rollback = "sm7", reopen = "50perc", exp_name_sub,stackLike=T)
+  out4 <- f_stacked_barplot(dflist = list_csvs, subregions = subregion, rollback = "sm7", reopen = "100perc", exp_name_sub, stackLike=T)
+  
+  pplot2 <- plot_grid( f_remove_legend(out4[[2]]),  f_remove_legend(out3[[2]]), ncol=1)
+  f_save_plot(pplot = pplot2, plot_name = paste0("barplot2b_reg_", subregion), plot_dir = file.path(outdir), width = 7, height = 10)
+  
   rm(pplot, subregion)
 }
 
@@ -265,6 +269,7 @@ f_custom_prob_plot(
 )
 
 
+
 #### --------------------------------------
 ####  Triggered reopening - Probability - Compare with characteristics
 #### --------------------------------------
@@ -352,6 +357,7 @@ simdat_comparePeak <- simdat_compare %>%
 ggplot(data = subset(simdat_comparePeak, geography_name != "illinois")) +
   geom_boxplot(aes(x = geography_name, y = median.value, col = risk_tolerance, group = interaction(risk_tolerance, geography_name))) +
   customTheme
+}
 
 exportForQgis=F
 if(exportForQgis){

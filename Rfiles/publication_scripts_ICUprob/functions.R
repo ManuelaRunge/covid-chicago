@@ -577,11 +577,11 @@ f_stacked_barplot <- function(dflist = list_csvs, subregions = NULL, rollback = 
       delay = gsub("daysdelay", " days", delay)
     )
 
-  y_lu <-  round_any(min(tab_peak$median.aboveICU), 10, f = ceiling)   
-  y_up <-  round_any(max(tab_peak$median.aboveICU), 10, f = ceiling)  
-  if(y_up <0)y_up=0
-  y_step <- round_any(max(abs(y_lu),abs(y_up))/3, 10, f = ceiling)
-  labels_and_breaks = seq(y_lu, y_up, y_step)
+ # y_lu <- -400# round_any(min(tab_peak$median.aboveICU), 10, f = ceiling)   
+#  y_up <- 200# round_any(max(tab_peak$median.aboveICU), 10, f = ceiling)  
+  #if(y_up <0)y_up=0
+  #y_step <- 100 #round_any(max(abs(y_lu),abs(y_up))/3, 10, f = ceiling)
+  #labels_and_breaks = seq(y_lu, y_up, y_step)
   
   tab_peak <- tab_peak[tab_peak$reopen==reopen,]
   tab_peak <- tab_peak[tab_peak$rollback==rollback,]
@@ -605,11 +605,11 @@ f_stacked_barplot <- function(dflist = list_csvs, subregions = NULL, rollback = 
   pplot_peak <- ggplot(data = tab_peak) +
     geom_hline(yintercept = Inf) +
     geom_vline(xintercept = Inf) +
-    geom_bar(data = subset(tab_peak), aes(x = capacity_multiplier_fct, y = median.aboveICU, fill = delay, group = interaction(delay, capacity_multiplier)), 
-             col = "azure4", position = position_dodge(width = 0.5), stat = "identity") +
+    geom_bar(data = subset(tab_peak), aes(x = capacity_multiplier_fct, y = median.aboveICU,  col = delay, fill = delay, group = interaction(delay, capacity_multiplier)), 
+              position = position_dodge(width = 0.8), stat = "identity", width=0.7) +
     # geom_bar(data = subset(tab_peak, capacity_multiplier < capacity_threshold), aes(x = as.factor(capacity_multiplier), y = median.aboveICU, fill = delay, group=interaction(delay,capacity_multiplier)), col = "azure4", position = position_dodge(width = 0.5), stat = "identity") +
     # geom_bar(data = subset(tab_peak, capacity_multiplier > capacity_threshold), aes(x = as.factor(capacity_multiplier), y = median.aboveICU, fill = delay_rev, group=interaction(delay,capacity_multiplier)), col = "azure4", position = position_dodge(width = 0.5), stat = "identity") +
-    scale_y_continuous(lim = c(y_lu, y_up), labels = labels_and_breaks, breaks = labels_and_breaks) +
+   # scale_y_continuous(lim = c(y_lu, y_up), labels = labels_and_breaks, breaks = labels_and_breaks) +
     labs(
       subtitle = "", y = expression(italic(ICU[predicted_peak] - ICU[capacity])),
       # caption="Difference between predicted\npeak ICU cases and ICU availability",
@@ -634,7 +634,7 @@ f_stacked_barplot <- function(dflist = list_csvs, subregions = NULL, rollback = 
       geom_bar(data = subset(tab_peak, delay == "3 days" & capacity_multiplier > capacity_threshold), aes(x = capacity_multiplier, y = median.aboveICU, fill = delay), col = "azure4", position = position_dodge(width = 0.01), stat = "identity") +
       geom_bar(data = subset(tab_peak, delay == "0 days" & capacity_multiplier > capacity_threshold), aes(x = capacity_multiplier, y = median.aboveICU, fill = delay), col = "azure4", position = position_dodge(width = 0.01), stat = "identity") +
       facet_wrap(~ rollback + reopen) +
-      scale_y_continuous(lim = c(-400, 500), labels = seq(-400, 500, 150), breaks = seq(-400, 500, 150)) +
+      #scale_y_continuous(lim = c(-400, 500), labels = seq(-400, 500, 150), breaks = seq(-400, 500, 150)) +
       labs(
         subtitle = "", y = expression(italic(ICU[predicted_peak] - ICU[capacity])),
         # caption="Difference between predicted\npeak ICU cases and ICU availability",
@@ -722,6 +722,7 @@ f_get_probabilities <- function(exp_dir, SAVE = TRUE) {
 
 
 f_custom_prob_plot <- function(dat, plot_name, exp_dir, SAVE = TRUE, showPoints = FALSE, width = 14, height = 8, reopenFacet = TRUE) {
+ 
   dat$grpVar <- paste0(gsub("none", "0days", gsub(" ", "", dat$delay)), "-", dat$reopen)
 
   dat$grpVar <- factor(dat$grpVar,
@@ -742,9 +743,9 @@ f_custom_prob_plot <- function(dat, plot_name, exp_dir, SAVE = TRUE, showPoints 
 
 
   pplot <- ggplot(data = dat) +
-    geom_line(aes(x = capacity_multiplier, y = prob_overflow, group = exp_name, col = grpVar, linetype = rollback), size = 1.1) +
+    geom_smooth(aes(x = capacity_multiplier, y = prob_overflow, group = exp_name, col = reopen, linetype = rollback), size = 1.1) +
     geom_hline(yintercept = 0.2) +
-    scale_color_manual(values = custom_cols) +
+    scale_color_manual(values = reopen) +
     scale_fill_manual(values = custom_cols) +
     scale_y_continuous(lim = c(0, 1)) +
     customTheme +
@@ -757,6 +758,59 @@ f_custom_prob_plot <- function(dat, plot_name, exp_dir, SAVE = TRUE, showPoints 
 
   f_save_plot(pplot = pplot, plot_name = plot_name, plot_dir = file.path(exp_dir), width = width, height = height)
 
+  return(pplot)
+}
+
+
+f_custom_prob_plot_b <- function(dat, plot_name, exp_dir, SAVE = TRUE, showPoints = FALSE, width = 14, height = 8, reopenFacet = TRUE) {
+  
+  dat$grpVar <- paste0(gsub("none", "0days", gsub(" ", "", dat$delay)), "-", dat$reopen)
+  
+  dat$grpVar <- factor(dat$grpVar,
+                       levels = c(
+                         "7days-100perc", "3days-100perc", "0days-100perc",
+                         "7days-50perc", "3days-50perc", "0days-50perc"
+                       ),
+                       labels = c(
+                         "7days-100perc", "3days-100perc", "0days-100perc",
+                         "7days-50perc", "3days-50perc", "0days-50perc"
+                       )
+  )
+  
+  custom_cols <- c(
+    "0days-50perc" = "#c6dbef", "3days-50perc" = "#6baed6", "7days-50perc" = "#2171b5",
+    "0days-100perc" = "#fee0d2", "3days-100perc" = "#fb6a4a", "7days-100perc" = "#cb181d"
+  )
+  
+  
+  pplot <- ggplot(data = subset(dat, rollback=="sm7"& delay=="none")) +
+    geom_line(aes(x = capacity_multiplier, y = prob_overflow, col=reopen), size = 1.1) +
+    geom_hline(yintercept = 0.2) +
+    scale_color_manual(values = custom_cols_reopen) +
+    scale_fill_manual(values = custom_cols_reopen) +
+    scale_y_continuous(lim = c(0, 1)) +
+    customTheme +
+    background_grid()+
+    facet_wrap(~ geography_name, scales = "free")
+  
+  
+  pplot <- ggplot(data = subset(dat, rollback=="sm7"& delay=="none")) +
+    geom_line(aes(x = capacity_multiplier, y = prob_overflow, col=geography_name), size = 1.1) +
+    geom_hline(yintercept = 0.2) +
+    #scale_color_manual(values = custom_cols_reopen) +
+    ##scale_fill_manual(values = custom_cols_reopen) +
+    scale_y_continuous(lim = c(0, 1)) +
+    customTheme +
+    background_grid()+
+    facet_wrap(~ reopen, scales = "free")
+  
+  
+  if (reopenFacet) pplot <- pplot + facet_wrap(reopen ~ geography_name, scales = "free")
+  if (reopenFacet == FALSE) pplot <- pplot + facet_wrap(~geography_name, scales = "free")
+  if (showPoints) pplot <- pplot + geom_point(aes(x = capacity_multiplier, y = prob_overflow, group = exp_name, fill = reopen), col = "white", shape = 21, size = 2)
+  
+  f_save_plot(pplot = pplot, plot_name = plot_name, plot_dir = file.path(exp_dir), width = width, height = height)
+  
   return(pplot)
 }
 
@@ -781,6 +835,7 @@ f_custom_prob_plot2 <- function(dat, subregions = NULL, exp_dir, plot_name, widt
     theme(panel.spacing = unit(2, "lines"))
 
   f_save_plot(pplot = pplot, plot_name = plot_name, plot_dir = file.path(exp_dir), width = width, height = height)
+  return(pplot)
 }
 
 
