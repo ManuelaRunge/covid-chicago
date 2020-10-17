@@ -164,6 +164,21 @@ for (subregion in c(1:11)) {
   rm(pplot, subregion)
 }
 
+#### Different barplot with errorbars
+for (subregion in c(1:11)) {
+  print(subregion)
+  # subregion <- c("11")
+
+  out3 <- f_stacked_barplot_errorbars(dflist = list_csvs, subregions = subregion, rollback = "sm7", reopen = "50perc", exp_name_sub,stackLike=T)
+  out4 <- f_stacked_barplot_errorbars(dflist = list_csvs, subregions = subregion, rollback = "sm7", reopen = "100perc", exp_name_sub, stackLike=T)
+  
+  pplot2 <- plot_grid( f_remove_legend(out4[[2]]),  f_remove_legend(out3[[2]]), ncol=1)
+  f_save_plot(pplot = pplot2, plot_name = paste0("barplot2b_erorbars_delay0_reg_", subregion), plot_dir = file.path(outdir), width = 7, height = 10)
+  
+  rm( pplot2,subregion)
+}
+
+
 # f_save_plot(pplot = out1[[2]], plot_name = "barplot_legend1", plot_dir = file.path(outdir, exp_name_sub), width = 8, height = 6)
 # f_save_plot(pplot = out4[[2]], plot_name = "barplot_legend2", plot_dir = file.path(outdir, exp_name_sub), width = 8, height = 6)
 
