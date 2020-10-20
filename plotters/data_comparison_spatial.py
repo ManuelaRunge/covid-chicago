@@ -141,7 +141,7 @@ def compare_ems(exp_name,fname, ems_nr=0):
 
     df = load_sim_data(exp_name, ems_nr, fname=fname,column_list=column_list)
     first_day = datetime.strptime(df['startdate'].unique()[0],  '%Y-%m-%d')
-
+    df = df.dropna()
     df['critical_with_suspected'] = df['critical']
 
 
