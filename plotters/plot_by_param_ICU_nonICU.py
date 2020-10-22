@@ -144,8 +144,7 @@ def plot_covidregions(channel,subgroups, psuffix) :
 def plot_covidregions_both(subgroups, plot_name) :
 
     fig = plt.figure(figsize=(10, 4))
-    fig.subplots_adjust(right=0.97, wspace=0.5, left=0.1, hspace=0.9, top=0.95, bottom=0.07)
-    #axes = [fig.add_subplot(3, 4, x + 1) for x in range(len(subgroups))]
+    fig.subplots_adjust(right=0.97, wspace=0.5, left=0.1, hspace=0.9, top=0.6, bottom=0.07)
     axes = [fig.add_subplot(1, 2, x + 1) for x in range(2)]
 
     region_suffix =subgroups[0]
@@ -159,7 +158,7 @@ def plot_covidregions_both(subgroups, plot_name) :
         plot_on_fig2(df, axes, ems_nr=ems_nr,  label=exp_name_label)
 
     #axes[-1].legend()
-    #fig.suptitle(f'{region_label}\n', x=0.5, y=0.990)
+    fig.suptitle(f'{region_label}\n', x=0.5, y=0.990)
     #plt.tight_layout(rect=[0, 0, 0, .95])
     plt.tight_layout()
 
@@ -176,4 +175,5 @@ if __name__ == '__main__' :
 
     #plot_covidregions(channel='crit_det', subgroups = covidregionlist, psuffix ='_reg11_JulDec')
     #plot_covidregions(channel='hosp_det', subgroups = covidregionlist,  psuffix ='_reg11_JulDec')
-    plot_covidregions_both(subgroups = ['_EMS-11'],  plot_name ='covidregion_11_ICU_nonICU_JulDec')
+    plot_covidregions_both(subgroups = ['_EMS-10'],  plot_name ='covidregion_10_ICU_nonICU_JulDec')
+    plt.show()

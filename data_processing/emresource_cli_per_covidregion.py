@@ -73,12 +73,13 @@ def plot_emresource(scale='') :
 
         for ei, ems in enumerate(ems_list) :
             ax = fig.add_subplot(1,1,ei+1)
+            ax.grid(b=True, which='major', color='#999999', linestyle='-', alpha=0.3)
             df = ref_df[ref_df['covid_region'] == ems]
             for (c,name) in enumerate(channels):
                 df['moving_ave'] = df[name].rolling(window=7, center=True).mean()
                 ax.plot(df['date'].values, df['moving_ave'], color=palette[c], label=name)
                 ax.scatter(df['date'].values, df[name], s=10, linewidth=0, color=palette[c], alpha=0.7, label='')
-            ax.set_title('EMS %d' % ems)
+            ax.set_title('covid region %d' % ems)
            # format_plot(ax)
             if ems == 11 or len(ems_list)==1 :
                 ax.legend()
@@ -87,8 +88,8 @@ def plot_emresource(scale='') :
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%d\n%b'))
             #ax.xaxis.set_major_locator(mdates.WeekdayLocator())
 
-    fig.savefig(os.path.join(plotdir, 'EMResource_and_CLI_by_covidregion11_for_civis.png'))
-    fig.savefig(os.path.join(plotdir, 'EMResource_and_CLI_by_covidregion11_for_civis.pdf'), format='PDF')
+    fig.savefig(os.path.join(plotdir, 'EMResource_and_CLI_by_covidregion11.png'))
+    fig.savefig(os.path.join(plotdir, 'EMResource_and_CLI_by_covidregion11.pdf'), format='PDF')
 
 
 if __name__ == '__main__' :
