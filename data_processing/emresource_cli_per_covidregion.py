@@ -25,7 +25,7 @@ plotdir = os.path.join(projectpath, 'Plots + Graphs', 'Emresource Plots')
 def plot_emresource(scale='') :
 
     ems_regions = {
-        'custom' : [1, 2, 5, 10],
+        'custom' : [11],
     }
 
     ref_df = pd.read_csv(os.path.join(datapath, 'covid_IDPH', 'Corona virus reports','emresource_by_region.csv'))
@@ -59,22 +59,20 @@ def plot_emresource(scale='') :
 
     #palette = load_color_palette('wes')
     palette = ("#913058", "#F6851F","#00A08A")  # sns.color_palette('Set1', len(channels))
-    formatter = mdates.DateFormatter("%m-%d")
-
-    fig = plt.figure(figsize=(9,10))
-    fig.subplots_adjust(left=0.07, right=0.97, top=0.95, bottom=0.05, hspace=0.25)
+    fig = plt.figure(figsize=(6,5))
+    fig.subplots_adjust(left=0.07, right=0.97, top=0.95, bottom=0.1, hspace=0.25)
 
     def format_plot(ax) :
         ax.set_xlim(xmin, )
-        ax.xaxis.set_major_formatter(formatter)
-        ax.xaxis.set_major_locator(mdates.MonthLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%d\n%b'))
+        #ax.xaxis.set_major_locator(mdates.MonthLocator())
         if scale == 'log' :
             ax.set_yscale('log')
 
     for ri, (restore_region, ems_list) in enumerate(ems_regions.items()) :
 
         for ei, ems in enumerate(ems_list) :
-            ax = fig.add_subplot(3,2,ei+1)
+            ax = fig.add_subplot(1,1,ei+1)
             df = ref_df[ref_df['covid_region'] == ems]
             for (c,name) in enumerate(channels):
                 df['moving_ave'] = df[name].rolling(window=7, center=True).mean()
@@ -82,15 +80,15 @@ def plot_emresource(scale='') :
                 ax.scatter(df['date'].values, df[name], s=10, linewidth=0, color=palette[c], alpha=0.7, label='')
             ax.set_title('EMS %d' % ems)
            # format_plot(ax)
-            if ems == 10 :
+            if ems == 11 or len(ems_list)==1 :
                 ax.legend()
                 #ax.legend(bbox_to_anchor=(1.5, 1))
-            formatter = mdates.DateFormatter("%b")
-            ax.xaxis.set_major_formatter(formatter)
-            ax.xaxis.set_major_locator(mdates.WeekdayLocator())
+            #formatter = mdates.DateFormatter("%b")
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%d\n%b'))
+            #ax.xaxis.set_major_locator(mdates.WeekdayLocator())
 
-    fig.savefig(os.path.join(plotdir, 'EMResource_and_CLI_by_covidregion_for_civis.png'))
-    fig.savefig(os.path.join(plotdir, 'EMResource_and_CLI_by_covidregion_for_civis.pdf'), format='PDF')
+    fig.savefig(os.path.join(plotdir, 'EMResource_and_CLI_by_covidregion11_for_civis.png'))
+    fig.savefig(os.path.join(plotdir, 'EMResource_and_CLI_by_covidregion11_for_civis.pdf'), format='PDF')
 
 
 if __name__ == '__main__' :
