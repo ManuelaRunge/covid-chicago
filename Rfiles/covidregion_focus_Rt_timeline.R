@@ -4,7 +4,7 @@ library(data.table)
 library(cowplot)
 
 
-selected_region <- "covidregion_11"
+selected_region <- "covidregion_10"
 
 simdate <- "20201020"
 simdate_lastweek = "20201006"
@@ -32,7 +32,7 @@ customTheme <- theme(
 NU_civis_outputs <- file.path("C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/NU_civis_outputs/")
 outdir <- file.path("C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/Plots + Graphs/Rt_plots")
 
-dat <- fread("C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/NU_civis_outputs/", simdate, "/csv/nu_", simdate, ".csv") %>%
+dat <- fread(file.path("C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/NU_civis_outputs/", paste0(simdate, "/csv/nu_", simdate, ".csv"))) %>%
   mutate(date = as.Date(as.character(date), format = "%Y-%m-%d")) %>%
   filter(
     geography_modeled == selected_region,
@@ -55,9 +55,9 @@ p1 <- ggplot(data = dat) +
   geom_ribbon(aes(x = date, ymin = rt_lower, ymax = rt_upper), fill = "deepskyblue4", alpha = 0.3) +
   geom_line(aes(x = date, y = rt_median), col = "deepskyblue4", size = 1) +
   labs(
-    title = "Chicago",
+    title = "Region 10",
     subtitle = paste0("Estimated Rt using NU's COVID-19 transmission model \nEstimated Rt for Oct 21th: ",round(currentRt$rt_median,3)," (95%CI: ",round(currentRt$rt_lower,3)," - ",round(currentRt$rt_upper,3),")"),
-    x = "", caption = paste0("Fitting point: Time in the simulation model at which the transmission rate is changed to match the observed data trends (~ 1 fitting point per month)\nModel fitted to hospital inpatient census, intensive care unit census data and reported deaths\nRt estimated based on predicted new infections using EpiEstim with an uncertain SI distribution\nLag time between infections and hospitalizations and selected fitting points affect estimated Rt for the previous weeks\nPlot truncated in March, before March 15th Rt was estimated at ",round(initialRt$rt_median,3)," (95%CI: ",round(initialRt$rt_lower,3)," - ",round(initialRt$rt_upper,3),")\n"),
+    x = "", caption = paste0("Fitting point: Time in the simulation model at which the transmission rate is changed to match the observed data trends (~ 1 fitting point per month)\nModel fitted to hospital inpatient census, intensive care unit census data and reported deaths\nRt estimated based on predicted new infections using EpiEstim with an uncertain SI distribution\nLag time between infections and hospitalizations and selected fitting points affect estimated Rt for the previous weeks\nPlot truncated in March, before March 15th Rt was estimated at ",round(initialRt_worst$rt_median,3)," (95%CI: ",round(initialRt_worst$rt_lower,3)," - ",round(initialRt_worst$rt_upper,3),")\n"),
     y = expr(italic(R[t]))
   ) +
   scale_x_date(date_breaks = "30 days", date_labels = "%b", expand = c(0, 0)) +
@@ -71,7 +71,7 @@ addLastWeek <- T
 if (addLastWeek) {
 
   dat_lastweek <- fread(file.path(NU_civis_outputs, paste0(simdate_lastweek,"/csv/nu_",simdate_lastweek,".csv"))) %>%
-    filter(geography_modeled == "covidregion_11")
+    filter(geography_modeled ==selected_region)
 
   dat_lastweek$date <- as.Date(as.character(dat_lastweek$date), format = "%m/%d/%Y") # "%Y-%m-%d"  , "%m/%d/%Y"
   dat_lastweek <- dat_lastweek %>% filter(date <= plot_stop_date)
@@ -83,9 +83,9 @@ if (addLastWeek) {
 }
 
 
-ggsave(paste0(simdate, "_Rt_chicago", ".png"),
+ggsave(paste0(simdate, "_Rt_region10", ".png"),
   plot = p1, path = file.path(outdir), width = 10, height = 6, device = "png"
 )
-ggsave(paste0(simdate, "_Rt_chicago", ".pdf"),
+ggsave(paste0(simdate, "_Rt_region10", ".pdf"),
   plot = p1, path = file.path(outdir), width = 10, height = 6, device = "pdf"
 )
