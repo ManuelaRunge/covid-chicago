@@ -15,7 +15,7 @@ mpl.rcParams['pdf.fonttype'] = 42
 datapath, projectpath, wdir,exe_dir, git_dir = load_box_paths()
 
 first_day = date(2020, 2, 13) # IL
-first_plot_day = date(2020, 8, 1)
+first_plot_day = date(2020, 7, 1)
 last_plot_day = date(2020,12, 30)
 
 
