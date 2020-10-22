@@ -33,7 +33,7 @@ def trim_trajectories(simpath, scenario, colnames, ems) :
 if __name__ == '__main__' :
 
 
-    exp_name = '20200929_IL_resim_sm7_refit'
+    exp_name = '20201020_IL_mr_baseline'
     simdate = exp_name.split("_")[0]
     ems = ['EMS-%d' % x for x in range(1, 12)] + ['All']
     colnames = ['infected', 'recovered', 'N']
@@ -65,7 +65,8 @@ if __name__ == '__main__' :
 
         ax = fig.add_subplot(3,4,e+1)
 
-        channels = ['prevalence_%s' % ems_num, 'seroprevalence_%s' % ems_num]
+        channels = ['seroprevalence_%s' % ems_num]
+        #channels = ['prevalence_%s' % ems_num]
         for k, channel in enumerate(channels) :
             mdf = df.groupby('date')[channel].agg([np.mean, CI_5, CI_95, CI_25, CI_75]).reset_index()
             ax.plot(mdf['date'], mdf['mean'], color=palette[k], label=channel.split('_')[0])
@@ -79,6 +80,6 @@ if __name__ == '__main__' :
         ax.xaxis.set_major_formatter(formatter)
         ax.xaxis.set_major_locator(mdates.MonthLocator())
 
-    plt.savefig(os.path.join(projectpath, 'NU_civis_outputs', outdir, 'plots', 'prevalence_by_ems.png'))
-    plt.savefig(os.path.join(projectpath, 'NU_civis_outputs', outdir, 'plots', 'prevalence_by_ems.pdf'), format='PDF')
+    plt.savefig(os.path.join(simpath, '_plots', 'seroprevalence_by_ems.png'))
+    plt.savefig(os.path.join(simpath, '_plots', 'seroprevalence_by_ems.pdf'), format='PDF')
     plt.show()
