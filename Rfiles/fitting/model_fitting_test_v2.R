@@ -649,7 +649,7 @@ if (fitstep == "all") {
                     'ki_time_3','ki_time_4','ki_time_5', 'ki_time_6','ki_time_7','ki_time_8','ki_time_9','ki_time_10')
   
   start_date <- as.Date("2020-01-01")
-  stop_date <- as.Date("2020-10-08")
+  stop_date <- as.Date("2020-10-20")
   
 }
 if (fitstep == "initial") {
@@ -735,7 +735,7 @@ if(runFitting){
     print(paste0("Region ", i))
     
     sim_ems <- load_sim_dat(fittingParam, exp_name, i, start_date, stop_date, fname = paste0("trajectoriesDat_region_",i,".RData"),
-                            aggregateByFittingParam=TRUE)
+                            aggregateByFittingParam=FALSE)
     #  sim_ems <- load_sim_dat(fittingParam, exp_name, i, start_date, stop_date, fname = paste0("trajectoriesDat.csv"))
     
     str(sim_ems)
