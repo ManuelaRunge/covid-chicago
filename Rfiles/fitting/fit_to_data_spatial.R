@@ -502,16 +502,17 @@ f_run_fitting <- function(i, sim_ems_emresource, sim_ems_LL, sim_ems_CLI, scens,
   #' @param useSmoothedData boolean, if TRUE takes 7 day rolling average for fitting
 
   # create data.frame to hold likelihood results
-  ems_output <- matrix(0, length(scens), length(fittingParam) + 3)
+  ems_output <- matrix(0, length(scens), length(fittingParam) + 4)
   ems_output <- as.data.frame(ems_output)
-  colnames(ems_output) <- c(fittingParam, "NLL","scen_num", "region")
+  colnames(ems_output) <- c("row_num", "scen_num", "region" , "NLL",fittingParam)
   ems_output[, "region"] <- i
 
   # loop over simulation scenarios and record likelihood
+  count=0
   for (j in scens) {
+    count = count+1
     print(paste0("scenario ", j))
-    ems_output[, "scen_num"] <- j
-    
+
     # pull out all simulation values of given parameter value
     emresource_sub <- sim_ems_emresource[which(sim_ems_emresource$scen_num == scens[j]), ]
     LL_sub <- sim_ems_LL[which(sim_ems_LL$scen_num == scens[j]), ]
@@ -554,8 +555,10 @@ f_run_fitting <- function(i, sim_ems_emresource, sim_ems_LL, sim_ems_CLI, scens,
       ems_output[j, z] <- unique(emresource_sub[, fittingParam[z]])
     }
 
-    ems_output[j, "NLL"] <- nll
-
+    ems_output[count, "NLL"] <- nll
+    ems_output[count, "scen_num"] <- j
+    ems_output[count, "row_num"] <- count
+    
     rm(j, nll, nll1, nll2, nll3, nll4, nll5, emresource_sub, LL_sub, CLI_sub)
   }
 
@@ -714,7 +717,7 @@ for (i in c(1:11)) {
   pplot <- f_post_fit_plot(use_values_dat = use_values, i, logscale = TRUE)
   fwrite(use_values, file.path(out_dir, "csv", paste0("best_parameter_ranges_ems_", i, ".csv")), quote = FALSE, row.names = FALSE)
 
-  rm(sim_ems_emresource, sim_ems, scens, use_values)
+  rm(sim_ems_emresource,sim_ems_LL, sim_ems_CLI, sim_ems, scens, use_values)
 }
 
 
