@@ -50,7 +50,7 @@ if (runInBatchMode) {
   if (tolower(useSmoothedData) == "false") useSmoothedData <- FALSE
   if (tolower(useSmoothedData) == "true") useSmoothedData <- TRUE
 } else {
-  exp_name <- "20201020_IL_mr_quest_fitki9"
+  exp_name <- "_forFitting/20201003_IL_mr_fitkistartsm3"
 
   Location <- "Local"
   workingDir <- getwd()
@@ -58,6 +58,7 @@ if (runInBatchMode) {
   weightDeath <- FALSE
   excludeDeaths <- FALSE
   includeLLadmissions <- FALSE
+  includeCLIadmissions <- FALSE
 }
 
 ## Print out for log
@@ -80,10 +81,10 @@ simdate <- exp_name_split[1]
 monthnr <- gsub("fitki", "", exp_name_split[length(exp_name_split)])
 
 #### TODO fix to automatic selection , needs manual editing when multiplier + time is fitted vs multiplier only or multiple multipliers
-fittingParam <- paste0("ki_multiplier_", monthnr) # (paste0("ki_multiplier_time_",monthnr), paste0("ki_multiplier_",monthnr))
+fittingParam <- c('Ki','time_infection_import','social_multiplier_3','socialDistance_time1') # paste0("ki_multiplier_", monthnr) # (paste0("ki_multiplier_time_",monthnr), paste0("ki_multiplier_",monthnr))
 
-start_date <- as.Date(paste0("2020-", monthnr, "-01"))
-stop_date <- start_date + 30
+start_date <-  as.Date("2020-01-01") # as.Date(paste0("2020-", monthnr, "-01"))
+stop_date <-as.Date("2020-05-01") #  start_date + 30
 
 smooth_n_days <- 7
 
@@ -203,9 +204,23 @@ load_ref_dat <- function(i, start_date, stop_date, smooth_n_days) {
     dplyr::filter(date >= start_date & date <= stop_date) %>%
     complete(date = seq.Date(min(date), max(date), by = "day"))
 
+  county_covidregion <- fread(file.path(data_path, "covid_IDPH/EMS Population/covidregion_population_by_county.csv")) %>% mutate(County=tolower(County))
+  CLI_ems <- fread(file.path(data_path, "covid_IDPH/Corona virus reports/CLI_admissions.csv")) %>%
+    mutate(County=tolower(region)) %>%
+    left_join(county_covidregion, by="County") %>% 
+    rename(covid_region = new_restore_region) %>%
+    group_by(date, covid_region) %>%
+    summarize(inpatient=sum(inpatient)) %>%
+    dplyr::filter(covid_region %in% i) %>%
+    dplyr::mutate(date = as.Date(date)) %>%
+    dplyr::filter(date >= start_date & date <= stop_date) %>%
+    complete(date = seq.Date(min(date), max(date), by = "day"))
+  
+
   emresource_ems$date <- as.Date(as.character(emresource_ems$date))
   LL_ems$date <- as.Date(as.character(LL_ems$date))
-
+  CLI_ems$date <- as.Date(as.character(CLI_ems$date))
+  
 
   ### Add 7 day rolling average to test fitting to raw vs smoothed
   emresource_ems <- emresource_ems %>%
@@ -223,10 +238,18 @@ load_ref_dat <- function(i, start_date, stop_date, smooth_n_days) {
       deaths_avrg = round(rollmean(deaths, smooth_n_days, align = "right", fill = 0), 0),
       admissions_avrg = round(rollmean(admissions, smooth_n_days, align = "right", fill = 0), 0)
     )
+  
+  CLI_ems <- CLI_ems %>%
+    group_by(covid_region) %>%
+    arrange(date) %>%
+    mutate(
+      inpatient_avrg = round(rollmean(inpatient, smooth_n_days, align = "right", fill = 0), 0)
+    )
+  
 
 
-  ref_dat_list <- list(emresource_ems, LL_ems)
-  names(ref_dat_list) <- c("emresource_ems", "LL_ems")
+  ref_dat_list <- list(emresource_ems, LL_ems,CLI_ems)
+  names(ref_dat_list) <- c("emresource_ems", "LL_ems","CLI_ems")
 
   return(ref_dat_list)
 }
@@ -243,12 +266,16 @@ merge_sim_and_ref_dat <- function(sim_ems, i, start_date, stop_date, smooth_n_da
   #' @param LL_file_date date of the lates line list data
   #'
 
-  emresource_ems <- load_ref_dat(i, start_date, stop_date, smooth_n_days)[[1]]
-  LL_ems <- load_ref_dat(i, start_date, stop_date, smooth_n_days)[[2]]
-
+  ref_dfs = load_ref_dat(i, start_date, stop_date, smooth_n_days)
+  emresource_ems <- ref_dfs[[1]]
+  LL_ems <- ref_dfs[[2]]
+  CLI_ems <- ref_dfs[[3]]
+  rm(ref_dfs)
+  
 
   emresource_ems$filterVar <- 1
   LL_ems$filterVar <- 1
+  CLI_ems$filterVar <- 1
 
   sim_ems_emresource <- sim_ems %>%
     dplyr::left_join(emresource_ems, by = "date") %>%
@@ -258,18 +285,21 @@ merge_sim_and_ref_dat <- function(sim_ems, i, start_date, stop_date, smooth_n_da
     left_join(LL_ems, by = "date") %>%
     filter(!is.na(filterVar))
 
+  sim_ems_CLI <- sim_ems %>%
+    left_join(CLI_ems, by = "date") %>%
+    filter(!is.na(filterVar))
   # summary(sim_ems_emresource$date)
   # summary(sim_ems_LL$date)
 
-  dat_list <- list(sim_ems_emresource, sim_ems_LL)
-  names(dat_list) <- c("sim_ems_emresource", "sim_ems_LL")
+  dat_list <- list(sim_ems_emresource, sim_ems_LL,sim_ems_CLI)
+  names(dat_list) <- c("sim_ems_emresource", "sim_ems_LL","sim_ems_CLI")
 
   return(dat_list)
 }
 
 
 ## Plotting
-pre_fit_plot <- function(sim_ems_emresource, sim_ems_LL, fittingVar, logscale = TRUE) {
+pre_fit_plot <- function(sim_ems_emresource, sim_ems_LL,sim_ems_CLI, fittingVar, logscale = TRUE) {
 
   #' Generates custom pre-fitting plots to assess whether data lies within simulated parameter space
   #'
@@ -304,6 +334,7 @@ pre_fit_plot <- function(sim_ems_emresource, sim_ems_LL, fittingVar, logscale = 
     p3 <- p3 + scale_y_log10()
   }
   emr_plot <- plot_grid(p1, p2, p3, nrow = 1)
+  rm(df,p1,p2,p3)
 
   df <- as.data.frame(sim_ems_LL)
   df$fittingVar <- df[, fittingVar]
@@ -325,8 +356,23 @@ pre_fit_plot <- function(sim_ems_emresource, sim_ems_LL, fittingVar, logscale = 
     p1 <- p1 + scale_y_log10()
     p2 <- p2 + scale_y_log10()
   }
-
-  ll_plot <- plot_grid(p1, p2, nrow = 1)
+  rm(df)
+  
+  
+  df <- as.data.frame(sim_ems_CLI)
+  df$fittingVar <- df[, fittingVar]
+  
+  p3 <- ggplot(data = df) +
+    geom_line(aes(x = date, y = new_detected_hospitalized, col = as.factor(fittingVar), group = scen_num)) +
+    geom_point(aes(x = date, y = inpatient, group = scen_num)) +
+    theme(legend.position = "None") +
+    labs(title = "IDPH\nCLI_admissions", subtitle = "", caption = paste0(fittingVar))
+  
+  if (logscale == TRUE) {
+    p3 <- p3 + scale_y_log10()
+  }
+  
+  ll_plot <- plot_grid(p1, p2,p3, nrow = 1)
 
   pplot <- plot_grid(emr_plot, ll_plot, nrow = 2)
 
@@ -407,8 +453,29 @@ f_post_fit_plot <- function(use_values_dat, i, logscale = TRUE) {
     p1 <- p1 + scale_y_log10()
     p2 <- p2 + scale_y_log10()
   }
+  
+  
+  df <- as.data.frame(sim_ems_CLI)
+  df <- subset(df, df$scen_num %in% row.names(use_values_dat))
+  
+  use_values_dat$scen_num_fit <- rownames(use_values_dat)
+  minNLL <- use_values_dat %>% filter(NLL == min(NLL))
+  minNLL <- minNLL[1, ]
+  dfMin <- subset(df, df$scen_num %in% minNLL$scen_num_fit)
+  
+  p3 <- ggplot(data = df) +
+    geom_line(aes(x = date, y = new_detected_hospitalized, group = scen_num), col = "deepskyblue3") +
+    geom_line(data = dfMin, aes(x = date, y = new_detected_hospitalized, group = scen_num), col = "red", size = 1.1) +
+    geom_point(aes(x = date, y = inpatient, group = scen_num)) +
+    theme(legend.position = "None") +
+    labs(title = "IDPH\nCLI_admissions", subtitle = "", caption = paste0(fittingVar))
 
-  ll_plot <- plot_grid(p1, p2, nrow = 1)
+  if (logscale) {
+    p3 <- p3 + scale_y_log10()
+  }
+  
+
+  ll_plot <- plot_grid(p1, p2,p3, nrow = 1)
 
   pplot <- plot_grid(emr_plot, ll_plot, nrow = 2)
 
@@ -422,8 +489,8 @@ f_post_fit_plot <- function(use_values_dat, i, logscale = TRUE) {
 
 
 ## Fitting + export csv's
-f_run_fitting <- function(i, sim_ems_emresource, sim_ems_LL, scens, useSmoothedData = TRUE, weightDeath = FALSE,
-                          excludeDeaths = FALSE, includeLLadmissions = FALSE) {
+f_run_fitting <- function(i, sim_ems_emresource, sim_ems_LL, sim_ems_CLI, scens, useSmoothedData = TRUE, weightDeath = FALSE,
+                          excludeDeaths = FALSE, includeLLadmissions = FALSE,  includeCLIadmissions = FALSE) {
 
   #' Fitting function
   #'
@@ -435,30 +502,35 @@ f_run_fitting <- function(i, sim_ems_emresource, sim_ems_LL, scens, useSmoothedD
   #' @param useSmoothedData boolean, if TRUE takes 7 day rolling average for fitting
 
   # create data.frame to hold likelihood results
-  ems_output <- matrix(0, length(scens), length(fittingParam) + 2)
+  ems_output <- matrix(0, length(scens), length(fittingParam) + 3)
   ems_output <- as.data.frame(ems_output)
-  colnames(ems_output) <- c(fittingParam, "NLL", "region")
+  colnames(ems_output) <- c(fittingParam, "NLL","scen_num", "region")
   ems_output[, "region"] <- i
 
   # loop over simulation scenarios and record likelihood
-  for (j in 1:length(scens)) {
+  for (j in scens) {
     print(paste0("scenario ", j))
+    ems_output[, "scen_num"] <- j
+    
     # pull out all simulation values of given parameter value
     emresource_sub <- sim_ems_emresource[which(sim_ems_emresource$scen_num == scens[j]), ]
     LL_sub <- sim_ems_LL[which(sim_ems_LL$scen_num == scens[j]), ]
-
+    CLI_sub <- sim_ems_CLI[which(sim_ems_CLI$scen_num == scens[j]), ]
+    
     if (useSmoothedData == FALSE) {
       nll1 <- -1 * sum(dpois(emresource_sub$confirmed_covid_icu, emresource_sub$crit_det + 1e-10, log = T), na.rm = TRUE)
       nll2 <- -1 * sum(dpois(emresource_sub$covid_non_icu, emresource_sub$hosp_det + 1e-10, log = T))
       nll3 <- -1 * sum(dpois(LL_sub$deaths, LL_sub$new_detected_deaths + 1e-10, log = T), na.rm = TRUE)
       nll4 <- -1 * sum(dpois(LL_sub$admissions, LL_sub$new_detected_hospitalized + 1e-10, log = T), na.rm = TRUE)
+      nll5 <- -1 * sum(dpois(CLI_sub$inpatient, CLI_sub$new_detected_hospitalized + 1e-10, log = T), na.rm = TRUE)
     }
 
     if (useSmoothedData) {
       nll1 <- -1 * sum(dpois(emresource_sub$confirmed_covid_icu_avrg, emresource_sub$crit_det + 1e-10, log = T), na.rm = TRUE)
       nll2 <- -1 * sum(dpois(emresource_sub$covid_non_icu_avrg, emresource_sub$hosp_det + 1e-10, log = T), na.rm = TRUE)
       nll3 <- -1 * sum(dpois(LL_sub$deaths_avrg, LL_sub$new_detected_deaths + 1e-10, log = T), na.rm = TRUE)
-      nll4 <- -1 * sum(dpois(LL_sub$admissions, LL_sub$new_detected_hospitalized + 1e-10, log = T), na.rm = TRUE)
+      nll4 <- -1 * sum(dpois(LL_sub$admissions_avrg, LL_sub$new_detected_hospitalized + 1e-10, log = T), na.rm = TRUE)
+      nll5 <- -1 * sum(dpois(CLI_sub$inpatient_avrg, CLI_sub$new_detected_hospitalized + 1e-10, log = T), na.rm = TRUE)
     }
 
     # Sum all Likelihood
@@ -466,10 +538,15 @@ f_run_fitting <- function(i, sim_ems_emresource, sim_ems_LL, scens, useSmoothedD
     if (weightDeath) nll <- nll1 + nll2 + (nll3) * (length(emresource_sub$confirmed_covid_icu) / length(LL_sub$cases)) / 2
     if (excludeDeaths) nll <- nll1 + nll2
 
-    if (includeLLadmissions) {
+    if (includeLLadmissions & includeCLIadmissions==F) {
       nll <- nll1 + nll2 + nll3 + nll4
       if (weightDeath) nll <- nll1 + nll2 + (nll3 + nll4) * (length(emresource_sub$confirmed_covid_icu) / length(LL_sub$cases)) / 2
       if (excludeDeaths) nll <- nll1 + nll2 + nll4
+    }
+    if (includeLLadmissions & includeCLIadmissions) {
+      nll <- nll1 + nll2 + nll3 + nll4 + nll5
+      if (weightDeath) nll <- nll1 + nll2 + nll5 +  (nll3 + nll4) * (length(emresource_sub$confirmed_covid_icu) / length(LL_sub$cases)) / 2
+      if (excludeDeaths) nll <- nll1 + nll2 + nll4 + nll5
     }
 
     # Put Likelihood values and corresponding start date and Ki in output dataframe
@@ -479,7 +556,7 @@ f_run_fitting <- function(i, sim_ems_emresource, sim_ems_LL, scens, useSmoothedD
 
     ems_output[j, "NLL"] <- nll
 
-    rm(nll, nll1, nll2, nll3, emresource_sub, LL_sub)
+    rm(j, nll, nll1, nll2, nll3, nll4, nll5, emresource_sub, LL_sub, CLI_sub)
   }
 
 
@@ -606,7 +683,7 @@ use_values_list <- list()
 for (i in c(1:11)) {
   print(paste0("Start fitting process for region ", i))
 
-  sim_ems <- load_sim_dat(fittingParam, exp_name, i, start_date, stop_date)
+  sim_ems <- load_sim_dat(fittingParam, exp_name, i, start_date, stop_date, fname="trajectoriesDat.csv")
 
   str(sim_ems)
   summary(sim_ems$date)
@@ -616,13 +693,18 @@ for (i in c(1:11)) {
   ### Prepare for merge and merge ref_dat to sim_dat
   sim_ems_emresource <- merge_sim_and_ref_dat(sim_ems, i, start_date, stop_date, smooth_n_days)[[1]]
   sim_ems_LL <- merge_sim_and_ref_dat(sim_ems, i, start_date, stop_date, smooth_n_days)[[2]]
-
+  sim_ems_CLI <- merge_sim_and_ref_dat(sim_ems, i, start_date, stop_date, smooth_n_days)[[3]]
+  
   ## get a list of all scenario numbers run for this EMS
   scens <- unique(sim_ems_emresource$scen_num)
 
-  use_values <- f_run_fitting(i, sim_ems_emresource, sim_ems_LL, scens,
+  use_values <- f_run_fitting(i, 
+    sim_ems_emresource, sim_ems_LL,sim_ems_CLI, scens,
     useSmoothedData = useSmoothedData,
-    weightDeath = weightDeath, excludeDeaths = excludeDeaths, includeLLadmissions = includeLLadmissions
+    weightDeath = weightDeath, 
+    excludeDeaths = excludeDeaths, 
+    includeLLadmissions = includeLLadmissions,
+    includeCLIadmissions = includeCLIadmissions
   )
 
 
