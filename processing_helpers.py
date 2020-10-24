@@ -18,7 +18,7 @@ def merge_county_covidregions(df_x, key_x='region', key_y='County'):
     df_x[key_x] = df_x[key_x] .str.lower()
     df_y[key_y] = df_y[key_y] .str.lower()
 
-    df = pd.merge(how='left', left=key_x, left_on=key_x, right=df_y, right_on=key_y)
+    df = pd.merge(how='left', left=df_x, left_on=key_x, right=df_y, right_on=key_y)
 
     return df
 
