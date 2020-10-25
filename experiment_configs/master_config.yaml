@@ -234,12 +234,6 @@ time_parameters:
   'ki_multiplier_time_7':
     custom_function: DateToTimestep
     function_kwargs: {'dates': [2020-07-10, 2020-07-15, 2020-07-20, 2020-07-25]}
-  'ki_multiplier_time_6':
-    custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-06-21}
-  'ki_multiplier_time_7':
-    custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-07-25}
   'ki_multiplier_time_8':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-08-25}
