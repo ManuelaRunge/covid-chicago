@@ -37,7 +37,7 @@ library(cowplot)
 theme_set(theme_cowplot())
 
 
-runInBatchMode <- TRUE
+runInBatchMode <- F
 
 if (runInBatchMode) {
   cmd_agrs <- commandArgs()
@@ -50,15 +50,16 @@ if (runInBatchMode) {
   if (tolower(useSmoothedData) == "false") useSmoothedData <- FALSE
   if (tolower(useSmoothedData) == "true") useSmoothedData <- TRUE
 } else {
-  exp_name <- "_forFitting/20201003_IL_mr_fitkistartsm3"
+  exp_name <- "_forFitting/20201024_IL_mr_20201003_IL_mr_fitkistartsm3_sm4and5"
 
   Location <- "Local"
   workingDir <- getwd()
   useSmoothedData <- TRUE
   weightDeath <- FALSE
   excludeDeaths <- FALSE
-  includeLLadmissions <- FALSE
-  includeCLIadmissions <- FALSE
+  includeLLadmissions <- TRUE
+  includeCLIadmissions <- TRUE
+  excludeEMRnonICU <- TRUE
 }
 
 ## Print out for log
@@ -81,10 +82,10 @@ simdate <- exp_name_split[1]
 monthnr <- gsub("fitki", "", exp_name_split[length(exp_name_split)])
 
 #### TODO fix to automatic selection , needs manual editing when multiplier + time is fitted vs multiplier only or multiple multipliers
-fittingParam <- c('Ki','time_infection_import','social_multiplier_3','socialDistance_time1') # paste0("ki_multiplier_", monthnr) # (paste0("ki_multiplier_time_",monthnr), paste0("ki_multiplier_",monthnr))
+fittingParam <- c('ki_multiplier_4' , 'ki_multiplier_5', 'ki_multiplier_time_4', 'ki_multiplier_time_5') # paste0("ki_multiplier_", monthnr) # (paste0("ki_multiplier_time_",monthnr), paste0("ki_multiplier_",monthnr))
 
-start_date <-  as.Date("2020-01-01") # as.Date(paste0("2020-", monthnr, "-01"))
-stop_date <-as.Date("2020-05-01") #  start_date + 30
+start_date <-  as.Date("2020-04-01") # as.Date(paste0("2020-", monthnr, "-01"))
+stop_date <-as.Date("2020-06-01") #  start_date + 30
 
 smooth_n_days <- 7
 
@@ -122,7 +123,15 @@ load_sim_dat <- function(fittingParam, exp_name, i, start_date, stop_date, fname
   outcomeParam <- paste0(c("death_det_cumul", "crit_det", "hosp_det", "hosp_det_cumul", "infected_cumul"), paste0("_EMS-", i))
   KeepCols <- c("time", "startdate", "scen_num", "sample_num", fittingParam, outcomeParam)
 
-  df <- fread(file.path(simulation_output, exp_name, fname), select = KeepCols) %>%
+  if(sum(grep(".Rdata",fname),grep(".RData",fname))==1){
+    load(file.path(exp_dir,fname))
+    df = subdat
+    rm(subdat)
+  }
+    
+  if(sum(grep(".csv",fname))==1){ df <- fread(file.path(simulation_output, exp_name, fname), select = KeepCols) }
+    
+   df=  df  %>%
     dplyr::mutate(
       region = i,
       startdate = as.Date(as.character(startdate)),
@@ -468,7 +477,7 @@ f_post_fit_plot <- function(use_values_dat, i, logscale = TRUE) {
     geom_line(data = dfMin, aes(x = date, y = new_detected_hospitalized, group = scen_num), col = "red", size = 1.1) +
     geom_point(aes(x = date, y = inpatient, group = scen_num)) +
     theme(legend.position = "None") +
-    labs(title = "IDPH\nCLI_admissions", subtitle = "", caption = paste0(fittingVar))
+    labs(title = "IDPH\nCLI_admissions", subtitle = "")
 
   if (logscale) {
     p3 <- p3 + scale_y_log10()
@@ -490,7 +499,7 @@ f_post_fit_plot <- function(use_values_dat, i, logscale = TRUE) {
 
 ## Fitting + export csv's
 f_run_fitting <- function(i, sim_ems_emresource, sim_ems_LL, sim_ems_CLI, scens, useSmoothedData = TRUE, weightDeath = FALSE,
-                          excludeDeaths = FALSE, includeLLadmissions = FALSE,  includeCLIadmissions = FALSE) {
+                          excludeDeaths = FALSE, includeLLadmissions = FALSE,  includeCLIadmissions = FALSE,excludeEMRnonICU = FALSE) {
 
   #' Fitting function
   #'
@@ -549,10 +558,14 @@ f_run_fitting <- function(i, sim_ems_emresource, sim_ems_LL, sim_ems_CLI, scens,
       if (weightDeath) nll <- nll1 + nll2 + nll5 +  (nll3 + nll4) * (length(emresource_sub$confirmed_covid_icu) / length(LL_sub$cases)) / 2
       if (excludeDeaths) nll <- nll1 + nll2 + nll4 + nll5
     }
+    if (excludeEMRnonICU ) {
+      nll <- nll - nll2 
+    }
+    
 
     # Put Likelihood values and corresponding start date and Ki in output dataframe
     for (z in c(1:length(fittingParam))) {
-      ems_output[j, z] <- unique(emresource_sub[, fittingParam[z]])
+      ems_output[j, z+4] <- unique(emresource_sub[, fittingParam[z]])
     }
 
     ems_output[count, "NLL"] <- nll
@@ -642,8 +655,8 @@ prefit_plots <- function(start_date, stop_date) {
   for (i in c(1:11)) {
     print(paste0("Region ", i))
 
-    sim_ems <- load_sim_dat(fittingParam, exp_name, i, start_date, stop_date)
-
+    sim_ems <- load_sim_dat(fittingParam, exp_name, i, start_date, stop_date, fname="trajectoriesDat_trim.csv")
+    
     str(sim_ems)
     summary(sim_ems$scen_num)
     summary(sim_ems$date)
@@ -653,13 +666,15 @@ prefit_plots <- function(start_date, stop_date) {
     ### Prepare for merge and merge ref_dat to sim_dat
     sim_ems_emresource <- merge_sim_and_ref_dat(sim_ems, i, start_date, stop_date, smooth_n_days)[[1]]
     sim_ems_LL <- merge_sim_and_ref_dat(sim_ems, i, start_date, stop_date, smooth_n_days)[[2]]
+    sim_ems_CLI <- merge_sim_and_ref_dat(sim_ems, i, start_date, stop_date, smooth_n_days)[[3]]
+    
 
     ggplot(data = sim_ems) +
       geom_line(aes(x = date, y = crit_det, group = scen_num)) +
-      scale_x_date(lim = c(as.Date("2020-01-01"), as.Date("2020-05-01")))
+      scale_x_date(lim = c(start_date, stop_date))
 
     for (paramVar in fittingParam) {
-      pplot <- pre_fit_plot(sim_ems_emresource, sim_ems_LL, fittingVar = paramVar, logscale = TRUE)
+      pplot <- pre_fit_plot(sim_ems_emresource, sim_ems_LL,sim_ems_CLI, fittingVar = paramVar, logscale = TRUE)
 
       ggsave(paste0(i, "_pre_fit_plot_", paramVar, ".png"),
         plot = pplot,
@@ -675,7 +690,7 @@ prefit_plots <- function(start_date, stop_date) {
 ## --------------------------------
 #### Pre-fi plots (optional)
 ## --------------------------------
-runPreFitPlot <- TRUE
+runPreFitPlot <- F
 if (runPreFitPlot) prefit_plots(start_date, stop_date)
 
 
@@ -686,7 +701,8 @@ use_values_list <- list()
 for (i in c(1:11)) {
   print(paste0("Start fitting process for region ", i))
 
-  sim_ems <- load_sim_dat(fittingParam, exp_name, i, start_date, stop_date, fname="trajectoriesDat.csv")
+  sim_ems <- load_sim_dat(fittingParam, exp_name, i, start_date, stop_date, fname = paste0("trajectoriesDat_region_",i,".RData"))
+  #sim_ems <- load_sim_dat(fittingParam, exp_name, i, start_date, stop_date, fname="trajectoriesDat_trim.csv")
 
   str(sim_ems)
   summary(sim_ems$date)
@@ -707,7 +723,8 @@ for (i in c(1:11)) {
     weightDeath = weightDeath, 
     excludeDeaths = excludeDeaths, 
     includeLLadmissions = includeLLadmissions,
-    includeCLIadmissions = includeCLIadmissions
+    includeCLIadmissions = includeCLIadmissions,
+    excludeEMRnonICU =excludeEMRnonICU
   )
 
 
@@ -720,5 +737,22 @@ for (i in c(1:11)) {
   rm(sim_ems_emresource,sim_ems_LL, sim_ems_CLI, sim_ems, scens, use_values)
 }
 
-
 f_export_sumary_csv(use_values_list, fittingParam, npairs = 10)
+
+sink(file.path(exp_dir,"fitting/selectedIndicators.txt"))
+cat("\n")
+print(paste0("useSmoothedData  = ",  useSmoothedData))
+print(paste0("weightDeath  = ",  weightDeath))
+print(paste0("excludeDeaths  = ",  excludeDeaths))
+print(paste0("includeLLadmissions  = ",  includeLLadmissions))
+print(paste0("includeCLIadmissions  = ",  includeCLIadmissions))
+print(paste0("excludeEMRnonICU  = ",  excludeEMRnonICU))
+cat("\n")
+print(paste0("start_date  = ",  start_date))
+print(paste0("stop_date  = ",  stop_date))
+cat("\n")
+print(paste0("fittingParam  = ",  fittingParam))
+sink()
+
+
+
