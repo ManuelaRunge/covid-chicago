@@ -38,6 +38,8 @@ python runScenarios.py -rl NUCLUSTER -r IL -mc extendedcobey_fitsm7.yaml -c spat
 python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "mr_test_resim_kistartsm3"
 
 
+## For paper - reproduced fitting
+python runScenarios.py -rl NUCLUSTER -r IL -mc master_config.yaml -c region_config.yaml -e region_baseline.emodl -n "mr_local_20201003_IL_mr_fitkistartsm3_sm4and5_sm6and7" 
 
 Specify post process      
 python runScenarios.py -rl NUCLUSTER -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "mr_fitsm7_quest" --post_process "dataComparison"
