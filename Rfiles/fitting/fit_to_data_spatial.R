@@ -141,7 +141,7 @@ load_sim_dat <- function(fittingParam, exp_name, i, start_date, stop_date, fname
     setNames(gsub(paste0("_EMS-", i), "", names(.))) %>%
     dplyr::filter(date <= as.Date(stop_date) & date >= as.Date(start_date))
 
-  grpVars <- c(fittingParam, "time", "startdate", "date")
+  grpVars <- c(fittingParam, "time", "startdate", "date","scen_num")
 
   df <- df %>%
     dplyr::group_by_at(.vars = grpVars) %>%
@@ -153,7 +153,6 @@ load_sim_dat <- function(fittingParam, exp_name, i, start_date, stop_date, fname
       hosp_det = median(hosp_det)
     ) %>%
     dplyr::group_by_at(.vars = fittingParam) %>%
-    mutate(scen_num = cur_group_id()) %>%
     as.data.table()
 
   df <- df %>%
