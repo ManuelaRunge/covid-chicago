@@ -141,7 +141,7 @@ load_sim_dat <- function(fittingParam, exp_name, i, start_date, stop_date, fname
     setNames(gsub(paste0("_EMS-", i), "", names(.))) %>%
     dplyr::filter(date <= as.Date(stop_date) & date >= as.Date(start_date))
 
-  grpVars <- c(fittingParam, "time", "startdate", "date","scen_num")
+  grpVars <- c(fittingParam, "time", "startdate", "date","scen_num","sample_num","run_num")
 
   df <- df %>%
     dplyr::group_by_at(.vars = grpVars) %>%
@@ -156,7 +156,7 @@ load_sim_dat <- function(fittingParam, exp_name, i, start_date, stop_date, fname
     as.data.table()
 
   df <- df %>%
-    dplyr::group_by(scen_num) %>%
+    dplyr::group_by(scen_num, sample_num, run_num) %>%
     dplyr::arrange(time) %>%
     dplyr::mutate(
       new_detected_deaths = 0,
