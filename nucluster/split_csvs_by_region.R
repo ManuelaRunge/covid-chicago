@@ -1,14 +1,15 @@
+### R script to combine trajectoriesDat subsets and save them separate per region as Rdata or csv file
+
 library(tidyverse)
 library(data.table)
 
 exp_name <- "20201025_IL_mr_local_20201003_IL_mr_fitkistartsm3_sm5and6"
 exp_dir <- file.path("/projects/p30781/covidproject/covid-chicago/_temp/",exp_name)
  
-f_save_per_grp <- function(filepattern, i,SAVE="csv"){
+f_save_per_grp <- function(filepattern, i,paramVars, outcomeVars_stem, SAVE="csv"){
 
-    fittingParam <- c('ki_multiplier_6' , 'ki_multiplier_7', 'ki_multiplier_time_6', 'ki_multiplier_time_7') 
-    outcomeParam <- paste0(c("death_det_cumul", "crit_det", "hosp_det", "hosp_det_cumul", "infected_cumul"), paste0("_EMS-", i))
-    KeepCols <- c("time", "startdate", "scen_num", "sample_num", fittingParam, outcomeParam)
+    outcomeVars <- paste0(outcomeVars_stem , paste0("_EMS-", i))
+    KeepCols <- c("time", "startdate", "scen_num", "sample_num", paramVars, outcomeVars)
     
     trajectoriesFiles <- list.files(exp_dir, pattern=filepattern)
     
@@ -25,5 +26,9 @@ f_save_per_grp <- function(filepattern, i,SAVE="csv"){
 
 
 for(i in c(1:11)){
-  f_save_per_grp( filepattern="trim.csv" ,i,SAVE="RData")
+
+  paramVars <- c('ki_multiplier_6' , 'ki_multiplier_7', 'ki_multiplier_time_6', 'ki_multiplier_time_7') 
+  outcomeVars_stem <- c("death_det_cumul", "crit_det", "hosp_det", "hosp_det_cumul", "infected_cumul")
+  
+  f_save_per_grp( filepattern="trim.csv" ,i, paramVars=paramVars, outcomeVars_stem=outcomeVars_stem, ,SAVE="RData")
 }
