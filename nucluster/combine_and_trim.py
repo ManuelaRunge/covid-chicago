@@ -81,7 +81,7 @@ def trim_trajectories_Dat(df, fname, VarsToKeep, time_start, time_stop,channels=
     df.to_csv(os.path.join(temp_exp_dir, fname + '_trim.csv'), index=False, date_format='%Y-%m-%d')
     del df
 
-def combineTrajectories(VarsToKeep,Nscenarios_start=0, Nscenarios_stop=1000, time_start=1, time_stop=400, fname='trajectoriesDat.csv',SAVE_fullTrajectories=True):
+def combineTrajectories(VarsToKeep,Nscenarios_start=0, Nscenarios_stop=1000, time_start=1, time_stop=400, fname='trajectoriesDat.csv'):
 
     df_list = []
     n_errors = 0
@@ -101,13 +101,9 @@ def combineTrajectories(VarsToKeep,Nscenarios_start=0, Nscenarios_stop=1000, tim
             continue
     print("Number of errors:" + str(n_errors))
     dfc = pd.concat(df_list)
-    if SAVE_fullTrajectories :
-        dfc.to_csv(os.path.join(temp_exp_dir, fname), index=False,date_format='%Y-%m-%d')
+    #dfc.to_csv(os.path.join(temp_exp_dir, fname), index=False,date_format='%Y-%m-%d')
 
-    trim_trajectories_Dat(df=dfc, VarsToKeep=VarsToKeep,
-                          time_start=time_start,time_stop=time_stop,
-                          channels=None, grpspecific_params=None, grpnames=None,
-                          fname=fname.split(".csv")[0])
+    trim_trajectories_Dat(df=dfc, VarsToKeep=VarsToKeep, time_start=time_start,time_stop=time_stop,channels=None, grpspecific_params=None, grpnames=None,fname=fname.split(".csv")[0])
 
 
 if __name__ == '__main__':
@@ -118,8 +114,8 @@ if __name__ == '__main__':
     # stem = '20201003_IL_mr_fitsm5'
     exp_names = ['20201025_IL_mr_local_20201003_IL_mr_fitkistartsm3_sm5and6']  # [x for x in os.listdir(sim_out_dir) if stem in x]
 
-    time_start = 1
-    time_end = 400
+    time_start = 90
+    time_end = 330
     additionalVars = ['ki_multiplier_6', 'ki_multiplier_7','ki_multiplier_time_6', 'ki_multiplier_time_7']
     VarsToKeepI = ['startdate',  'scen_num', 'sample_num'] + additionalVars
     VarsToKeep = ['time', 'run_num'] + VarsToKeepI
@@ -135,22 +131,20 @@ if __name__ == '__main__':
         sampledf = sampledf[ VarsToKeepI ]
         Nscenario = max(sampledf['scen_num'])
 
-        Scenario_save_limit = 600
+        Scenario_save_limit = 500
 
         if Nscenario <= Scenario_save_limit :
-            combineTrajectories(VarsToKeep=VarsToKeep,
-                                Nscenarios_start=0, Nscenarios_stop=Nscenario+1,
-                                time_start=time_start, time_stop=time_stop,
-                                fname='trajectoriesDat.csv')
+            combineTrajectories(VarsToKeep=VarsToKeep,Nscenarios_start=0, Nscenarios_stop=Nscenario+1,time_start=time_start, time_stop=time_stop, fname='trajectoriesDat.csv')
         if Nscenario > Scenario_save_limit:
             n_subsets = int(Nscenario/Scenario_save_limit)
 
-            for i in range(1,n_subsets) :
+            for i in range(1,n_subsets+2) :
                 if i ==1 : Nscenario_stop=Scenario_save_limit
                 if i > 1 : Nscenario_stop = Nscenario_stop + Scenario_save_limit
+                print(Nscenario_stop)
                 Nscenarios_start = Nscenario_stop-Scenario_save_limit
-                combineTrajectories(VarsToKeep=VarsToKeep,
-                                    Nscenarios_start=Nscenarios_start,Nscenarios_stop=Nscenario_stop,
-                                    fname='trajectoriesDat_'+str(Nscenario_stop)+'.csv',
-                                    SAVE_fullTrajectories=False)
+                combineTrajectories(VarsToKeep=VarsToKeep,Nscenarios_start=Nscenarios_start, Nscenarios_stop=Nscenario_stop, fname='trajectoriesDat_'+str(Nscenario_stop)+'.csv')
+            #Nscenario_stop = 7000
+            #Nscenarios_start = 5500
+            #combineTrajectories(VarsToKeep=VarsToKeep,Nscenarios_start=Nscenarios_start, Nscenarios_stop=Nscenario_stop, fname='trajectoriesDat_'+str(Nscenario_stop)+'.csv')
 
