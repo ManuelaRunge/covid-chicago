@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 
 datapath, projectpath, wdir,exe_dir, git_dir = load_box_paths()
 
-
 def merge_county_covidregions(df_x, key_x='region', key_y='County'):
     """ Add covidregions (new_restore_regions from covidregion_population_by_county.csv)
     to a file that only includes counties. Country names are changes to lowercase before the merge.
@@ -21,8 +20,6 @@ def merge_county_covidregions(df_x, key_x='region', key_y='County'):
     df = pd.merge(how='left', left=df_x, left_on=key_x, right=df_y, right_on=key_y)
 
     return df
-
-
 
 def get_latest_LLfiledate(file_path, split_string ='_jg_' , file_pattern='aggregated_covidregion.csv'):
 
