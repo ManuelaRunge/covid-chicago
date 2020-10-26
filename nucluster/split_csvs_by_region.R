@@ -15,6 +15,7 @@ f_save_per_grp <- function(filepattern, i,paramVars, outcomeVars_stem, SAVE="csv
     
     subdatList <- list()
     for(tfile in trajectoriesFiles){
+      print(tfile)
       subdatList[[length(subdatList)+1]] <- fread(file.path(exp_dir,tfile), select = KeepCols)
     }
   
@@ -26,9 +27,10 @@ f_save_per_grp <- function(filepattern, i,paramVars, outcomeVars_stem, SAVE="csv
 
 
 for(i in c(1:11)){
+  print(paste0("\nStart combining files for region ", i))
 
   paramVars <- c('ki_multiplier_6' , 'ki_multiplier_7', 'ki_multiplier_time_6', 'ki_multiplier_time_7') 
   outcomeVars_stem <- c("death_det_cumul", "crit_det", "hosp_det", "hosp_det_cumul", "infected_cumul")
   
-  f_save_per_grp( filepattern="trim.csv" ,i, paramVars=paramVars, outcomeVars_stem=outcomeVars_stem, ,SAVE="RData")
+  f_save_per_grp( filepattern="trim.csv" ,i, paramVars=paramVars, outcomeVars_stem=outcomeVars_stem, SAVE="RData")
 }
