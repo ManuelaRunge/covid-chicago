@@ -78,9 +78,10 @@ def trim_trajectories_Dat(df, fname, VarsToKeep, time_start, time_stop,channels=
     df = df[column_list]
     df = df[df['time'] > time_start]
     df = df[df['time'] < time_stop]
-    df.to_csv(os.path.join(temp_exp_dir, f'{fname}_trim.csv'), index=False, date_format='%Y-%m-%d')
+    df.to_csv(os.path.join(temp_exp_dir, fname + '_trim.csv'), index=False, date_format='%Y-%m-%d')
+    del df
 
-def combineTrajectories(VarsToKeep,Nscenarios_start=0, Nscenarios_stop=1000, time_start=1, time_stop=400, fname='trajectoriesDat.csv'):
+def combineTrajectories(VarsToKeep,Nscenarios_start=0, Nscenarios_stop=1000, time_start=1, time_stop=400, fname='trajectoriesDat.csv',SAVE_fullTrajectories=True):
 
     df_list = []
     n_errors = 0
@@ -92,15 +93,21 @@ def combineTrajectories(VarsToKeep,Nscenarios_start=0, Nscenarios_stop=1000, tim
             # print("df_length " + str(len(df_i)))
             df_i = df_i.merge(sampledf, on=['scen_num'])
             # print("df_length " + str(len(df_i)))
+            df_i = df_i[df_i['time'] > time_start]
+            df_i = df_i[df_i['time'] < time_stop]
             df_list.append(df_i)
         except:
             n_errors += 1
             continue
     print("Number of errors:" + str(n_errors))
     dfc = pd.concat(df_list)
-    dfc.to_csv(os.path.join(temp_exp_dir, fname), index=False,date_format='%Y-%m-%d')
+    if SAVE_fullTrajectories :
+        dfc.to_csv(os.path.join(temp_exp_dir, fname), index=False,date_format='%Y-%m-%d')
 
-    trim_trajectories_Dat(df=dfc, VarsToKeep=VarsToKeep, time_start=time_start,time_stop=time_stop,channels=None, grpspecific_params=None, grpnames=None,fname=fname.split(".csv")[0])
+    trim_trajectories_Dat(df=dfc, VarsToKeep=VarsToKeep,
+                          time_start=time_start,time_stop=time_stop,
+                          channels=None, grpspecific_params=None, grpnames=None,
+                          fname=fname.split(".csv")[0])
 
 
 if __name__ == '__main__':
@@ -109,12 +116,14 @@ if __name__ == '__main__':
     sim_out_dir = "/projects/p30781/covidproject/covid-chicago/_temp/"
 
     # stem = '20201003_IL_mr_fitsm5'
-    exp_names = ['20201002_IL_sm7to5_counterfactual2_local']  # [x for x in os.listdir(sim_out_dir) if stem in x]
+    exp_names = ['20201025_IL_mr_local_20201003_IL_mr_fitkistartsm3_sm5and6']  # [x for x in os.listdir(sim_out_dir) if stem in x]
 
-    time_start = 120
+    time_start = 1
     time_end = 400
-    VarsToKeep = ['startdate', 'time', 'scen_num', 'sample_num', 'run_num', 'ki_multiplier_6', 'ki_multiplier_7',
-                  'ki_multiplier_time_6', 'ki_multiplier_time_7']
+    additionalVars = ['ki_multiplier_6', 'ki_multiplier_7','ki_multiplier_time_6', 'ki_multiplier_time_7']
+    VarsToKeepI = ['startdate',  'scen_num', 'sample_num'] + additionalVars
+    VarsToKeep = ['time', 'run_num'] + VarsToKeepI
+
 
     for exp_name in exp_names:
         print(exp_name)
@@ -123,13 +132,16 @@ if __name__ == '__main__':
         trajectoriesDat = os.path.join(git_dir, 'trajectories')
         temp_exp_dir = git_dir
         sampledf = pd.read_csv(os.path.join(temp_exp_dir, "sampled_parameters.csv"))
-        sampledf = sampledf[ ['startdate', 'scen_num', 'sample_num']]
+        sampledf = sampledf[ VarsToKeepI ]
         Nscenario = max(sampledf['scen_num'])
 
-        Scenario_save_limit = 1000
+        Scenario_save_limit = 600
 
         if Nscenario <= Scenario_save_limit :
-            combineTrajectories(VarsToKeep=VarsToKeep,Nscenarios_start=0, Nscenarios_stop=Nscenario+1,time_start=time_start, time_stop=time_stop, fname='trajectoriesDat.csv')
+            combineTrajectories(VarsToKeep=VarsToKeep,
+                                Nscenarios_start=0, Nscenarios_stop=Nscenario+1,
+                                time_start=time_start, time_stop=time_stop,
+                                fname='trajectoriesDat.csv')
         if Nscenario > Scenario_save_limit:
             n_subsets = int(Nscenario/Scenario_save_limit)
 
@@ -137,5 +149,8 @@ if __name__ == '__main__':
                 if i ==1 : Nscenario_stop=Scenario_save_limit
                 if i > 1 : Nscenario_stop = Nscenario_stop + Scenario_save_limit
                 Nscenarios_start = Nscenario_stop-Scenario_save_limit
-                combineTrajectories(VarsToKeep=VarsToKeep,Nscenarios_start=Nscenarios_start, Nscenarios_stop=Nscenario_stop, fname=f'trajectoriesDat_{Nscenario_stop}.csv')
+                combineTrajectories(VarsToKeep=VarsToKeep,
+                                    Nscenarios_start=Nscenarios_start,Nscenarios_stop=Nscenario_stop,
+                                    fname='trajectoriesDat_'+str(Nscenario_stop)+'.csv',
+                                    SAVE_fullTrajectories=False)
 
