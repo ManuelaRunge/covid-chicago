@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH -A p30781               # Allocation
-#SBATCH -p short                # Queue
-#SBATCH -t 04:00:00             # Walltime/duration of the job
+#SBATCH -A b1139               # Allocation
+#SBATCH -p b1139                # Queue
+#SBATCH -t 01:00:00             # Walltime/duration of the job
 #SBATCH -N 1                    # Number of Nodes
-#SBATCH --mem=18G               # Memory per node in GB needed for a job. Also see --mem-per-cpu
+#SBATCH --mem=80GB              # Memory per node in GB needed for a job. Also see --mem-per-cpu
 #SBATCH --ntasks-per-node=1     # Number of Cores (Processors)
 #SBATCH --mail-user=manuela.runge@northwestern.edu  # Designate email address for job communications
 #SBATCH --mail-type=FAIL     # Events options are job BEGIN, END, NONE, FAIL, REQUEUE
@@ -12,10 +12,15 @@
 #SBATCH --job-name="combine"       # Name of job
 
 
+
 # load modules you need to use
-module load python/anaconda3.6
-cd /home/mrm9534/gitrepos/covid-chicago/
+module load python
+#cd /projects/p30781/covidproject/covid-chicago/plotters/
+cd /home/mrm9534/gitrepos/covid-chicago/_temp/
 
 # A command you actually want to execute:
-python /home/mrm9534/gitrepos/covid-chicago/_temp/combine.py
+python combine_and_trim.py
 
+#python  process_for_civis_EMSgrp.py#
+#python combine.py "${SLURM_ARRAY_TASK_ID}"
+#python trim_trajectoriesDat.py
