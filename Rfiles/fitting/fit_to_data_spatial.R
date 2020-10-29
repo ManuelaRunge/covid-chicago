@@ -516,16 +516,16 @@ f_run_fitting <- function(i, sim_ems_emresource, sim_ems_LL, sim_ems_CLI, scens,
   ems_output[, "region"] <- i
 
   # loop over simulation scenarios and record likelihood
-  count=0
+  count <- 0
   for (j in scens) {
-    count = count+1
+    count <- count + 1
     print(paste0("scenario ", j))
 
     # pull out all simulation values of given parameter value
-    emresource_sub <- sim_ems_emresource[which(sim_ems_emresource$scen_num == scens[j]), ]
-    LL_sub <- sim_ems_LL[which(sim_ems_LL$scen_num == scens[j]), ]
-    CLI_sub <- sim_ems_CLI[which(sim_ems_CLI$scen_num == scens[j]), ]
-    
+    emresource_sub <- sim_ems_emresource[which(sim_ems_emresource$scen_num ==j), ]
+    LL_sub <- sim_ems_LL[which(sim_ems_LL$scen_num == j), ]
+    CLI_sub <- sim_ems_CLI[which(sim_ems_CLI$scen_num == j), ]
+
     if (useSmoothedData == FALSE) {
       nll1 <- -1 * sum(dpois(emresource_sub$confirmed_covid_icu, emresource_sub$crit_det + 1e-10, log = T), na.rm = TRUE)
       nll2 <- -1 * sum(dpois(emresource_sub$covid_non_icu, emresource_sub$hosp_det + 1e-10, log = T))
@@ -564,7 +564,7 @@ f_run_fitting <- function(i, sim_ems_emresource, sim_ems_LL, sim_ems_CLI, scens,
 
     # Put Likelihood values and corresponding start date and Ki in output dataframe
     for (z in c(1:length(fittingParam))) {
-      ems_output[j, z+4] <- unique(emresource_sub[, fittingParam[z]])
+      ems_output[count, z + 4] <- unique(emresource_sub[, fittingParam[z]])
     }
 
     ems_output[count, "NLL"] <- nll
@@ -714,7 +714,7 @@ for (i in c(1:11)) {
   sim_ems_CLI <- merge_sim_and_ref_dat(sim_ems, i, start_date, stop_date, smooth_n_days)[[3]]
   
   ## get a list of all scenario numbers run for this EMS
-  scens <- unique(sim_ems_emresource$scen_num)
+  scens <- sort(unique(sim_ems_emresource$scen_num))
 
   use_values <- f_run_fitting(i, 
     sim_ems_emresource, sim_ems_LL,sim_ems_CLI, scens,
