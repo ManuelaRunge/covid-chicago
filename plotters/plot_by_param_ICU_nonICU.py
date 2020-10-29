@@ -1,3 +1,4 @@
+import argparse
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -15,9 +16,19 @@ mpl.rcParams['pdf.fonttype'] = 42
 datapath, projectpath, wdir,exe_dir, git_dir = load_box_paths()
 
 first_day = date(2020, 2, 13) # IL
-first_plot_day = date(2020, 8, 1)
-last_plot_day = date(2020,12, 30)
+first_plot_day = date(2020, 10, 1)
+last_plot_day = date(2020, 12,30)
 
+def parse_args():
+    description = "Simulation run for modeling Covid-19"
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument(
+        "--exp_names",
+        nargs="*",
+        type=str,
+        help="Experiment names ['exp_name1', 'exp_name2']"
+    )
+    return parser.parse_args()
 
 def load_sim_data(exp_name, region_suffix ='_All', input_wdir=None,fname='trajectoriesDat_trim.csv', input_sim_output_path =None) :
     input_wdir = input_wdir or wdir
@@ -31,6 +42,9 @@ def load_sim_data(exp_name, region_suffix ='_All', input_wdir=None,fname='trajec
 
     df = pd.read_csv(os.path.join(sim_output_path, fname), usecols=column_list)
     df.columns = df.columns.str.replace(region_suffix, '')
+
+    df['date'] = df['time'].apply(lambda x: first_day + timedelta(days=int(x)))
+    df = df[(df['date'] >= first_plot_day) & (df['date'] <= last_plot_day)]
 
     return df
 
@@ -71,8 +85,6 @@ def plot_on_fig2(df, axes,  ems_nr, label=None, addgrid=True) :
     palette = sns.color_palette('Set1', 2)
     for c, channel in enumerate(['hosp_det','crit_det']):
         ax = axes[c]
-        df['date'] = df['time'].apply(lambda x: first_day + timedelta(days=int(x)))
-        df = df[(df['date'] >= first_plot_day) & (df['date'] <= last_plot_day)]
         mdf = df.groupby('date')[channel].agg([CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75]).reset_index()
 
         if addgrid ==True : ax.grid(b=True, which='major', color='#999999', linestyle='-', alpha=0.3)
@@ -99,6 +111,7 @@ def plot_on_fig2(df, axes,  ems_nr, label=None, addgrid=True) :
                     [capacity[capacitychannel], capacity[capacitychannel]], '--', linewidth=1, color='black')
         ax.set_title('capacity limit', y=0.86)
         ax.set_ylabel(f'predicted {channel_label}')
+        ax.set_xlim(first_plot_day, last_plot_day)
 
 def compare_ems( ems,channel):
     ref_df = pd.read_csv(os.path.join(datapath, 'covid_IDPH', 'Corona virus reports', 'emresource_by_region.csv'))
@@ -112,7 +125,8 @@ def compare_ems( ems,channel):
 
     ref_df = ref_df.groupby('date_of_extract')[data_channel_names].agg(np.sum).reset_index()
     ref_df['date'] = pd.to_datetime(ref_df['date_of_extract'])
-    ref_df = ref_df[(ref_df['date'] >= pd.to_datetime(first_plot_day)) & (ref_df['date'] <= pd.to_datetime(last_plot_day))]
+    ref_df = ref_df[(ref_df['date'] >= pd.to_datetime(first_plot_day)) &
+                    (ref_df['date'] <= pd.to_datetime(last_plot_day))]
 
     return ref_df
 
@@ -142,7 +156,7 @@ def plot_covidregions(channel,subgroups, psuffix) :
     plt.savefig(os.path.join(sim_output_path, 'covidregion_'+psuffix+'_%s.png' % channel))
     plt.savefig(os.path.join(sim_output_path, 'covidregion'+psuffix+'_%s.pdf' % channel))
 
-def plot_covidregions_both(subgroups, plot_name) :
+def plot_covidregions_both(subgroups, plot_name, plot_path=None) :
 
     fig = plt.figure(figsize=(10, 4))
     fig.subplots_adjust(right=0.97, wspace=0.5, left=0.1, hspace=0.9, top=0.6, bottom=0.07)
@@ -163,18 +177,33 @@ def plot_covidregions_both(subgroups, plot_name) :
     #plt.tight_layout(rect=[0, 0, 0, .95])
     plt.tight_layout()
 
-    plt.savefig(os.path.join(sim_output_path, plot_name))
-    plt.savefig(os.path.join(sim_output_path, plot_name))
+    if plot_path ==None :
+        plot_path = sim_output_path
+    plt.savefig(os.path.join(plot_path, plot_name))
+    plt.savefig(os.path.join(plot_path, plot_name))
 
 
 if __name__ == '__main__' :
 
-    exp_names = ['20201020_IL_mr_baseline']
+    args = parse_args()
+    exp_names = args.exp_names
+    #exp_names = ['20201020_IL_mr_baseline']
 
-    covidregionlist = ['_EMS-1', '_EMS-2', '_EMS-3', '_EMS-4', '_EMS-5', '_EMS-6', '_EMS-7', '_EMS-8', '_EMS-9', '_EMS-10', '_EMS-11']
-    #covidregionlist = ['_EMS-1', '_EMS-3', '_EMS-4', '_EMS-5', '_EMS-9']
+    covidregionlist = ['_EMS-1', '_EMS-2', '_EMS-3', '_EMS-4', '_EMS-5', '_EMS-6', '_EMS-7', '_EMS-8', '_EMS-9',
+                       '_EMS-10', '_EMS-11']
 
-    plot_covidregions(channel='crit_det', subgroups = covidregionlist, psuffix ='AugDec')
-    plot_covidregions(channel='hosp_det', subgroups = covidregionlist,  psuffix ='AugDec')
-    #plot_covidregions_both(subgroups = ['_EMS-10'],  plot_name ='covidregion_10_ICU_nonICU_JulDec')
-    #plt.show()
+    plot_covidregions(channel='crit_det', subgroups=covidregionlist, psuffix='AugNov')
+    plot_covidregions(channel='hosp_det', subgroups=covidregionlist,  psuffix='AugNov')
+    plot_covidregions_both(subgroups=['_EMS-11'], plot_name='covidregion_11_ICU_nonICU_AugNov')
+
+    """Generate sub plots for region 10 and 11 (or any other to specify) and save in NU_cdph_outputs """
+    subgroup_plots = True
+    if subgroup_plots:
+        # datetime.today() #date(2020, 10,1)
+        # datetoday = (str(today.year) + str(today.month) + str(today.day))
+        exp_name = exp_names[len(exp_names) - 1]
+        datetoday = exp_name.split('_')[0]
+        plot_path = os.path.join(projectpath, 'NU_cdph_outputs', datetoday)
+        plot_covidregions_both(subgroups=['_EMS-10'], plot_name='covidregion_10_ICU_nonICU_AugNov', plot_path=plot_path)
+        plot_covidregions_both(subgroups=['_EMS-11'], plot_name='covidregion_11_ICU_nonICU_AugNov', plot_path=plot_path)
+        #plt.show()
