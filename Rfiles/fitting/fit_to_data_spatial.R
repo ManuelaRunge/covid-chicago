@@ -140,7 +140,8 @@ load_sim_dat <- function(fittingParam, exp_name, i, start_date, stop_date, fname
       # startdate = as.Date(as.character(startdate), format = "%m/%d/%Y"), #, format = "%m/%d/%Y"
       date = startdate + time
     ) %>%
-    setNames(gsub(paste0("_EMS-", i), "", names(.))) 
+    setNames(gsub(paste0("_EMS-", i), "", names(.))) %>%
+    as.data.frame()
   
   
   ### Prepare for merge and merge ref_dat to sim_dat
@@ -167,12 +168,12 @@ load_sim_dat <- function(fittingParam, exp_name, i, start_date, stop_date, fname
   }
   
 
-  grpVars <- c(fittingParam, "time", "startdate", "date", "scen_num", "sample_num")
+  grpVars <- c(fittingParam, "scen_num", "sample_num")
 
-  df <- df %>%
+  df <- df  %>%
     dplyr::filter(date <= as.Date(stop_date) & date >= as.Date(start_date)) %>%
     dplyr::group_by_at(.vars=grpVars) %>%
-    dplyr::arrange(time) %>%
+    dplyr::arrange(date) %>%
     dplyr::mutate(
       new_detected_deaths = 0,
       new_detected_deaths = death_det_cumul - lag(death_det_cumul),
@@ -367,12 +368,11 @@ f_post_fit_plot <- function(use_values_dat, i, logscale = TRUE) {
   rm(p1, p2, p3, df)
 
   df <- as.data.frame(sim_ems_LL)
-  df <- subset(df, df$scen_num %in% row.names(use_values_dat))
-
-  use_values_dat$scen_num_fit <- rownames(use_values_dat)
+  df <- subset(df, df$scen_num %in% unique(use_values_dat$scen_num))
+  
   minNLL <- use_values_dat %>% filter(NLL == min(NLL))
   minNLL <- minNLL[1, ]
-  dfMin <- subset(df, df$scen_num %in% minNLL$scen_num_fit)
+  dfMin <- subset(df, df$scen_num == minNLL$scen_num)
 
   p1 <- ggplot(data = df) +
     geom_line(aes(x = date, y = new_detected_deaths, group = scen_num), col = "deepskyblue3") +
@@ -396,12 +396,12 @@ f_post_fit_plot <- function(use_values_dat, i, logscale = TRUE) {
 
 
   df <- as.data.frame(sim_ems_CLI)
-  df <- subset(df, df$scen_num %in% row.names(use_values_dat))
+  df <- subset(df, df$scen_num %in% unique(use_values_dat$scen_num))
+  
 
-  use_values_dat$scen_num_fit <- rownames(use_values_dat)
   minNLL <- use_values_dat %>% filter(NLL == min(NLL))
   minNLL <- minNLL[1, ]
-  dfMin <- subset(df, df$scen_num %in% minNLL$scen_num_fit)
+  dfMin <- subset(df, df$scen_num == minNLL$scen_num)
 
   p3 <- ggplot(data = df) +
     geom_line(aes(x = date, y = new_detected_hospitalized, group = scen_num), col = "deepskyblue3") +
