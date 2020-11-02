@@ -145,20 +145,9 @@ load_sim_dat <- function(fittingParam, exp_name, i, start_date, stop_date, fname
 
   grpVars <- c(fittingParam, "time", "startdate", "date", "scen_num", "sample_num")
 
-  df <- df %>%
-    dplyr::group_by_at(.vars = grpVars) %>%
-    dplyr::summarize(
-      death_det_cumul = median(death_det_cumul),
-      hosp_det_cumul = median(hosp_det_cumul),
-      infected_cumul = median(infected_cumul),
-      crit_det = median(crit_det),
-      hosp_det = median(hosp_det)
-    ) %>%
-    dplyr::group_by_at(.vars = fittingParam) %>%
-    as.data.table()
 
   df <- df %>%
-    dplyr::group_by(scen_num, sample_num) %>%
+    dplyr::group_by_at(.vars=grpVars) %>%
     dplyr::arrange(time) %>%
     dplyr::mutate(
       new_detected_deaths = 0,
@@ -399,12 +388,11 @@ f_post_fit_plot <- function(use_values_dat, i, logscale = TRUE) {
   #'
   #'
   df <- as.data.frame(sim_ems_emresource)
-  df <- subset(df, df$scen_num %in% row.names(use_values_dat))
+  df <- subset(df, df$scen_num %in% unique(use_values_dat$scen_num))
 
-  use_values_dat$scen_num_fit <- rownames(use_values_dat)
   minNLL <- use_values_dat %>% filter(NLL == min(NLL))
   minNLL <- minNLL[1, ]
-  dfMin <- subset(df, df$scen_num %in% minNLL$scen_num_fit)
+  dfMin <- subset(df, df$scen_num == minNLL$scen_num)
 
   p1 <- ggplot(data = df) +
     geom_line(aes(x = date, y = crit_det, group = scen_num), col = "deepskyblue3") +
