@@ -106,7 +106,7 @@ if (!dir.exists(file.path(out_dir, "csv"))) dir.create(file.path(out_dir, "csv")
 ## Note: All directories need to be defined before executing the functions via the load_paths.R.
 
 ## Data management
-load_sim_dat <- function(fittingParam, exp_name, i, start_date, stop_date, fname = "trajectoriesDat.csv") {
+load_sim_dat <- function(fittingParam, exp_name, i, start_date, stop_date, fname = "trajectoriesDat.csv",  samplePlot=TRUE) {
 
   #' Load simulation outputs and do basic data operations
   #'
@@ -125,7 +125,7 @@ load_sim_dat <- function(fittingParam, exp_name, i, start_date, stop_date, fname
 
   if (sum(grep(".Rdata", fname), grep(".RData", fname)) == 1) {
     load(file.path(exp_dir, fname))
-    df <- subdat
+    df <- na.omit(subdat)
     rm(subdat)
   }
 
@@ -140,13 +140,37 @@ load_sim_dat <- function(fittingParam, exp_name, i, start_date, stop_date, fname
       # startdate = as.Date(as.character(startdate), format = "%m/%d/%Y"), #, format = "%m/%d/%Y"
       date = startdate + time
     ) %>%
-    setNames(gsub(paste0("_EMS-", i), "", names(.))) %>%
-    dplyr::filter(date <= as.Date(stop_date) & date >= as.Date(start_date))
+    setNames(gsub(paste0("_EMS-", i), "", names(.))) 
+  
+  
+  ### Prepare for merge and merge ref_dat to sim_dat
+  if(samplePlot){
+    
+    emresource_ems <- fread(file.path(data_path, "covid_IDPH/Corona virus reports/emresource_by_region.csv")) %>%
+      dplyr::filter(covid_region %in% i) %>%
+      dplyr::mutate(date = as.Date(date_of_extract)) %>%
+      complete(date = seq.Date(min(date), max(date), by = "day"))
+    
+    nsamples=500
+    pplot <- ggplot(data=subset(df, scen_num %in% sample(df$scen_num,nsamples, replace = F) )) +
+      geom_line(aes(x=date, y=crit_det, group=scen_num), col="deepskyblue3", alpha=0.3)+
+      geom_point(data=emresource_ems,aes(x=date, y=confirmed_covid_icu)) +
+      labs(title=paste0("region ", i),
+           subtitle = ("confirmed_covid_icu, df"), 
+           caption=paste0("subset for ", nsamples))+
+      facet_wrap(~region)
+    
+    ggsave(paste0(i, "_samplePlot.png"),
+           plot = pplot,
+           path = file.path(out_dir, "pre_fit"), width = 13, height = 10, device = "png"
+    )
+  }
+  
 
   grpVars <- c(fittingParam, "time", "startdate", "date", "scen_num", "sample_num")
 
-
   df <- df %>%
+    dplyr::filter(date <= as.Date(stop_date) & date >= as.Date(start_date)) %>%
     dplyr::group_by_at(.vars=grpVars) %>%
     dplyr::arrange(time) %>%
     dplyr::mutate(
@@ -294,88 +318,6 @@ merge_sim_and_ref_dat <- function(sim_ems, i, start_date, stop_date, smooth_n_da
   names(dat_list) <- c("sim_ems_emresource", "sim_ems_LL", "sim_ems_CLI")
 
   return(dat_list)
-}
-
-
-## Plotting
-pre_fit_plot <- function(sim_ems_emresource, sim_ems_LL, sim_ems_CLI, fittingVar, logscale = TRUE) {
-
-  #' Generates custom pre-fitting plots to assess whether data lies within simulated parameter space
-  #'
-  #' @param fittingVar vector with names of fitting parameters
-  #' @param logscale boolean, if TRUE uses  log scale for y axis
-  #'
-
-  df <- as.data.frame(sim_ems_emresource)
-  df$fittingVar <- df[, fittingVar]
-
-  p1 <- ggplot(data = df) +
-    geom_line(aes(x = date, y = crit_det, col = as.factor(fittingVar), group = scen_num)) +
-    geom_point(aes(x = date, y = confirmed_covid_icu, group = scen_num)) +
-    theme(legend.position = "None") +
-    labs(title = "EMSrecourse\nconfirmed_covid_icu", subtitle = "", caption = paste0(fittingVar))
-
-  p2 <- ggplot(data = df) +
-    geom_line(aes(x = date, y = new_detected_deaths, col = as.factor(fittingVar), group = scen_num)) +
-    geom_point(aes(x = date, y = confirmed_covid_deaths_prev_24h, group = scen_num)) +
-    theme(legend.position = "None") +
-    labs(title = "EMSrecourse\nconfirmed_covid_deaths_prev_24h", subtitle = "", caption = paste0(fittingVar))
-
-  p3 <- ggplot(data = df) +
-    geom_line(aes(x = date, y = hosp_det, col = as.factor(fittingVar), group = scen_num)) +
-    geom_point(aes(x = date, y = covid_non_icu, group = scen_num)) +
-    theme(legend.position = "None") +
-    labs(title = "EMSrecourse\ncovid_non_icu", subtitle = "", caption = paste0(fittingVar))
-
-  if (logscale == TRUE) {
-    p1 <- p1 + scale_y_log10()
-    p2 <- p2 + scale_y_log10()
-    p3 <- p3 + scale_y_log10()
-  }
-  emr_plot <- plot_grid(p1, p2, p3, nrow = 1)
-  rm(df, p1, p2, p3)
-
-  df <- as.data.frame(sim_ems_LL)
-  df$fittingVar <- df[, fittingVar]
-
-  p1 <- ggplot(data = df) +
-    geom_line(aes(x = date, y = new_detected_deaths, col = as.factor(fittingVar), group = scen_num)) +
-    geom_point(aes(x = date, y = deaths, group = scen_num)) +
-    theme(legend.position = "None") +
-    labs(title = "Line List\nnew_detected_deaths", subtitle = "", caption = paste0(fittingVar))
-
-
-  p2 <- ggplot(data = df) +
-    geom_line(aes(x = date, y = new_detected_hospitalized, col = as.factor(fittingVar), group = scen_num)) +
-    geom_point(aes(x = date, y = admissions, group = scen_num)) +
-    theme(legend.position = "None") +
-    labs(title = "Line List\nadmissions", subtitle = "", caption = paste0(fittingVar))
-
-  if (logscale == TRUE) {
-    p1 <- p1 + scale_y_log10()
-    p2 <- p2 + scale_y_log10()
-  }
-  rm(df)
-
-
-  df <- as.data.frame(sim_ems_CLI)
-  df$fittingVar <- df[, fittingVar]
-
-  p3 <- ggplot(data = df) +
-    geom_line(aes(x = date, y = new_detected_hospitalized, col = as.factor(fittingVar), group = scen_num)) +
-    geom_point(aes(x = date, y = inpatient, group = scen_num)) +
-    theme(legend.position = "None") +
-    labs(title = "IDPH\nCLI_admissions", subtitle = "", caption = paste0(fittingVar))
-
-  if (logscale == TRUE) {
-    p3 <- p3 + scale_y_log10()
-  }
-
-  ll_plot <- plot_grid(p1, p2, p3, nrow = 1)
-
-  pplot <- plot_grid(emr_plot, ll_plot, nrow = 2)
-
-  return(pplot)
 }
 
 f_post_fit_plot <- function(use_values_dat, i, logscale = TRUE) {
@@ -637,50 +579,6 @@ f_export_sumary_csv <- function(use_values_list, fittingParam, npairs = 10, writ
   }
 }
 
-
-## ----------------------------------------------
-## Wrapper function to run for all
-prefit_plots <- function(start_date, stop_date) {
-  for (i in c(1:11)) {
-    print(paste0("Region ", i))
-
-    sim_ems <- load_sim_dat(fittingParam, exp_name, i, start_date, stop_date, fname = "trajectoriesDat_trim.csv")
-
-    str(sim_ems)
-    summary(sim_ems$scen_num)
-    summary(sim_ems$date)
-    sapply(sim_ems[fittingParam], summary)
-    sapply(sim_ems[fittingParam], unique)
-
-    ### Prepare for merge and merge ref_dat to sim_dat
-    sim_ems_emresource <- merge_sim_and_ref_dat(sim_ems, i, start_date, stop_date, smooth_n_days)[[1]]
-    sim_ems_LL <- merge_sim_and_ref_dat(sim_ems, i, start_date, stop_date, smooth_n_days)[[2]]
-    sim_ems_CLI <- merge_sim_and_ref_dat(sim_ems, i, start_date, stop_date, smooth_n_days)[[3]]
-
-
-    ggplot(data = sim_ems) +
-      geom_line(aes(x = date, y = crit_det, group = scen_num)) +
-      scale_x_date(lim = c(start_date, stop_date))
-
-    for (paramVar in fittingParam) {
-      pplot <- pre_fit_plot(sim_ems_emresource, sim_ems_LL, sim_ems_CLI, fittingVar = paramVar, logscale = TRUE)
-
-      ggsave(paste0(i, "_pre_fit_plot_", paramVar, ".png"),
-        plot = pplot,
-        path = file.path(out_dir, "pre_fit"), width = 13, height = 10, device = "png"
-      )
-    }
-  }
-}
-
-## ----------------------------------------------
-
-
-## --------------------------------
-#### Pre-fi plots (optional)
-## --------------------------------
-runPreFitPlot <- F
-if (runPreFitPlot) prefit_plots(start_date, stop_date)
 
 
 ## --------------------------------
