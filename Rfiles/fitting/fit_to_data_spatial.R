@@ -56,10 +56,22 @@ if (runInBatchMode) {
   workingDir <- getwd()
   useSmoothedData <- TRUE
   weightDeath <- FALSE
-  excludeDeaths <- FALSE
-  includeLLadmissions <- TRUE
-  includeCLIadmissions <- TRUE
-  excludeEMRnonICU <- TRUE
+  excludeDeaths <- TRUE
+  includeLLadmissions <- FALSE
+  includeCLIadmissions <- FALSE
+  excludeEMRnonICU <- FALSE
+  
+  #### TODO fix to automatic selection , needs manual editing when multiplier + time is fitted vs multiplier only or multiple multipliers
+  fittingParam_45 <- c( "ki_multiplier_4", "ki_multiplier_5", "ki_multiplier_time_4", "ki_multiplier_time_5")
+  fittingParam_67 <- c( "ki_multiplier_6", "ki_multiplier_7", "ki_multiplier_time_6", "ki_multiplier_time_7")
+  fittingParam_89 <- c( "ki_multiplier_8", "ki_multiplier_9", "ki_multiplier_time_8", "ki_multiplier_time_9")
+  
+  #fittingParam <- fittingParam_67
+  fittingParam <- c(fittingParam_45,fittingParam_67,fittingParam_89)
+  
+  start_date <- as.Date("2020-05-10") # as.Date(paste0("2020-", monthnr, "-01"))
+  stop_date <- as.Date("2020-09-30") #  start_date + 30
+  
 }
 
 ## Print out for log
@@ -79,17 +91,9 @@ setwd(workingDir)
 ## --------------------------------
 exp_name_split <- str_split(exp_name, "_")[[1]]
 simdate <- exp_name_split[1]
-monthnr <- gsub("fitki", "", exp_name_split[length(exp_name_split)])
-
-#### TODO fix to automatic selection , needs manual editing when multiplier + time is fitted vs multiplier only or multiple multipliers
-fittingParam <- c('ki_multiplier_4' , 'ki_multiplier_5', 'ki_multiplier_time_4', 'ki_multiplier_time_5') # paste0("ki_multiplier_", monthnr) # (paste0("ki_multiplier_time_",monthnr), paste0("ki_multiplier_",monthnr))
-
-start_date <-  as.Date("2020-04-01") # as.Date(paste0("2020-", monthnr, "-01"))
-stop_date <-as.Date("2020-06-01") #  start_date + 30
+#monthnr <- gsub("fitki", "", exp_name_split[length(exp_name_split)])
 
 smooth_n_days <- 7
-
-
 exp_dir <- file.path(simulation_output, exp_name)
 out_dir <- file.path(simulation_output, exp_name, "fitting")
 
@@ -427,8 +431,6 @@ f_post_fit_plot <- function(use_values_dat, i, logscale = TRUE) {
   return(pplot)
 }
 
-
-## Fitting + export csv's
 f_run_fitting <- function(i, sim_ems_emresource, sim_ems_LL, sim_ems_CLI, scens, useSmoothedData = TRUE, weightDeath = FALSE,
                           excludeDeaths = FALSE, includeLLadmissions = FALSE, includeCLIadmissions = FALSE, excludeEMRnonICU = FALSE) {
 
