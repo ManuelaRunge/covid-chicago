@@ -226,6 +226,9 @@ intervention_parameters:
   'trigger_delay_days':
     np.random: uniform
     function_kwargs: {'low':1, 'high':1}   
+  'multiplier_elderly':
+    np.random: uniform
+    function_kwargs: {'low': 0.6, 'high':0.6}
 time_parameters:
   ### TIME-VARYING PARAMETER  - DATES
   ### Reduce Ki due to stay-at-home policy 
@@ -260,7 +263,7 @@ time_parameters:
     function_kwargs: {'dates': 2020-09-17}
   'ki_multiplier_time_10':
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-10-10}
+    function_kwargs: {'dates': 2020-10-07}
   'socialDistance_rollback_time':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-08-30}
@@ -354,6 +357,9 @@ time_parameters:
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-06-01}   
   'cfr_time_2':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2020-07-01}   
+  'start_time_2ndWave':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-07-01}   
 fitted_parameters:

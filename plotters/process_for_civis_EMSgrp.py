@@ -101,7 +101,7 @@ def plot_sim(dat,suffix,channels) :
         plt.subplots_adjust(top=0.88)
 
         plt.savefig(os.path.join(plot_path, plotname + '.png'))
-        plt.savefig(os.path.join(plot_path, plotname + '.pdf'), format='PDF')
+        plt.savefig(os.path.join(plot_path, 'pdf', plotname + '.pdf'), format='PDF')
         # plt.show()
 
 def load_and_plot_data(ems_region, fname , savePlot=True) :
@@ -202,12 +202,6 @@ if __name__ == '__main__' :
 
     sim_output_path = os.path.join(wdir, 'simulation_output', exp_name)
     plot_path = os.path.join(sim_output_path, '_plots')
-
-    if not os.path.exists(sim_output_path):
-        os.makedirs(sim_output_path)
-
-    if not os.path.exists(plot_path):
-        os.makedirs(plot_path)
 
     if processStep == 'generate_outputs' :
         dfAll = pd.DataFrame()

@@ -16,10 +16,6 @@ mpl.rcParams['pdf.fonttype'] = 42
 
 datapath, projectpath, wdir,exe_dir, git_dir = load_box_paths()
 
-first_day = date(2020, 2, 13) # IL
-first_plot_day = date(2020, 7, 1)
-last_plot_day = date(2020, 12, 30)
-
 def plot_on_fig(df, channels, axes, color, label, addgrid=True) :
 
     for c, channel in enumerate(channels) :
@@ -59,8 +55,6 @@ def plot_on_fig2(df, c, axes,channel, color,panel_heading, label, addgrid=True) 
     ax.xaxis.set_major_locator(mdates.MonthLocator())
     ax.set_ylim(0, max(mdf['CI_75']))
 
-    ax.plot([np.min(mdf['date']), np.max(mdf['date'])], [capacity['critical'], capacity['critical']], '--', linewidth=1.5, color='black')
-
 def plot_main() :
     fig = plt.figure(figsize=(8, 8))
     fig.subplots_adjust(right=0.97, wspace=0.2, left=0.1, hspace=0.25, top=0.95, bottom=0.07)
@@ -70,7 +64,7 @@ def plot_main() :
 
     for d, exp_name in enumerate(exp_names) :
         sim_output_path = os.path.join(wdir, 'simulation_output', exp_name)
-        df = load_sim_data(exp_name, fname="trajectoriesDat_trim.csv")
+        df = load_sim_data(exp_name)
 
         df['symptomatic_census'] = df['symptomatic_mild'] + df['symptomatic_severe']
         df['ventilators'] = get_vents(df['crit_det'].values)
@@ -78,8 +72,8 @@ def plot_main() :
         plot_on_fig(df, channels, axes, color=palette[d], label=exp_name)
     axes[-1].legend()
 
-    plt.savefig(os.path.join(sim_output_path, 'iteration_comparison_IL.png'))
-    plt.savefig(os.path.join(sim_output_path, 'iteration_comparison_IL.pdf'), format='PDF')
+    plt.savefig(os.path.join(plot_path, 'iteration_comparison_IL.png'))
+    plt.savefig(os.path.join(plot_path,'pdf', 'iteration_comparison_IL.pdf'), format='PDF')
     #plt.show()
 
 def plot_covidregions() :
@@ -101,7 +95,7 @@ def plot_covidregions() :
 
         for d, exp_name in enumerate(exp_names) :
             sim_output_path = os.path.join(wdir, 'simulation_output', exp_name)
-            df = load_sim_data(exp_name, fname='trajectoriesDat_trim.csv', region_suffix=region_suffix)
+            df = load_sim_data(exp_name, region_suffix=region_suffix)
 
             df['symptomatic_census'] = df['symptomatic_mild'] + df['symptomatic_severe']
             df['ventilators'] = get_vents(df['crit_det'].values)
@@ -110,8 +104,8 @@ def plot_covidregions() :
 
         axes[-1].legend()
         fig.suptitle(region_label)
-        plt.savefig(os.path.join(sim_output_path, 'iteration_comparison_%s.png' % region_label2))
-        plt.savefig(os.path.join(sim_output_path, 'iteration_comparison_%s.pdf' % region_label2))
+        plt.savefig(os.path.join(plot_path, 'iteration_comparison_%s.png' % region_label2))
+        plt.savefig(os.path.join(plot_path,'pdf', 'iteration_comparison_%s.pdf' % region_label2))
         #plt.show()
 
 
@@ -131,15 +125,15 @@ def plot_covidregions_inone(channel='hospitalized') :
 
         for d, exp_name in enumerate(exp_names) :
             sim_output_path = os.path.join(wdir, 'simulation_output', exp_name)
-            df = load_sim_data(exp_name, fname='trajectoriesDat_trim.csv', region_suffix=region_suffix)
+            df = load_sim_data(exp_name, region_suffix=region_suffix)
 
             plot_on_fig2(df, c, axes, channel=channel, color=palette[d],panel_heading = region_label,  label=exp_name)
 
         axes[-1].legend()
         fig.suptitle(x=0.5, y=0.999,t=channel)
         plt.tight_layout()
-    plt.savefig(os.path.join(sim_output_path, 'iteration_comparison_covidregion_%s.png' % channel))
-    plt.savefig(os.path.join(sim_output_path, 'iteration_comparison_covidregion_%s.pdf' % channel))
+    plt.savefig(os.path.join(plot_path, 'iteration_comparison_covidregion_%s.png' % channel))
+    plt.savefig(os.path.join(plot_path,'pdf', 'iteration_comparison_covidregion_%s.pdf' % channel))
         #plt.show()
 
 def plot_covidregions_inone2(channels=['infected','new_detected','hospitalized', 'critical', 'deaths']) :
@@ -156,25 +150,20 @@ def plot_covidregions_inone2(channels=['infected','new_detected','hospitalized',
         for c, region_suffix in enumerate(subgroups) :
 
             region_label= region_suffix.replace('_EMS-', 'covid region ')
-            suffix_nr = region_suffix.replace('_EMS-', '')
-            capacity = load_capacity(int(suffix_nr))
 
             for d, exp_name in enumerate(exp_names) :
                 sim_output_path = os.path.join(wdir, 'simulation_output', exp_name)
-                df = load_sim_data(exp_name, fname='trajectoriesDat_trim.csv', region_suffix=region_suffix)
+                df = load_sim_data(exp_name, region_suffix=region_suffix)
 
-                exp_name_label ="current trend-predictions"
-                if exp_name =="20200919_IL_regreopen_counterfactual" : exp_name_label ="soft reopening predictions (19 Sep) "
-
-                plot_on_fig2(df, capacity,c, axes, channel=channel, color=palette[d],panel_heading = region_label,  label=exp_name_label)
+                plot_on_fig2(df, c, axes, channel=channel, color=palette[d],panel_heading = region_label,  label="")
 
             axes[-1].legend()
             fig.suptitle(x=0.5, y=0.999,t=channel)
             plt.tight_layout()
-        if os.path.isdir(os.path.join(sim_output_path,'_plots')) ==False  :
-            os.mkdir(os.path.join(sim_output_path,'_plots'))
-        plt.savefig(os.path.join(sim_output_path,'_plots', 'covidregion_%s.png' % channel))
-        plt.savefig(os.path.join(sim_output_path,'_plots', 'covidregion_%s.pdf' % channel))
+        if os.path.isdir(os.path.join(plot_path,'_plots_covid_region_by_indicator')) ==False  :
+            os.mkdir(os.path.join(plot_path,'_plots_covid_region_by_indicator'))
+        plt.savefig(os.path.join(plot_path,'_plots_covid_region_by_indicator', 'covidregion_%s.png' % channel))
+        plt.savefig(os.path.join(plot_path,'_plots_covid_region_by_indicator', 'covidregion_%s.pdf' % channel))
         #plt.show()
 
 
@@ -191,31 +180,35 @@ def plot_restoreregions_inone(channel='hospitalized') :
 
         region_label= region_suffix.replace('_', '')
 
-
         for d, exp_name in enumerate(exp_names) :
             sim_output_path = os.path.join(wdir, 'simulation_output', exp_name)
-            df = load_sim_data(exp_name, fname='trajectoriesDat_trim.csv', region_suffix=region_suffix)
+            df = load_sim_data(exp_name, region_suffix=region_suffix)
 
-            plot_on_fig2(df,  c, axes, channel=channel, color=palette[d],panel_heading = region_label,  label=exp_name)
-
+            plot_on_fig2(df, c, axes, channel=channel, color=palette[d],panel_heading = region_label,  label=exp_name)
 
         axes[-1].legend()
         fig.suptitle(x=0.5, y=0.999,t=channel)
         plt.tight_layout()
-    plt.savefig(os.path.join(sim_output_path, 'iteration_comparison_restoreregion_%s.png' % channel))
-    plt.savefig(os.path.join(sim_output_path, 'iteration_comparison_restoreregion_%s.pdf' % channel))
+    plt.savefig(os.path.join(plot_path, 'iteration_comparison_restoreregion_%s.png' % channel))
+    plt.savefig(os.path.join(plot_path, 'pdf', 'iteration_comparison_restoreregion_%s.pdf' % channel))
         #plt.show()
 
 
 if __name__ == '__main__' :
 
-    exp_names = [ '20201020_IL_mr_baseline']
+    first_day = date(2020, 2, 13)  # IL
+    first_plot_day = date(2020, 7, 1)
+    last_plot_day = date(2020, 12, 1)
 
-    #plot_main()
-    # plot_covidregions()
-    #plot_covidregions_inone(channel='prevalence')
+    exp_names = ['20200804_IL_RR_fitting_0']
+    plot_path = os.path.join(wdir, 'simulation_output', exp_names[len(exp_names)-1], '_plots')
+
+    plot_main()
+    #plot_covidregions()
+    #plot_covidregions_inone(channel='hospitalized')
     #plot_restoreregions_inone(channel='hospitalized')
     #plot_covidregions_inone2(channels=['infected','new_detected','hospitalized', 'critical', 'deaths'])
     #plot_covidregions_inone2(channels=['prevalence','recoverged','symptomatic_mild','symptomatic_severe'])
-    plot_covidregions_inone2(channels=['crit_det'])
+    plot_covidregions_inone2(channels=['symp_severe_det_cumul','symp_mild_det_cumul','symptomatic_mild',
+                                       'hosp_det','deaths_det','infectious_det'])
 
