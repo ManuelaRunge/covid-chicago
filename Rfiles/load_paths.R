@@ -78,17 +78,19 @@ if(tolower(Location)=="local"){
     wdir = file.path(project_path, 'cms_sim')
     exe_dir = file.path(home_path, 'binaries', 'compartments')
   }
-
-  if('HP1' %in%  user_path){
-    user_path = 'C:/Users/HP1/'
-    git_dir = file.path(user_path, 'Documents', 'covid-chicago')
-    home_path = file.path(user_path, 'Box')
-    data_path = file.path(user_path, 'Box')
+    if('HP1' %in%  user_path){
+    #user_path = r'\~/'
+    git_dir = os.path.join(user_path, 'Documents', 'covid-chicago')
+    home_path = os.path.join(user_path, 'Box')
+    data_path = os.path.join(user_path, 'Box')
+    # project_path = os.path.join(home_path, 'Box', 'covid_chicago')
     project_path = file.path(home_path, 'covid_chicago')
     wdir = file.path(project_path, 'cms_sim')
     exe_dir = file.path(home_path, 'binaries', 'compartments')
   }
 }
+
+
 
 simulation_output <- file.path(wdir, "simulation_output")
 ct_dir <- file.path(simulation_output, "contact_tracing")
