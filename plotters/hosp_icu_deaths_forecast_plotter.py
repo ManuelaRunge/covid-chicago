@@ -120,6 +120,79 @@ def plot_sim_and_ref(df, ems_nr, ref_df, channels, data_channel_names, titles, p
     plt.savefig(os.path.join(plot_path, plot_name_full + '.png'))
     plt.savefig(os.path.join(plot_path, 'pdf', plot_name_full + '.pdf'), format='PDF')
 
+def plot_sim_and_ref_show_distribution(df, ems_nr, ref_df, channels, data_channel_names, titles, plot_name, first_day,
+                     ymax=1000,  logscale=False):
+
+    fig = plt.figure(figsize=(13, 4))
+    fig.subplots_adjust(left=0.07, right=0.97, top=2.95, bottom=0.05, hspace=0.25)
+    axes = [fig.add_subplot(1,3, x + 1) for x in range(len(channels))]
+    palette = sns.color_palette('husl', 8)
+    k = 0
+
+    for c, channel in enumerate(channels):
+        ax = axes[c]
+        # for k, (ki, kdf) in enumerate(df.groupby('Ki')) :
+        df['date'] = df['time'].apply(lambda x: first_day + timedelta(days=int(x)))
+        df = df[(df['date'] >= first_plot_day) & (df['date'] <= last_plot_day)]
+        mdf = df.groupby('date')[channel].agg([np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
+
+        ax.plot(mdf['date'].values, mdf['CI_2pt5'], '--', color='grey' , linewidth=0.7)
+        ax.plot(mdf['date'].values, mdf['CI_25'], '--', color='grey', linewidth=0.7)
+        ax.plot(mdf['date'].values, mdf['CI_50'], color='grey', linewidth=1)
+        ax.plot(mdf['date'].values, mdf['CI_75'], '--', color='grey', linewidth=0.7)
+        ax.plot(mdf['date'].values, mdf['CI_97pt5'], '--', color='grey', linewidth=0.7)
+        ax.plot(mdf['date'].values, mdf['amax'], '--', color='grey', linewidth=0.7)
+
+        ax.fill_between(mdf['date'].values, mdf['amin'], mdf['CI_2pt5'],
+                        color=palette[k], linewidth=0, alpha=1)
+        ax.fill_between(mdf['date'].values, mdf['CI_2pt5'], mdf['CI_25'],
+                        color=palette[k], linewidth=0, alpha=0.8)
+        ax.fill_between(mdf['date'].values, mdf['CI_25'], mdf['CI_50'],
+                        color=palette[k], linewidth=0, alpha=0.6)
+        ax.fill_between(mdf['date'].values, mdf['CI_50'], mdf['CI_75'],
+                        color=palette[k], linewidth=0, alpha=0.4)
+        ax.fill_between(mdf['date'].values, mdf['CI_75'], mdf['CI_97pt5'],
+                        color=palette[k], linewidth=0, alpha=0.3)
+        ax.fill_between(mdf['date'].values, mdf['CI_97pt5'], mdf['amax'],
+                        color=palette[k], linewidth=0, alpha=0.2)
+
+        ax.grid(b=True, which='major', color='#999999', linestyle='-', alpha=0.3)
+        ax.set_title(titles[c],  fontsize=12)
+        # ax.legend()
+
+        if logscale:
+            ax.set_ylim(0.1, ymax)
+            ax.set_yscale('log')
+
+        ax.plot(ref_df['date'], ref_df[data_channel_names[c]], 'o', color='#303030', linewidth=0, ms=1)
+        ax.plot(ref_df['date'], ref_df[data_channel_names[c]].rolling(window=7, center=True).mean(), c='k', alpha=1.0)
+
+        if channel == "hosp_det" or channel == "crit_det":
+            capacity = load_capacity(ems_nr)
+            if channel == "hosp_det":
+                capacitychannel = 'hospitalized'
+            if channel == "crit_det":
+                capacitychannel = 'critical'
+
+            ax.plot([first_plot_day,last_plot_day ], [capacity[capacitychannel], capacity[capacitychannel]], '--', linewidth=1, color='black')
+            ax.plot([first_plot_day,last_plot_day ], [capacity[capacitychannel] * 0.75, capacity[capacitychannel] * 0.75], '--', linewidth=0.8, color='grey')
+
+        formatter = mdates.DateFormatter("%m-%d")
+        ax.xaxis.set_major_formatter(formatter)
+        ax.xaxis.set_major_locator(mdates.MonthLocator())
+        ax.set_xlim(first_plot_day, last_plot_day)
+
+    fig.suptitle(f'Covidregion {ems_nr}        \n',  y=1.0, fontsize=14)
+    fig.tight_layout()
+    plot_name_full = plot_name + '_covidregion_' + str(ems_nr)
+    fig.subplots_adjust(top=0.8)
+
+    if logscale == False:
+        plot_name_full = plot_name_full + "_nolog"
+
+    plt.savefig(os.path.join(plot_path, plot_name_full + '_v2.png'))
+    plt.savefig(os.path.join(plot_path, 'pdf', plot_name_full + '_v2.pdf'), format='PDF')
+
 def compare_ems(exp_name, fname, plot_name, ems_nr=0):
 
     column_list = ['time', 'startdate', 'scen_num', 'sample_num', 'run_num']
@@ -148,6 +221,11 @@ def compare_ems(exp_name, fname, plot_name, ems_nr=0):
     #                ymax=10000,first_day=first_day, logscale=True)
     plot_sim_and_ref(df, ems_nr, ref_df, channels=channels, data_channel_names=data_channel_names, titles=titles,plot_name=plot_name,
                      ymax=10000,first_day=first_day, logscale=False)
+
+    show_distribution=False
+    if show_distribution :
+        plot_sim_and_ref_show_distribution(df, ems_nr, ref_df, channels=channels, data_channel_names=data_channel_names, titles=titles,plot_name=plot_name,
+                        ymax=10000,first_day=first_day, logscale=False)
 
     # return ref_df_emr, ref_df_ll
 
