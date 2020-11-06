@@ -45,6 +45,7 @@ def load_sim_data(exp_name, region_suffix ='_All', input_wdir=None,fname='trajec
 
     df['date'] = df['time'].apply(lambda x: first_day + timedelta(days=int(x)))
     df = df[(df['date'] >= first_plot_day) & (df['date'] <= last_plot_day)]
+    df = df.dropna()
 
     return df
 
