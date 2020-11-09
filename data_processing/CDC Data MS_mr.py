@@ -33,17 +33,16 @@ def load_data(column_list=None, remove_nas=True):
 
     return df
 
-
 def LOS_descriptive_tables(groupList, channel='hosp_length', sortByList=None):
 
-    df_summary = df.groupby(groupList)['hosp_length'].agg(
+    df_summary = df.groupby(groupList)[channel].agg(
         [np.mean, CI_2pt5, CI_25, CI_50, CI_75, CI_97pt5]).reset_index()
     if sortByList != None:
         df_summary = df_summary.sort_values(by=sortByList)
     return df_summary
 
 ### Simple histogram, not age structured\
-def plot_hist(df=df, channel='hosp_length') :
+def plot_hist(df, channel='hosp_length') :
     plt.rcParams.update({'figure.figsize':(7,5), 'figure.dpi':100})
     x = df[channel]
     plt.hist(x, bins=50)
