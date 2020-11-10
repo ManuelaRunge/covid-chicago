@@ -6,6 +6,7 @@ def writeTxt(txtdir, filename, textstring):
     file.write(textstring)
     file.close()
 
+
 def reprocess(input_fname='trajectories.csv', output_fname=None):
     fname = os.path.join(git_dir, input_fname)
     row_df = pd.read_csv(fname, skiprows=1)
@@ -28,29 +29,33 @@ def reprocess(input_fname='trajectories.csv', output_fname=None):
     del adf['index']
     return adf
 
-def trim_trajectories_Dat(df, fname, VarsToKeep, time_start, time_stop,channels=None, grpspecific_params=None, grpnames=None):
+
+def trim_trajectories_Dat(df, fname, VarsToKeep, time_start, time_stop, channels=None, grpspecific_params=None,
+                          grpnames=None):
     """Generate a subset of the trajectoriesDat dataframe
     The new csv file is saved under trajectoriesDat_trim.csv, no dataframe is returned
     """
 
-    if VarsToKeep == None :
+    if VarsToKeep == None:
         VarsToKeep = ['startdate', 'time', 'scen_num', 'sample_num', 'run_num']
-    if VarsToKeep != None :
-        VarsToKeep =  ['startdate', 'time', 'scen_num', 'sample_num', 'run_num'] + VarsToKeep
+    if VarsToKeep != None:
+        VarsToKeep = ['startdate', 'time', 'scen_num', 'sample_num', 'run_num'] + VarsToKeep
         VarsToKeep = [i for n, i in enumerate(VarsToKeep) if i not in VarsToKeep[:n]]
 
     if grpnames == None:
-        grpnames = ['All', 'EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10', 'EMS-11']
-        grpnames_ki = ['EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10','EMS-11']
+        grpnames = ['All', 'EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10',
+                    'EMS-11']
+        grpnames_ki = ['EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10',
+                       'EMS-11']
 
     if channels == None:
         channels = ['susceptible', 'infected', 'recovered', 'infected_cumul', 'detected_cumul',
                     'asymp_cumul', 'asymp_det_cumul',
                     'symp_mild_cumul', 'symptomatic_mild', 'symp_mild_det_cumul',
-                    'symp_severe_cumul','symptomatic_severe', 'symp_severe_det_cumul',
+                    'symp_severe_cumul', 'symptomatic_severe', 'symp_severe_det_cumul',
                     'hosp_det_cumul', 'hosp_cumul', 'hosp_det', 'hospitalized',
-                    'crit_cumul','crit_det_cumul', 'crit_det',  'critical',
-                    'death_det_cumul',  'deaths' ]
+                    'crit_cumul', 'crit_det_cumul', 'crit_det', 'critical',
+                    'death_det_cumul', 'deaths']
 
     if grpspecific_params == None:
         grpspecific_params = ['Ki_t']  # ['Ki_t', 'triggertime','reopening_multiplier_4']
@@ -60,9 +65,9 @@ def trim_trajectories_Dat(df, fname, VarsToKeep, time_start, time_stop,channels=
         for grp in grpnames:
             column_list.append(channel + "_" + str(grp))
 
-    #for grpspecific_param in grpspecific_params:
-    #    for grp in grpnames_ki:
-    #        column_list.append(grpspecific_param + "_" + str(grp))
+    for grpspecific_param in grpspecific_params:
+        for grp in grpnames_ki:
+            column_list.append(grpspecific_param + "_" + str(grp))
 
     df = df[column_list]
     df = df[df['time'] > time_start]
@@ -70,8 +75,9 @@ def trim_trajectories_Dat(df, fname, VarsToKeep, time_start, time_stop,channels=
     df.to_csv(os.path.join(temp_exp_dir, fname + '_trim.csv'), index=False, date_format='%Y-%m-%d')
     del df
 
-def combineTrajectories(VarsToKeep,Nscenarios_start=0, Nscenarios_stop=1000, time_start=1, time_stop=400, fname='trajectoriesDat.csv',SAVE=True):
 
+def combineTrajectories(VarsToKeep, Nscenarios_start=0, Nscenarios_stop=1000, time_start=1, time_stop=400,
+                        fname='trajectoriesDat.csv', SAVE=True):
     df_list = []
     n_errors = 0
     for scen_i in range(Nscenarios_start, Nscenarios_stop):
@@ -113,11 +119,19 @@ if __name__ == '__main__':
 
     # stem = '20201003_IL_mr_fitsm5'                                                                 
     exp_names = ['20201003_IL_mr_fitsm5']  # [x for x in os.listdir(sim_out_dir) if stem in x]
+    # sim_out_dir =  "C:/Users/mrm9534/gitrepos/covid-chicago/_temp"
+    # sim_out_dir = "/home/mrm9534/gitrepos/covid-chicago/_temp/"
+    sim_out_dir = "/projects/p30781/covidproject/covid-chicago/_temp/"
 
-    time_start = 90
+    stem = '20201110_IL_mr_gradual_reopening_Sep2'
+    exp_names = [x for x in os.listdir(sim_out_dir) if stem in x]
+    # exp_names = ['20201104_IL_mr_refit5_test']  # [x for x in os.listdir(sim_out_dir) if stem in x]
+
+    time_start = 1
     time_end = 400
-    additionalVars = ['ki_multiplier_5', 'ki_multiplier_5']
-    VarsToKeepI = ['startdate',  'scen_num', 'sample_num'] + additionalVars
+    additionalVars = [
+        'reopening_multiplier_4']  # ['reopening_multiplier_4'] #['Ki', 'time_infection_import', 'ki_multiplier_3c']
+    VarsToKeepI = ['startdate', 'scen_num', 'sample_num'] + additionalVars
     VarsToKeep = ['time', 'run_num'] + VarsToKeepI
 
     for exp_name in exp_names:
@@ -133,16 +147,16 @@ if __name__ == '__main__':
         Scenario_save_limit = 500
 
         if Nscenario <= Scenario_save_limit:
-            combineTrajectories(VarsToKeep=VarsToKeep,Nscenarios_start=0, Nscenarios_stop=Nscenario+1,time_start=time_start, time_stop=time_end, fname='trajectoriesDat.csv')
+            combineTrajectories(VarsToKeep=VarsToKeep, Nscenarios_start=0, Nscenarios_stop=Nscenario + 1,
+                                time_start=time_start, time_stop=time_end, fname='trajectoriesDat.csv')
         if Nscenario > Scenario_save_limit:
-            n_subsets = int(Nscenario/Scenario_save_limit)
+            n_subsets = int(Nscenario / Scenario_save_limit)
 
-            for i in range(1,n_subsets+2):
-                if i ==1: Nscenario_stop=Scenario_save_limit
+            for i in range(1, n_subsets + 2):
+                if i == 1: Nscenario_stop = Scenario_save_limit
                 if i > 1: Nscenario_stop = Nscenario_stop + Scenario_save_limit
                 print(Nscenario_stop)
-                Nscenarios_start = Nscenario_stop-Scenario_save_limit
+                Nscenarios_start = Nscenario_stop - Scenario_save_limit
                 combineTrajectories(VarsToKeep=VarsToKeep,
                                     Nscenarios_start=Nscenarios_start,
                                     Nscenarios_stop=Nscenario_stop,
-                                    fname='trajectoriesDat_'+str(Nscenario_stop)+'.csv')
