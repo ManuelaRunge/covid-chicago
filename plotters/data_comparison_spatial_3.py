@@ -1,3 +1,7 @@
+"""
+Compare COVID-19 simulation outputs to data.
+Allow lines per varying input parameter to be specified
+"""
 import argparse
 import os
 import pandas as pd
