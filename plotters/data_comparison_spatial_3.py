@@ -57,8 +57,15 @@ def load_sim_data(exp_name, ems_nr, input_wdir=None, fname='trajectoriesDat.csv'
 
     # df.columns = df.columns.str.replace('_All', '')
     df.columns = df.columns.str.replace('_EMS-' + str(ems_nr), '')
-    df['infected_cumul'] = df['infected'] + df['recovered'] + df['deaths']
-    df = calculate_incidence(df)
+    #df['infected_cumul'] = df['infected'] + df['recovered'] + df['deaths']
+    #df = calculate_incidence(df)
+
+    df['new_detected_hospitalized'] = count_new(df, 'hosp_det_cumul')
+    df['new_hospitalized'] = count_new(df, 'hosp_cumul')
+    df['new_critical'] = count_new(df, 'crit_cumul')
+    df['new_detected_critical'] = count_new(df, 'crit_det_cumul')
+    df['new_detected_deaths'] = count_new(df, 'death_det_cumul')
+    df['new_deaths'] = count_new(df, 'deaths')
 
     return df
 

@@ -102,6 +102,11 @@ def plot_sim_and_ref(df, ems_nr, ref_df, channels, data_channel_names, titles, f
     plot_name = 'compare_to_data_covidregion_' + str(ems_nr)
     if logscale == False:
         plot_name = plot_name + "_nolog"
+
+    if not os.path.exists(plot_path):
+        os.makedirs(plot_path)
+    if not os.path.exists(os.path.join(plot_path,'pdf')):
+        os.makedirs(os.path.join(plot_path,'pdf'))
     plt.savefig(os.path.join(plot_path, plot_name + '.png'))
     plt.savefig(os.path.join(plot_path, 'pdf', plot_name + '.pdf'), format='PDF')
     # return a
