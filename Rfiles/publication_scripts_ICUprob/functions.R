@@ -828,13 +828,13 @@ f_custom_prob_plot <- function(dat, plot_name, exp_dir, SAVE = TRUE, showPoints 
   if (reopenFacet == FALSE) pplot <- pplot + facet_wrap(~geography_name, scales = "free")
   if (showPoints) pplot <- pplot + geom_point(aes(x = capacity_multiplier, y = prob_overflow, group = exp_name, fill = reopen), col = "white", shape = 21, size = 2)
 
-  f_save_plot(pplot = pplot, plot_name = plot_name, plot_dir = file.path(exp_dir), width = width, height = height)
+  if(SAVE)f_save_plot(pplot = pplot, plot_name = plot_name, plot_dir = file.path(exp_dir), width = width, height = height)
 
   return(pplot)
 }
 
 
-f_custom_prob_plot2 <- function(dat, subregions = NULL, exp_dir, plot_name, width = 15, height = 10) {
+f_custom_prob_plot2 <- function(dat, subregions = NULL, exp_dir, plot_name, width = 15, height = 10, SAVE=TRUE) {
   if (!exists("customTheme")) customTheme <- f_getCustomTheme()
   if (is.null(subregions)) subregions <- unique(dat$geography_name)
 
@@ -853,7 +853,8 @@ f_custom_prob_plot2 <- function(dat, subregions = NULL, exp_dir, plot_name, widt
     facet_grid(reopen + rollback ~ delay) +
     theme(panel.spacing = unit(2, "lines"))
 
-  f_save_plot(pplot = pplot, plot_name = plot_name, plot_dir = file.path(exp_dir), width = width, height = height)
+  if(SAVE)f_save_plot(pplot = pplot, plot_name = plot_name, plot_dir = file.path(exp_dir), width = width, height = height)
+  return(pplot)
 }
 
 
