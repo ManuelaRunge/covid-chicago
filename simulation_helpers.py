@@ -166,7 +166,7 @@ def writeTxt(txtdir, filename, textstring) :
 
 
 def generateSubmissionFile(scen_num, exp_name, experiment_config, trajectories_dir, temp_dir, temp_exp_dir,sim_output_path,
-                           exe_dir=EXE_DIR, docker_image="cms", git_dir=GIT_DIR, wdir=WDIR):
+                           exe_dir=EXE_DIR, docker_image="cms", git_dir=GIT_DIR, projectpath=projectpath):
 
     today = datetime.datetime.today()
     fname = 'runSimulations.bat'
@@ -239,7 +239,7 @@ echo end""")
             copy_from_dir_plots = os.path.join(sim_output_path, '_plots')
             filestocopy = ['compare_to_data_covidregion_10.png','compare_to_data_covidregion_11.png',
                            'forward_projection_covidregion_10_nolog.png',  'forward_projection_covidregion_11_nolog.png']
-            copy_to_dir = os.path.join(wdir, 'NU_cdph_outputs', today.strftime("%Y%m%d"))
+            copy_to_dir = os.path.join(projectpath, 'NU_cdph_outputs', today.strftime("%Y%m%d"))
 
 
             file = open(os.path.join(temp_exp_dir, '5_runProcessFor_CDPH.bat'), 'w')
