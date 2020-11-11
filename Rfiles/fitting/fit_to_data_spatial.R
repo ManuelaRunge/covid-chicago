@@ -62,15 +62,28 @@ if (runInBatchMode) {
   excludeEMRnonICU <- FALSE
   
   #### TODO fix to automatic selection , needs manual editing when multiplier + time is fitted vs multiplier only or multiple multipliers
+  fittingParam_kistartsm3 <- c('Ki','time_infection_import','ki_multiplier_3c')
+  fittingParam_Ki <- c('Ki')
+  fittingParam_4 <- c( "ki_multiplier_5",  "ki_multiplier_time_5")
   fittingParam_45 <- c( "ki_multiplier_4", "ki_multiplier_5", "ki_multiplier_time_4", "ki_multiplier_time_5")
   fittingParam_67 <- c( "ki_multiplier_6", "ki_multiplier_7", "ki_multiplier_time_6", "ki_multiplier_time_7")
   fittingParam_89 <- c( "ki_multiplier_8", "ki_multiplier_9", "ki_multiplier_time_8", "ki_multiplier_time_9")
+  fittingParam_fit5 <- c(
+    'Ki_EMS_1',	'Ki_EMS_2', 'Ki_EMS_3', 'Ki_EMS_4'	,'Ki_EMS_5','Ki_EMS_6',	'Ki_EMS_7', 'Ki_EMS_8', 'Ki_EMS_9'	,'Ki_EMS_10', 'Ki_EMS_11',
+    'ki_multiplier_4_EMS_1',	'ki_multiplier_4_EMS_2', 'ki_multiplier_4_EMS_3', 'ki_multiplier_4_EMS_4'	,'ki_multiplier_4_EMS_5','ki_multiplier_4_EMS_6',	'ki_multiplier_4_EMS_7', 'ki_multiplier_4_EMS_8', 'ki_multiplier_4_EMS_9'	,'ki_multiplier_4_EMS_10', 'ki_multiplier_4_EMS_11',
+    'ki_multiplier_5_EMS_1',	'ki_multiplier_5_EMS_2', 'ki_multiplier_5_EMS_3', 'ki_multiplier_5_EMS_4'	,'ki_multiplier_5_EMS_5','ki_multiplier_5_EMS_6',	'ki_multiplier_5_EMS_7', 'ki_multiplier_5_EMS_8', 'ki_multiplier_5_EMS_9'	,'ki_multiplier_5_EMS_10', 'ki_multiplier_5_EMS_11',
+    'ki_multiplier_6_EMS_1',	'ki_multiplier_6_EMS_2', 'ki_multiplier_6_EMS_3', 'ki_multiplier_6_EMS_4'	,'ki_multiplier_6_EMS_5','ki_multiplier_6_EMS_6',	'ki_multiplier_6_EMS_7', 'ki_multiplier_6_EMS_8', 'ki_multiplier_6_EMS_9'	,'ki_multiplier_6_EMS_10', 'ki_multiplier_6_EMS_11',
+    'ki_multiplier_7_EMS_1',	'ki_multiplier_7_EMS_2', 'ki_multiplier_7_EMS_3', 'ki_multiplier_7_EMS_4'	,'ki_multiplier_7_EMS_5','ki_multiplier_7_EMS_6',	'ki_multiplier_7_EMS_7', 'ki_multiplier_7_EMS_8', 'ki_multiplier_7_EMS_9'	,'ki_multiplier_7_EMS_10', 'ki_multiplier_7_EMS_11',
+    'ki_multiplier_8_EMS_1',	'ki_multiplier_8_EMS_2', 'ki_multiplier_8_EMS_3', 'ki_multiplier_8_EMS_4'	,'ki_multiplier_8_EMS_5','ki_multiplier_8_EMS_6',	'ki_multiplier_8_EMS_7', 'ki_multiplier_8_EMS_8', 'ki_multiplier_8_EMS_9'	,'ki_multiplier_8_EMS_10', 'ki_multiplier_8_EMS_11',
+    'ki_multiplier_9_EMS_1',	'ki_multiplier_9_EMS_2', 'ki_multiplier_9_EMS_3', 'ki_multiplier_9_EMS_4'	,'ki_multiplier_9_EMS_5','ki_multiplier_9_EMS_6',	'ki_multiplier_9_EMS_7', 'ki_multiplier_9_EMS_8', 'ki_multiplier_9_EMS_9'	,'ki_multiplier_9_EMS_10', 'ki_multiplier_9_EMS_11')
   
-  #fittingParam <- fittingParam_67
-  fittingParam <- c(fittingParam_45,fittingParam_67,fittingParam_89)
+  fittingParam <- fittingParam_Ki
+  #fittingParam <-  c(fittingParam_89,fittingParam_67) #c(fittingParam_45,fittingParam_67,fittingParam_89)
   
-  start_date <- as.Date("2020-05-10") # as.Date(paste0("2020-", monthnr, "-01"))
-  stop_date <- as.Date("2020-09-30") #  start_date + 30
+  start_date <- as.Date("2020-07-01") # as.Date(paste0("2020-", monthnr, "-01"))
+  stop_date <- as.Date("2020-08-01") #  start_date + 30
+  #start_date <- as.Date("2020-08-01") # as.Date(paste0("2020-", monthnr, "-01"))
+  # stop_date <- as.Date("2020-10-01") #  start_date + 30
   
 }
 
@@ -123,16 +136,18 @@ load_sim_dat <- function(fittingParam, exp_name, i, start_date, stop_date, fname
   #' @param start_date first date of the time period to fit
   #' @param stop_date  last date of the time period to fit
   #' @param fname name of the simulation output file, default is 'trajectoriesDat.csv', often used is also 'trajectoriesDat_trim.csv'
-
-  outcomeParam <- paste0(c("death_det_cumul", "crit_det", "hosp_det", "hosp_det_cumul", "infected_cumul"), paste0("_EMS-", i))
-  KeepCols <- c("time", "startdate", "scen_num", "sample_num", fittingParam, outcomeParam)
-
+  
+  outcomeParam <- paste0(c("death_det_cumul", "crit_det", "hosp_det", "hosp_det_cumul", "infected_cumul"))
+  KeepCols <- c("time", "startdate", "scen_num",  "sample_num", fittingParam, outcomeParam)
+  
   if (sum(grep(".Rdata", fname), grep(".RData", fname)) == 1) {
     load(file.path(exp_dir, fname))
+    subdat = as.data.frame(subdat)
     df <- na.omit(subdat)
+    
     rm(subdat)
   }
-
+  
   if (sum(grep(".csv", fname)) == 1) {
     df <- fread(file.path(simulation_output, exp_name, fname), select = KeepCols)
   }
@@ -171,9 +186,29 @@ load_sim_dat <- function(fittingParam, exp_name, i, start_date, stop_date, fname
     )
   }
   
-
-  grpVars <- c(fittingParam, "scen_num", "sample_num")
-
+  
+  aggregateDat=TRUE
+  if(aggregateDat){
+    
+    grpVars <- c(fittingParam, "time", "date")
+    
+    df <- df %>%
+      dplyr::group_by_at(.vars = grpVars) %>%
+      dplyr::summarize(
+        death_det_cumul = median(death_det_cumul),
+        hosp_det_cumul = median(hosp_det_cumul),
+        infected_cumul = median(infected_cumul),
+        crit_det = median(crit_det),
+        hosp_det = median(hosp_det)
+      ) %>%
+      dplyr::group_by_at(.vars = fittingParam) %>%
+      mutate(scen_num = cur_group_id(),
+             sample_num = "aggregated_median") %>%
+      as.data.table()
+  }
+  
+  grpVars <- c(fittingParam, "scen_num")
+  
   df <- df  %>%
     dplyr::filter(date <= as.Date(stop_date) & date >= as.Date(start_date)) %>%
     dplyr::group_by_at(.vars=grpVars) %>%
@@ -424,8 +459,8 @@ f_post_fit_plot <- function(use_values_dat, i, logscale = TRUE) {
   pplot <- plot_grid(emr_plot, ll_plot, nrow = 2)
 
   ggsave(paste0(i, "_post_fit_plot.png"),
-    plot = pplot,
-    path = file.path(out_dir, "post_fit"), width = 13, height = 10, device = "png"
+         plot = pplot,
+         path = file.path(out_dir, "post_fit"), width = 13, height = 10, device = "png"
   )
 
   return(pplot)
