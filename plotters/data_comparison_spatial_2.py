@@ -1,5 +1,6 @@
 """
 Compare COVID-19 simulation outputs to data.
+Used for spatial - covidregion - model
 Allow comparison of multiple simulation experiments
 """
 import argparse
