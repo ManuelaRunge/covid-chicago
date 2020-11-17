@@ -98,7 +98,7 @@ def plot_main(param, channel = 'crit_det',time_param=False) :
         os.makedirs(os.path.join(plot_path,'pdf'))
 
     fig.savefig(os.path.join(plot_path,f'plot_by_{param}_{channel}.png'))
-    fig.savefig(os.path.join(plot_path, f'plot_by_{param}_{channel}.pdf'), format='PDF')
+    fig.savefig(os.path.join(plot_path,'pdf', f'plot_by_{param}_{channel}.pdf'), format='PDF')
     #plt.show()
 
 
