@@ -24,10 +24,15 @@ outdir <- file.path(file.path(project_path, "/project_notes/publications/covid_m
 #### Experiment names and locations
 #### --------------------------------------
 exp_name_baseline <- "20201006_IL_baseline_oldsm8"
-exp_dir_baseline <- file.path(simulation_output, "_simulations_for_civis", exp_name_baseline)
+exp_dir_baseline <- file.path(simulation_output,'_simulations_for_civis',  exp_name_baseline)
+
+exp_name_counterfactual <- "20200919_IL_regreopen_counterfactual"
+exp_dir_counterfactual<- file.path(simulation_output, "_overflow_simulations", exp_name_counterfactual)
 
 exp_name_reopen <- "20200919_IL_gradual_reopening_sm7" #  "20200917_IL_gradual_reopening"
 exp_dir_reopen <- file.path(simulation_output, "_overflow_simulations", exp_name_reopen)
+
+
 
 
 exp_names_sm4 <- c(
@@ -46,12 +51,19 @@ exp_name_regreopen_combined <- "20200919_IL_regreopen_combined"
 
 
 #### --------------------------------------
-#### 1- Region characteristics
+#### 1- Region characteristics -> region_characteristics.csv
 #### --------------------------------------
-chunk1
+chunk1=F
 if (chunk1) {
   dat <- f_region_characteristics()
   summary(dat$icubeds_per10th)
+  print(dat)
+  fwrite(dat, file.path(outdir,"tables", "region_characteristics.csv"), quote=FALSE)
+  
+  
+  ## load refdat
+  
+  l
 }
 
 #### --------------------------------------
@@ -65,24 +77,31 @@ if (chunk1) {
 chunk2 <- F
 if (chunk2) {
   #### --------------------------------------
-  ####  Baseline - predicted ICU
+  ####  Baseline - predicted ICU in the past
+  #### --------------------------------------
+
+  exp_name <- exp_name_baseline
+  exp_dir <- exp_dir_baseline
+  simdat <- f_load_single_exp(exp_dir,paramvars = c("capacity_multiplier"))
+  pplot <- f_icu_timeline(dat = simdat, subregions = unique(simdat$geography_name), selected_channel = "crit_det") +
+    facet_wrap(~geography_name, scales="free")
+
+  #### --------------------------------------
+  ####  Baseline -  How often in the past did overflow happen?
   #### --------------------------------------
 
   exp_name <- exp_name_baseline
   exp_dir <- exp_dir_baseline
   simdat <- f_load_single_exp(exp_dir)
-  picu <- f_icu_timeline(dat = simdat, selected_channel = "crit_det")
-
-  #### --------------------------------------
-  ####  Baseline -  How often in the past did 20 happen?
-  #### --------------------------------------
-
-  exp_name <- simulation_output
-  exp_dir <- exp_dir_baseline
-  simdat <- f_load_single_exp(exp_dir)
   simdat$date <- as.Date(simdat$date)
   simdat <- simdat %>% filter(date <= Sys.Date())
   (ndates <- length(unique(simdat$date)))
+  
+  ### Current ICU
+  simdat %>% filter(channel=="crit_det" & geography_name %in% c(1,4,11) & 
+                      date ==as.Date("2020-09-01"))  %>%
+    group_by(geography_name) %>%
+    View()
 
   ICU_threshold_past <- list()
   for (capacity_threshold in seq(0.2, 1, 0.2)) {
@@ -107,35 +126,36 @@ if (chunk2) {
 }
 
 #### --------------------------------------
-####  Counterfactual - varying reopening
+####  Counterfactual - varying reopening - 2_counterfactual_description.R
 #### --------------------------------------
 chunk3 <- F
 if (chunk3) {
   exp_name <- exp_name_reopen
   exp_dir <- exp_dir_reopen
-  simdat <- f_load_single_exp(exp_dir = exp_dir, mainVars = c("date", "scen_num", "sample_num", "reopening_multiplier_4"))
+  simdat <- f_load_single_exp(exp_dir = exp_dir, paramvars = c("reopening_multiplier_4"))
   unique(simdat$geography_name)
   unique(simdat$reopening_multiplier_4)
-  picu <- f_icu_timeline(dat = simdat, subregions = c("1"), selected_channel = "crit_det", facetVar = "reopening_multiplier_4")
-
+  pplot <- f_icu_timeline(dat = simdat, subregions = c("1"), selected_channel = "crit_det", facetVar = "reopening_multiplier_4")
+  pplot <- f_icu_timeline(dat = simdat, subregions = c("4"), selected_channel = "crit_det", facetVar = "reopening_multiplier_4")
+  pplot <- f_icu_timeline(dat = simdat, subregions = c("11"), selected_channel = "crit_det", facetVar = "reopening_multiplier_4")
+  
   ## Rebound values
   rebound <- f_get_rebound_values(dat = simdat)
 
-
   ### Timeline plot
-  for (i in c("illinois", c(1:11))) {
-    if (!dir.exists(file.path(outdir, "gradual_reopening"))) dir.create(file.path(outdir, "gradual_reopening"))
-    picu <- f_icu_timeline(dat = simdat, subregions = c(i), selected_channel = "crit_det", facetVar = "reopening_multiplier_4")
+  for (i in unique(simdat$geography_name)) {
+    selected_channel = "crit_det"
+    pplot <- f_icu_timeline(dat = simdat, subregions = c(i), selected_channel = selected_channel, facetVar = "reopening_multiplier_4")
     ggsave(paste0("timeline_", selected_channel, "_region_", i, ".png"),
-      plot = picu, path = file.path(outdir, "gradual_reopening"), width = 14, height = 8, device = "png"
+      plot = pplot, path = file.path(exp_dir, "_plots"), width = 14, height = 8, device = "png"
     )
   }
 
   ##### Peak in ICU
-  ICUcumul_out <- f_describe_ICU_cumul(facetVar = "reopening_multiplier_4", subfolder = "gradual_reopening")
+  ICUcumul_out <- f_describe_ICU_cumul(facetVar = "reopening_multiplier_4")
 
   ##### More ICU beds needed at peak
-  ICUpeak_out <- f_describe_ICU_peak(facetVar = "reopening_multiplier_4", subfolder = "gradual_reopening")
+  ICUpeak_out <- f_describe_ICU_peak(facetVar = "reopening_multiplier_4")
   ICUpeak_out[[2]] %>% as.data.frame()
 }
 
@@ -159,7 +179,10 @@ if (chunk4) {
   exp_name_sub <- exp_name
   exp_dir <- file.path(simulation_output, "_overflow_simulations", exp_name)
   list_csvs <- list.files(file.path(simulation_output, "_overflow_simulations"), pattern = "trajectoriesDat_sub_long.csv", recursive = TRUE)
-
+  
+  simdate="20200919"
+  list_csvs <- list_csvs[grep(simdate, list_csvs)]
+  
   for (subregion in c(1:11)) {
     print(subregion)
     # subregion <- c("11")
@@ -169,14 +192,14 @@ if (chunk4) {
     out4 <- f_stacked_barplot(dflist = list_csvs, subregions = subregion, rollback = "sm7", reopen = "100perc", exp_name_sub)
 
     pplot <- plot_grid(f_remove_legend(out1[[2]]), f_remove_legend(out3[[2]]), f_remove_legend(out2[[2]]), f_remove_legend(out4[[2]]))
-    f_save_plot(pplot = pplot, plot_name = paste0("barplot_reg_", subregion), plot_dir = file.path(outdir), width = 8, height = 7)
-
-
+    if(SAVE)f_save_plot(pplot = pplot, plot_name = paste0("barplot_reg_", subregion), plot_dir = file.path(outdir), width = 8, height = 7)
+    
+    rm(out3, out4)
     out3 <- f_stacked_barplot(dflist = list_csvs, subregions = subregion, rollback = "sm7", reopen = "50perc", exp_name_sub, stackLike = T)
     out4 <- f_stacked_barplot(dflist = list_csvs, subregions = subregion, rollback = "sm7", reopen = "100perc", exp_name_sub, stackLike = T)
 
     pplot2 <- plot_grid(f_remove_legend(out4[[2]]), f_remove_legend(out3[[2]]), ncol = 1)
-    f_save_plot(pplot = pplot2, plot_name = paste0("barplot2b_reg_", subregion), plot_dir = file.path(outdir), width = 7, height = 10)
+    if(SAVE)f_save_plot(pplot = pplot2, plot_name = paste0("barplot2b_reg_", subregion), plot_dir = file.path(outdir), width = 7, height = 10)
 
     rm(pplot, subregion)
   }
@@ -185,7 +208,7 @@ if (chunk4) {
   for (subregion in c(1:11)) {
     print(subregion)
     # subregion <- c("11")
-
+    rm(out3, out4)
     out3 <- f_stacked_barplot_errorbars(dflist = list_csvs, subregions = subregion, rollback = "sm7", reopen = "50perc", exp_name_sub, stackLike = T)
     out4 <- f_stacked_barplot_errorbars(dflist = list_csvs, subregions = subregion, rollback = "sm7", reopen = "100perc", exp_name_sub, stackLike = T)
 
@@ -199,7 +222,15 @@ if (chunk4) {
   # f_save_plot(pplot = out1[[2]], plot_name = "barplot_legend1", plot_dir = file.path(outdir, exp_name_sub), width = 8, height = 6)
   # f_save_plot(pplot = out4[[2]], plot_name = "barplot_legend2", plot_dir = file.path(outdir, exp_name_sub), width = 8, height = 6)
 
+  
   ###### For text
+  exp_name <- exp_names_sm7[1]
+  
+  exp_dir <- file.path(simulation_output, "_overflow_simulations", exp_name)
+  simdat <- f_load_single_exp(exp_dir)
+  tab_peak_50 <- f_get_peak_numbers()
+  tab_peak_50 %>% filter(geography_name %in% c(1,4,11) & capacity_multiplier >0.77 )
+  
   unique(tab_peak_50$capacity_multiplier)
   tab_peak_50 %>%
     filter(capacity_multiplier > 0.8 & capacity_multiplier < 1) %>%
@@ -221,6 +252,36 @@ if (chunk4) {
     filter(geography_name == 5) %>%
     as.data.frame()
 
+  
+  
+  ###### For text
+  exp_name <- exp_names_sm4[2]
+  exp_dir <- file.path(simulation_output, "_overflow_simulations", exp_name)
+  simdat <- f_load_single_exp(exp_dir)
+  tab_peak_100 <- f_get_peak_numbers()
+  tab_peak_100 %>% filter(geography_name %in% c(1,4,11) & capacity_multiplier >0.77 ) 
+  
+  unique(tab_peak_50$capacity_multiplier)
+  tab_peak_50 %>%
+    filter(capacity_multiplier > 0.8 & capacity_multiplier < 1) %>%
+    as.data.frame() %>%
+    arrange(geography_name)
+  tab_peak_50 %>%
+    filter(capacity_multiplier > 0.4 & capacity_multiplier < 0.5) %>%
+    as.data.frame()
+  
+  tab_peak_50 %>%
+    group_by(geography_name) %>%
+    filter(q97.5.aboveICU_ratio < 1) %>%
+    filter(capacity_multiplier == max(capacity_multiplier)) %>%
+    mutate(capacity_multiplier = round(capacity_multiplier, 1)) %>%
+    arrange(capacity_multiplier) %>%
+    as.data.frame()
+  
+  tab_peak_50 %>%
+    filter(geography_name == 5) %>%
+    as.data.frame()
+  
   # rbind(tab_cumul_100, tab_cumul_50) %>% fwrite(file.path(outdir,"icu_cumul.csv" ), quote=FALSE)
   # rbind(tab_peak_100, tab_peak_50) %>% fwrite(file.path(outdir,"icu_peak.csv" ), quote=FALSE)
 }
@@ -437,7 +498,7 @@ if (chunk9) {
 
 
     ### Load Rt files
-    exp_name <- exp_name_reopen #  "20200917_IL_gradual_reopening"
+    exp_name <- "20200917_IL_gradual_reopening" #exp_name_reopen
     Rtdat <- fread(file.path(simulation_output, "_overflow_simulations", exp_name, "estimatedRt", "combined_estimated_Rt.csv"))
 
     ### + 120 as trimmed trajectories was used
@@ -467,7 +528,8 @@ if (chunk9) {
       mutate(rebound = "moderate") %>%
       dplyr::select(colnames(Rtdat_fast))
     Rtdat <- rbind(Rtdat_fast, Rtdat_moderate)
-    f_rt_timeline(dat = Rtdat, subregions = c(1, 2, 3), selected_channel = "median_rt", facetVar = "geography_name")
+    
+    f_rt_timeline(dat = Rtdat, subregions = c(1,4, 11), selected_channel = "median_rt", facetVar = "geography_name")
 
     Rtdat_peak <- Rtdat %>%
       group_by(geography_name, rebound) %>%
