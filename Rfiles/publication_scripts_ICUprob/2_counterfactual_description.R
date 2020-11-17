@@ -61,28 +61,48 @@ stopdate = as.Date("2020-12-31")
 capacityDat <- load_new_capacity() %>% mutate(region = as.character(geography_name))
 capacityDat$region_label <- factor(capacityDat$region, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
 
-### Facet A 
-exp_name <- exp_name_reopen
-exp_dir <- exp_dir_reopen
-load(file = file.path(exp_dir, "aggregatedDat_forR.Rdata"))
-dat$region_label <- factor(dat$region, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
+### Facet A
+exp_name <- "20201112_IL_regreopen50perc_counterfactual"
+exp_dir <- file.path(simulation_output, exp_name)
+simdat_50perc <- f_load_single_exp(exp_dir = exp_dir, paramvars = c("capacity_multiplier", "trigger_delay_days"))
+simdat_50perc$region_label <- factor(simdat_50perc$geography_name, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
 
-pplot_A <- dat %>%
-  filter(outcome == "crit_det" & date >= startdate & date <= as.Date(stopdate)) %>%
-  filter(region == 1) %>%
-  group_by(region, reopening_multiplier_4, outcome) %>%
+exp_name <- "20201112_IL_regreopen100perc_counterfactual"
+exp_dir <- file.path(simulation_output, exp_name)
+trajectoriesDat <- f_merge_Rdata(exp_dir = exp_dir, paramvars = c("capacity_multiplier", "trigger_delay_days"))
+simdat_100perc <- f_load_single_exp(exp_dir = exp_dir, paramvars = c("capacity_multiplier", "trigger_delay_days"))
+simdat_100perc$region_label <- factor(simdat_100perc$geography_name, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
+
+simdat_50perc <- simdat_100perc %>%
+  mutate(date=as.Date(date)) %>%
+  filter(channel == "crit_det" & date >= startdate & date <= as.Date(stopdate)) %>%
+  left_join(capacityDat)%>%
+  mutate(rebound="50perc")
+simdat_100perc <- simdat_100perc %>%
+  mutate(date=as.Date(date)) %>%
+  filter(channel == "crit_det" & date >= startdate & date <= as.Date(stopdate)) %>%
   left_join(capacityDat) %>%
-  ggplot() +
-  geom_ribbon(aes(x = date, ymin = q2.5.value, ymax = q97.5.value, fill = as.factor(reopening_multiplier_4), 
-                  group = reopening_multiplier_4), alpha = 0.2) +
-  geom_ribbon(aes(x = date, ymin = q25.value, ymax = q75.value, fill = as.factor(reopening_multiplier_4), 
-                  group = reopening_multiplier_4), alpha = 0.3) +
-  geom_line(aes(x = date, y = median.value, col = as.factor(reopening_multiplier_4), 
-                group = reopening_multiplier_4), show.legend = F, size = 1) +
-  facet_wrap(~region_label, scales = "free") +
+  mutate(rebound="100perc")
+
+tempdat <- rbind(simdat_50perc,simdat_100perc) %>% 
+              mutate(date=as.Date(date)) %>% 
+              filter(capacity_multiplier == max(capacity_multiplier) & trigger_delay_days == max(trigger_delay_days)) 
+
+pplot_A <- ggplot(data=tempdat) +
+  geom_ribbon(aes(
+    x = date, ymin = q2.5.value, ymax = q97.5.value, fill = as.factor(rebound),
+  ), alpha = 0.2) +
+  geom_ribbon(aes(
+    x = date, ymin = q25.value, ymax = q75.value, fill = as.factor(rebound),
+  ), alpha = 0.3) +
+  geom_line(aes(
+    x = date, y = median.value, col = as.factor(rebound),
+    group = rebound
+  ), show.legend = F, size = 1) +
+  facet_wrap(~geography_name, scales = "free") +
   labs(color = "Reopening", fill = "Reopening") +
-  scale_color_viridis_d(option = "C") +
-  scale_fill_viridis_d(option = "C") +
+  scale_color_manual(values=TwoCols) +
+  scale_fill_manual(values=TwoCols) +
   geom_hline(aes(yintercept = icu_available), linetype = "dashed") +
   labs(x = "", y = "predicted ICU census") +
   customThemeNoFacet
