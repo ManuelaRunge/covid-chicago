@@ -51,8 +51,8 @@ def load_sim_data(exp_name, region_suffix ='_All', input_wdir=None,fname='trajec
     #    df = pd.merge(left=df, right=scen_df[['scen_num', 'Ki']], on='scen_num', how='left')
 
     df.columns = df.columns.str.replace(region_suffix, '')
-    df['infected_cumul'] = df['infected'] + df['recovered'] + df['deaths']
-    df = calculate_incidence(df)
+   # df['infected_cumul'] = df['infected'] + df['recovered'] + df['deaths']
+   # df = calculate_incidence(df)
 
     return df
 

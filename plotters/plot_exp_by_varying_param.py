@@ -9,7 +9,6 @@ import matplotlib.dates as mdates
 from datetime import date, timedelta
 import seaborn as sns
 from processing_helpers import *
-from data_comparison import load_sim_data
 from copy import copy
 
 mpl.rcParams['pdf.fonttype'] = 42
@@ -20,6 +19,14 @@ first_day = date(2020, 2, 13) # IL
 first_plot_day = date(2020, 9, 1)
 #last_plot_day = date(2020, 4, 30)
 
+def load_sim_data(exp_name, region_suffix ='_All', input_wdir=None,fname='trajectoriesDat.csv', input_sim_output_path =None, column_list=None) :
+    input_wdir = input_wdir or wdir
+    sim_output_path_base = os.path.join(input_wdir, 'simulation_output', exp_name)
+    sim_output_path = input_sim_output_path or sim_output_path_base
+    df = pd.read_csv(os.path.join(sim_output_path, fname), usecols=column_list)
+    df.columns = df.columns.str.replace(region_suffix, '')
+    return df
+
 def plot_main(param, channel = 'crit_det',time_param=False) :
 
     column_list = ['scen_num', param]
@@ -28,7 +35,8 @@ def plot_main(param, channel = 'crit_det',time_param=False) :
     for ems_region in range(1, 12):
         column_list.append('crit_det_EMS-' + str(ems_region))
         column_list.append('hosp_det_EMS-' + str(ems_region))
-    df = load_sim_data(exp_name, fname="trajectoriesDat.csv", column_list=column_list)
+    df = load_sim_data(exp_name, fname="trajectoriesDat_trim.csv", column_list=column_list,
+                       input_sim_output_path=os.path.join(wdir, 'simulation_output','_overflow_simulations',exp_name))
     df = df.dropna()
     df = pd.merge(how='left', left=df, left_on='scen_num', right=sampled_df, right_on='scen_num')
     df['date'] = df['time'].apply(lambda x: first_day + timedelta(days=int(x)))
@@ -83,16 +91,27 @@ def plot_main(param, channel = 'crit_det',time_param=False) :
     fig.suptitle(x=0.5, y=0.999,t=channel + ' by ' + str(param))
     fig.tight_layout()
 
-    fig.savefig(os.path.join(sim_output_path,'_plots',f'plot_by_{param}_{channel}.png'))
-    fig.savefig(os.path.join(sim_output_path,'_plots', f'plot_by_{param}_{channel}.pdf'), format='PDF')
+    plot_path = os.path.join(sim_output_path,'_plots')
+    if not os.path.exists(plot_path):
+        os.makedirs(plot_path)
+    if not os.path.exists(os.path.join(plot_path,'pdf')):
+        os.makedirs(os.path.join(plot_path,'pdf'))
+
+    fig.savefig(os.path.join(plot_path,f'plot_by_{param}_{channel}.png'))
+    fig.savefig(os.path.join(plot_path, f'plot_by_{param}_{channel}.pdf'), format='PDF')
     #plt.show()
 
 
 
 if __name__ == '__main__' :
 
-    exp_name = '20201030_IL_rollback_toki8_small_reopen'
-    sim_output_path = os.path.join(wdir, 'simulation_output', exp_name)
-    #channels = ['infected', 'new_detected', 'new_deaths', 'hospitalized', 'critical', 'ventilators']
-    #channels = ['crit_det', 'hosp_det']
-    plot_main(channel= 'crit_det', param= 'socialDistance_reopen_time', time_param=True)
+    #stem = sys.argv[1]
+    stem = '20200919_IL_regreopen50'
+    exp_names = [x for x in os.listdir(os.path.join(wdir, 'simulation_output','_overflow_simulations')) if stem in x]
+
+    for exp_name in exp_names:
+        # exp_name = '20200919_IL_regreopen50perc_3daysdelay_sm7'
+        sim_output_path = os.path.join(wdir, 'simulation_output', '_overflow_simulations', exp_name)
+        # channels = ['infected', 'new_detected', 'new_deaths', 'hospitalized', 'critical', 'ventilators']
+        # channels = ['crit_det', 'hosp_det']
+        plot_main(channel='crit_det', param='capacity_multiplier', time_param=False)

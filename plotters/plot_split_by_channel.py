@@ -46,8 +46,8 @@ def plot_on_fig(df, channels, axes, color, label) :
 
 if __name__ == '__main__' :
 
-    exp_name = '20200909_IL_mr_test_observeLevel_v3'
-    channelGrp =  "symp" # "symp" "infect"  "hospCrit"
+    exp_name = '20201110_IL_ae_fitting4'
+    channelGrp = "hospCrit" # "symp" "infect"  "hospCrit"
     plot_path = os.path.join(wdir, 'simulation_output', exp_name, '_plots')
 
     fig = plt.figure(figsize=(12, 8))
