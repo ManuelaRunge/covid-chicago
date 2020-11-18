@@ -199,13 +199,8 @@ Rfiles/estimate_Rt/.Rhistory
 Rfiles/fitting/Rfiles - Shortcut.lnk
 Rfiles/fitting/scatter_plot.R
 Rfiles/simulation_plotter/mitigation_scenarios_analysis.R
-emodl/6_emodl_refit_kistartsm3.emodl
-emodl/7_emodl_reopening.emodl
-experiment_configs/6_master_config_refit_kistartdatesm3.yaml
-experiment_configs/6_spatial_config_refit_kistartdatesm3.yaml
-experiment_configs/7_master_config_reopening.yaml
-experiment_configs/7_spatial_config_reopening.yaml
 Rfiles/capacity_by_covidregion.html
 Rfiles/capacity_by_covidregion.Rmd
 Rfiles/capacity_by_covidregion.tex
 Rfiles/publication_scripts_ICUprob/fittingparam.R
+_SYNCAPP/
