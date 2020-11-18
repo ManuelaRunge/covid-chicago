@@ -1,8 +1,8 @@
 experiment_setup_parameters:
   'number_of_samples': 170
   'number_of_runs': 1
-  'duration': 455
-  'monitoring_samples': 455
+  'duration': 400
+  'monitoring_samples': 400 
   'random_seed': 751
   'initialAs': 10
 fixed_parameters_region_specific:
@@ -28,18 +28,15 @@ sampled_parameters:
     np.random: uniform
     function_kwargs: {'low':4, 'high':6}
   ### DELAY BETWEEN ONSET OF SYMPTOMS AND BEING TESTED 
-  ### Parameter values are substracted from the time values above and need to be >=1
   'time_to_detection':
     np.random: uniform
     function_kwargs: {'low':2.0, 'high':2.0}
-  ### Optionally use separate time to detection (use matching emodl))
   'time_to_detection_As':
     np.random: uniform
     function_kwargs: {'low':1.0, 'high':6.0}
   'time_to_detection_Sym':
     np.random: uniform
     function_kwargs: {'low':7.0, 'high':7.0}
-    #function_kwargs: {'low':2.0, 'high':5.0}
   'time_to_detection_Sys':
     np.random: uniform
     function_kwargs: {'low':2.0, 'high':2.0}
@@ -50,7 +47,6 @@ sampled_parameters:
   'recovery_time_mild':
     np.random: uniform
     function_kwargs: {'low':9, 'high':9}
-    #function_kwargs: {'low':7, 'high':10}
   'recovery_time_hosp':
     np.random: uniform
     function_kwargs: {'low':4, 'high':6}
@@ -72,11 +68,6 @@ sampled_parameters:
   'reduced_inf_of_det_cases':
     np.random: uniform
     function_kwargs: {'low':0, 'high':0.3}
-  ## DETECTION RATES 
-  ## In locale model, d_Sym is group specific
-  #'d_Sym':
-  #  np.random: uniform
-  #  function_kwargs: {'low':0.00, 'high':0.02}
   'd_Sys':
     np.random: uniform
     function_kwargs: {'low':0.00, 'high':0.0185} 
@@ -85,20 +76,7 @@ sampled_parameters:
     function_kwargs: {'low':0, 'high':0}
   'd_P':
     np.random: uniform
-    function_kwargs: {'low':0, 'high':0}  
-  ## TIME EVENT EFFECT SIZE PARAMETER  
-  ### Reduce Ki due to stay-at-home policy
-  #'ki_multiplier_3a':
-  #  np.random: uniform
-  #  function_kwargs: {'low':0.7, 'high':0.9}
-  #'ki_multiplier_3b':
-  #  np.random: uniform
-  #  function_kwargs: {'low':0.2, 'high':0.5}
-  #'ki_multiplier_3c':
-  #  np.random: uniform
-  #  function_kwargs: {'low':0.08, 'high':0.08}        
-  ### Increased testing - increased detectioon of severe symptomatic infections
-  ### (only used if corresponding emodl is defined)    
+    function_kwargs: {'low':0, 'high':0}
   'd_Sys_incr1':
     np.random: uniform
     function_kwargs: {'low':0.029, 'high':0.090}
@@ -130,6 +108,9 @@ sampled_parameters:
     np.random: uniform
     function_kwargs: {'low':0.05, 'high':0.09}
 intervention_parameters:
+  'reopening_multiplier_4':
+    np: logspace
+    function_kwargs: {'start':-2, 'stop':-0.5, 'num' : 20}                                                                                                     
   'd_Sym_ct1':
     np.random: uniform
     function_kwargs: {'low':0.170, 'high':0.170}
@@ -144,14 +125,14 @@ intervention_parameters:
     function_kwargs: {'low':0, 'high':1}
   'capacity_multiplier':
     np: linspace
-    function_kwargs: {'start':0, 'stop':1, 'num' : 1}
+    function_kwargs: {'start':0, 'stop':1, 'num': 1}
   'trigger_delay_days':
     np: linspace
-    function_kwargs: {'start':1, 'stop':7, 'num':1}   
+    function_kwargs: {'start':1, 'stop':7, 'num':1}
 time_parameters:
   'ki_multiplier_time_3a':
     custom_function: DateToTimestep
-    function_kwargs: {'dates':  2020-03-12}
+    function_kwargs: {'dates': 2020-03-12}
   'ki_multiplier_time_3b':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-03-17}
@@ -161,9 +142,6 @@ time_parameters:
   'socialDistance_rollback_time':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-08-30}
-  'reopening_time':
-    custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-10-01}
   'gradual_reopening_time1':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-09-07}
@@ -176,9 +154,9 @@ time_parameters:
   'gradual_reopening_time4':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-09-28}
-  'today' :
+  'today':
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-10-1}
+    function_kwargs: {'dates': 2020-10-01}
   'detection_time_1':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-03-07}
@@ -187,7 +165,7 @@ time_parameters:
     function_kwargs: {'dates': 2020-03-14}
   'detection_time_3':
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-03-21} 
+    function_kwargs: {'dates': 2020-03-21}
   'detection_time_4':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-03-28} 
@@ -202,7 +180,7 @@ time_parameters:
     function_kwargs: {'dates': 2020-06-01}
   'crit_time_1':
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-04-01} 
+    function_kwargs: {'dates': 2020-04-01}
   'crit_time_2':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-05-01} 
@@ -235,10 +213,10 @@ time_parameters:
     function_kwargs: {'dates': 2020-08-30}
   'cfr_time_1':
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-06-01}   
+    function_kwargs: {'dates': 2020-06-01}
   'cfr_time_2':
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-07-01}   
+    function_kwargs: {'dates': 2020-07-01}
 fitted_parameters:
   Kis:
     'IL':

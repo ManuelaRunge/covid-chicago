@@ -9,7 +9,7 @@ fixed_parameters_region_specific:
   populations:
     'IL': 12830632
   startdate:
-    'IL': 2020-01-01   
+    'IL': 2020-01-01
 fixed_parameters_global:
 sampled_parameters:
   'time_to_infectious':
@@ -166,19 +166,19 @@ time_parameters:
     function_kwargs: {'dates': 2020-10-01}
   'gradual_reopening_time1':
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-10-04}
+    function_kwargs: {'dates': 2020-09-07}
   'gradual_reopening_time2':
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-10-08}        
+    function_kwargs: {'dates': 2020-09-14} 
   'gradual_reopening_time3':
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-10-12}    
+    function_kwargs: {'dates': 2020-09-21}
   'gradual_reopening_time4':
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-10-16}  
+    function_kwargs: {'dates': 2020-09-28}
   'today' :
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-10-20}
+    function_kwargs: {'dates': 2020-10-1}
   'detection_time_1':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-03-07}
