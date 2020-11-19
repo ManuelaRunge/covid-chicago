@@ -28,8 +28,10 @@ today <- Sys.Date()
 NUdirs <- list.files(NU_civis_outputs)
 simdate <- NUdirs[length(NUdirs)]
 simdate_lastweek <- NUdirs[length(NUdirs) - 1]
-simdate_label <-  paste0(month(as.Date(simdate, format="%Y%m%d"), label=TRUE)," ",day(as.Date(simdate, format="%Y%m%d")))
-  
+
+simdate_date <- as.Date(simdate, format="%Y%m%d")
+simdate_label <- paste0(month(simdate_date, label=TRUE)," ",day(simdate_date))
+
 outdir <- file.path(project_path, "NU_cdph_outputs", simdate)
 if (!dir.exists(outdir)) dir.create(outdir)
 
@@ -56,8 +58,8 @@ f_generateTimeline_plot <- function(selected_region, addLastWeek = T, plot_stop_
   dat <- fread(file.path(NU_civis_outputs, paste0(simdate, "/csv/nu_", simdate, ".csv"))) %>%
     mutate(date = as.Date(as.character(date), format = "%Y-%m-%d")) %>%
     filter(scenario_name=="baseline",
-      geography_modeled == selected_region,
-      date <= as.Date(plot_stop_date)
+           geography_modeled == selected_region,
+           date <= as.Date(plot_stop_date)
     )
 
   (currentRt <- dat %>% filter(date == today) %>% dplyr::select(rt_median, rt_lower, rt_upper))
@@ -112,7 +114,7 @@ f_generateTimeline_plot <- function(selected_region, addLastWeek = T, plot_stop_
 
 
   ggsave(paste0(simdate, "_Rt_", selected_region, ".png"),
-    plot = p1, path = file.path(outdir), width = 10, height = 6, device = "png"
+         plot = p1, path = file.path(outdir), width = 10, height = 6, device = "png"
   )
   #ggsave(paste0(simdate, "_Rt_", selected_region, ".pdf"),
   #  plot = p1, path = file.path(outdir), width = 10, height = 6, device = "pdf"
