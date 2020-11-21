@@ -147,7 +147,7 @@ intervention_parameters:
     function_kwargs: {'start':0, 'stop':1, 'num' : 11}
   'trigger_delay_days':
     np: linspace
-    function_kwargs: {'start':1, 'stop':7, 'num':3}   
+    function_kwargs: {'start':3, 'stop':3, 'num':1}   
 time_parameters:
   'ki_multiplier_time_3a':
     custom_function: DateToTimestep
