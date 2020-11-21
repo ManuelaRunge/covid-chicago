@@ -70,11 +70,13 @@ def get_latest_filedate(file_path=os.path.join(datapath, 'covid_IDPH', 'Corona v
 def get_probs(exp_name,  file_str = 'hospitaloverflow'):
     trajectories = load_sim_data(exp_name, column_list=column_list, fname='trajectoriesDat_trim.csv')
     trajectories = trajectories.dropna()
-    template_fname = get_latest_filedate()
+    template_fname = 'capacity_weekday_average_20200901.csv' #'#get_latest_filedate()
     civis_template = pd.read_csv(os.path.join(datapath, 'covid_IDPH', 'Corona virus reports', 'hospital_capacity_thresholds', template_fname))
     civis_template = civis_template[civis_template['resource_type'] == 'icu_availforcovid']
     civis_template = civis_template[civis_template['date_window_upper_bound'] == civis_template['date_window_upper_bound'].max()]
     civis_template = civis_template[civis_template['overflow_threshold_percent'] == 1]
+    civis_template['avg_resource_available'] = civis_template['avg_resource_available_prev2weeks']
+
 
     for ems_region in range(1, 12):
         trajectories['total_hosp_census_EMS-' + str(ems_region)] = trajectories['hosp_det_EMS-' + str(ems_region)] + \
