@@ -32,7 +32,7 @@ def parse_args():
 
 def load_sim_data(exp_name, region_suffix ='_All', input_wdir=None,fname='trajectoriesDat_trim.csv', input_sim_output_path =None) :
     input_wdir = input_wdir or wdir
-    sim_output_path_base = os.path.join(input_wdir, 'simulation_output', exp_name)
+    sim_output_path_base = os.path.join(input_wdir, 'simulation_output','_overflow_simulations', exp_name)
     sim_output_path = input_sim_output_path or sim_output_path_base
 
     column_list = ['scen_num',  'time', 'startdate']
@@ -81,7 +81,7 @@ def plot_on_fig(df, c, axes,channel, color,panel_heading, ems, label=None, addgr
     ax.plot(ref_df['date'], ref_df[datachannel], 'o', color='#303030', linewidth=0, ms=3)
     ax.plot(ref_df['date'], ref_df[datachannel].rolling(window=7, center=True).mean(), c='k', alpha=1.0)
 
-    capacity = load_capacity(ems)
+    capacity = load_capacity(ems,  fname = 'capacity_weekday_average_' + '20200901' + '.csv')
     ax.plot([np.min(mdf['date']), np.max(mdf['date'])],[capacity[capacitychannel], capacity[capacitychannel]], '--', linewidth=1, color='black')
     ax.plot([np.min(mdf['date']), np.max(mdf['date'])],[capacity[capacitychannel]*0.75, capacity[capacitychannel]*0.75], '--', linewidth=0.8, color='grey')
 
@@ -163,13 +163,13 @@ def plot_covidregions(channel,subgroups, psuffix, plot_path) :
 
 if __name__ == '__main__' :
 
-    args = parse_args()
-    exp_names = args.exp_names
-    #exp_names = ['20201020_IL_mr_baseline']
+    #args = parse_args()
+    #exp_names = args.exp_names
+    exp_names = ['20201119_IL_mr_regreopen50perc_counterfactual','20201119_IL_mr_regreopen100perc_counterfactual']
 
     covidregionlist = ['_EMS-1', '_EMS-2', '_EMS-3', '_EMS-4', '_EMS-5', '_EMS-6', '_EMS-7', '_EMS-8', '_EMS-9',
                        '_EMS-10', '_EMS-11']
 
-    plot_path = os.path.join(wdir, 'simulation_output', exp_names[len(exp_names)-1], '_plots')
+    plot_path = os.path.join(wdir, 'simulation_output','_overflow_simulations', exp_names[len(exp_names)-1], '_plots')
     plot_covidregions(channel='crit_det', subgroups=covidregionlist, psuffix='OctDec', plot_path=plot_path)
     plot_covidregions(channel='hosp_det', subgroups=covidregionlist,  psuffix='OctDec', plot_path=plot_path)
