@@ -107,7 +107,7 @@ def get_probs(exp_name,  file_str = 'hospitaloverflow'):
     df_prob.geography_modeled.value_counts()
 
     df_prob['exp_name'] = exp_name
-    df_prob.to_csv(os.path.join(wdir, 'simulation_output','_overflow_simulations',  exp_name, file_str, '.csv'), index=False)
+    df_prob.to_csv(os.path.join(wdir, 'simulation_output','_overflow_simulations',  exp_name, file_str +  '.csv'), index=False)
 
 
 def get_dates(exp_name, file_str= 'hospitaloverflow'):
@@ -117,7 +117,7 @@ def get_dates(exp_name, file_str= 'hospitaloverflow'):
     df['capacity_multiplier'] = df['capacity_multiplier'].round(decimals=2)
     df = df[(df['date'] > pd.Timestamp(2020, 10, 1)) & (df['date'] < pd.Timestamp(2020, 12, 31))]
 
-    df_prob = pd.read_csv(os.path.join(wdir, 'simulation_output','_overflow_simulations',  exp_name, file_str, '.csv'))
+    df_prob = pd.read_csv(os.path.join(wdir, 'simulation_output','_overflow_simulations',  exp_name, file_str +  '.csv'))
     df_prob.reset_index()
     metric_root = 'crit_det'
     df_probAll = pd.DataFrame()
@@ -158,7 +158,7 @@ def get_dates(exp_name, file_str= 'hospitaloverflow'):
         else:
             df_probAll = df_probAll.append(df_prob)
 
-    df_probAll.to_csv(os.path.join(wdir, 'simulation_output','_overflow_simulations',  exp_name, file_str, '_dates.csv'), index=False)
+    df_probAll.to_csv(os.path.join(wdir, 'simulation_output','_overflow_simulations',  exp_name, file_str + '_dates.csv'), index=False)
 
     return df_prob
 
@@ -169,7 +169,7 @@ def get_numbers(exp_name, file_str = 'hospitaloverflow'):
     df['capacity_multiplier'] = df['capacity_multiplier'].round(decimals=2)
     df = df[(df['date'] > pd.Timestamp(2020, 10, 1)) & (df['date'] < pd.Timestamp(2020, 12, 31))]
 
-    df_prob = pd.read_csv(os.path.join(wdir, 'simulation_output','_overflow_simulations',  exp_name, file_str , '.csv'))
+    df_prob = pd.read_csv(os.path.join(wdir, 'simulation_output','_overflow_simulations',  exp_name, file_str + '.csv'))
     df_prob.reset_index()
     metric_root = 'crit_det'
 
@@ -200,14 +200,14 @@ def get_numbers(exp_name, file_str = 'hospitaloverflow'):
 
         del region, thresh, capacity, new
 
-    df_prob.to_csv(os.path.join(wdir, 'simulation_output','_overflow_simulations',  exp_name, file_str, '.csv'), index=False)
+    df_prob.to_csv(os.path.join(wdir, 'simulation_output','_overflow_simulations',  exp_name, file_str +  '.csv'), index=False)
 
     return df_prob
 
 
 if __name__ == '__main__':
     #stem = sys.argv[1]
-    stem = '20200919_IL_regreopen50'
+    stem = '20201119'
     exp_names = [x for x in os.listdir(os.path.join(wdir, 'simulation_output','_overflow_simulations')) if stem in x]
 
     for exp_name in exp_names:
