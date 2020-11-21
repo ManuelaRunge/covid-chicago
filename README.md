@@ -377,14 +377,15 @@ The model is updated every week to fit to latest hospitalisation and deaths repo
 <details><summary>Show history of updates</summary>
 <p>  
 
-- 20201110 updated parameter fit 
+- 20201119 updated parameter fit, added transmission multiplier 11
+- 20201110 updated parameter fit
 - 20201104 updated parameter fit 
 - 20201027 updated parameter fit, added transmission multiplier 10 (previously called social multiplier)
 - 20201020 updated parameter fit 
 - 20201015 updated parameter fit, reset fitting method
 - 20201007 updated parameter fit
 - 20200929 updated parameter fit, changed fitting method
-- 20200922 updated parameter fit
+- 20200922 updated parameter fit, changed d_Sym parameters (generic)
 - 20200915 updated parameter fit, added social multiplier 7 (time event Aug 25)
 - 20200909 updated parameter fit, updated evolution of CFR
 - 20200825 updated parameter fit
