@@ -178,7 +178,7 @@ time_parameters:
     function_kwargs: {'dates': 2020-09-28}
   'today' :
     custom_function: DateToTimestep
-    function_kwargs: {'dates': 2020-10-1}
+    function_kwargs: {'dates': 2020-10-01}
   'detection_time_1':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-03-07}
