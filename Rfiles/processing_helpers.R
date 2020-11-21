@@ -218,6 +218,8 @@ load_new_capacity <- function(selected_ems = NULL, filedate = NULL) {
 
   fname <- paste0("capacity_weekday_average_", filedate, ".csv")
   df <- read.csv(file.path(capacity_dir, fname))
+  colnames(df)[colnames(df)=='avg_resource_available_prev2weeks'] <- 'avg_resource_available'
+  
 
   df <- df %>%
     dplyr::filter(overflow_threshold_percent == 1) %>%
