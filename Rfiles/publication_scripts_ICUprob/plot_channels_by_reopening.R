@@ -10,10 +10,10 @@ source("processing_helpers.R")
 
 theme_set(theme_cowplot())
 
-exp_name <- "20201110_IL_mr_gradual_reopening_Sep2"  
+exp_name <- "20201120_IL_mr_gradual_reopening2_Sep"  
 simdate <- strsplit(exp_name, "_")[1]
-simtoday <- as.Date("2020-10-02") 
-stopdate <- as.Date("2021-01-01") 
+simtoday <- as.Date("2020-10-01") 
+stopdate <- as.Date("2021-12-31") 
 
 exp_dir <-  file.path(simulation_output,'_overflow_simulations', exp_name)
 plot_dir <- file.path(exp_dir, "_plots")
@@ -82,7 +82,7 @@ paramvalues <- trajectoriesDat %>%
 
 table(paramvalues$outcome)
 
-capacityDat <- load_new_capacity() %>% mutate(region = as.character(geography_name))
+capacityDat <- load_new_capacity(filedate = "20200901") %>% mutate(region = as.character(geography_name))
 
 table(paramvalues$region, exclude = NULL)
 paramvalues$region[is.na(paramvalues$region)] <- "illinois"
@@ -217,10 +217,10 @@ pplot <- paramvalues %>%
   customThemeNoFacet
 
 ggsave(paste0("nonICU_reopening_perCovidRegion.png"),
-  plot = pplot, path = file.path(plot_dir), width = 14, height = 8, device = "png"
+  plot = pplot, path = file.path(plot_dir), width = 18, height = 8, device = "png"
 )
 ggsave(paste0("nonICU_reopening_perCovidRegion.pdf"),
-  plot = pplot, path = file.path(plot_dir), width = 14, height = 8, device = "pdf"
+  plot = pplot, path = file.path(plot_dir), width = 18, height = 8, device = "pdf"
 )
 rm(pplot)
 
@@ -246,10 +246,10 @@ pplot <- paramvalues %>%
   customThemeNoFacet
 
 ggsave(paste0("ICU_reopening_perCovidRegion.png"),
-  plot = pplot, path = file.path(plot_dir), width = 14, height = 8, device = "png"
+  plot = pplot, path = file.path(plot_dir), width = 18, height = 8, device = "png"
 )
 ggsave(paste0("ICU_reopening_perCovidRegion.pdf"),
-  plot = pplot, path = file.path(plot_dir), width = 14, height = 8, device = "pdf"
+  plot = pplot, path = file.path(plot_dir), width = 18, height = 8, device = "pdf"
 )
 rm(pplot)
 
@@ -298,9 +298,10 @@ get_fit <- function(df=paramvalues, outputVar ="median.value"){
   
 }
 
-fitDat_median <- get_fit(df=paramvalues, outputVar ="median.value") %>% rename(reopening_multiplier_4=x) %>% select(-c(fit ,lwr ,upr))
-fitDat_lwr <- get_fit(df=paramvalues, outputVar ="q2.5.value") %>% rename(reopening_multiplier_4=x) %>% select(-c(fit ,lwr ,upr))
-fitDat_upr <- get_fit(df=paramvalues, outputVar ="q97.5.value") %>% rename(reopening_multiplier_4=x) %>% select(-c(fit ,lwr ,upr))
+
+fitDat_median <- get_fit(df=paramvalues, outputVar ="median.value") %>% dplyr::rename(reopening_multiplier_4=x) %>% dplyr::select(-c(fit ,lwr ,upr))
+fitDat_lwr <- get_fit(df=paramvalues, outputVar ="q2.5.value") %>% dplyr::rename(reopening_multiplier_4=x) %>% dplyr::select(-c(fit ,lwr ,upr))
+fitDat_upr <- get_fit(df=paramvalues, outputVar ="q97.5.value") %>% dplyr::rename(reopening_multiplier_4=x) %>% dplyr::select(-c(fit ,lwr ,upr))
 
 mergevars <- colnames(fitDat_median)[colnames(fitDat_median) %in% colnames(fitDat_lwr)]
 fitDat <- fitDat_median %>% left_join( fitDat_lwr,  by=mergevars) %>%
@@ -357,20 +358,18 @@ rm(pplot)
 
 
 soft_reopen <- fitDat %>%
-  mutate(aboveCapacity = ifelse(median.value >= icu_available, 1, 0)) %>%
-  group_by(region) %>%
-  filter(aboveCapacity == 1)  %>%
-  filter(reopening_multiplier_4 == min(reopening_multiplier_4))   %>%
-  mutate(reopen_soft = reopening_multiplier_4/100) %>%
-  select(region, reopen_soft)
+  dplyr::group_by(region) %>%
+  dplyr::filter(median.value >= icu_available)  %>%
+  dplyr::filter(reopening_multiplier_4 == min(reopening_multiplier_4, na.rm = TRUE))   %>%
+  dplyr::mutate(reopen_soft = reopening_multiplier_4/100) %>%
+  dplyr::select(region, reopen_soft)
 
 hard_reopen <- fitDat %>% 
-  mutate(aboveCapacity = ifelse(q2.5.value >= icu_available, 1, 0)) %>%
-  group_by(region) %>%
-  filter(aboveCapacity == 1)  %>%
-  filter(reopening_multiplier_4 == min(reopening_multiplier_4))  %>%
-  mutate(reopen_hard = reopening_multiplier_4/100) %>%
-  select(region, reopen_hard)
+  dplyr::group_by(region) %>%
+  dplyr::filter(q2.5.value >= icu_available)  %>%
+  dplyr::filter(reopening_multiplier_4 == min(reopening_multiplier_4, na.rm = TRUE))  %>%
+  dplyr::mutate(reopen_hard = reopening_multiplier_4/100) %>%
+  dplyr::select(region, reopen_hard)
 
 
 custom_reopen <- left_join(soft_reopen,hard_reopen, by="region" ) %>% arrange(region)
@@ -384,14 +383,14 @@ if (combinedPlot) {
   
   missingDat <- paramvalues %>%
     ungroup() %>%
-    select(region) %>%
+    dplyr::select(region) %>%
     unique() %>%
     mutate(reopenNA = NA)
 
 
   pdat1 <- paramvalues %>%
     filter(date >= as.Date(simtoday) & outcome == "hosp_det") %>%
-    group_by(region, reopening_multiplier_4, outcome) %>%
+    dplyr::group_by(region, reopening_multiplier_4, outcome) %>%
     filter(median.value == max(median.value)) %>%
     left_join(capacityDat) %>%
     filter(median.value <= medsurg_available) %>%
@@ -406,7 +405,7 @@ if (combinedPlot) {
     filter(median.value <= icu_available) %>%
     filter(reopening_multiplier_4 == max(reopening_multiplier_4)) %>%
     filter(date == min(date)) %>%
-    group_by(region)
+    dplyr::group_by(region)
 
 
   pdat1 <- missingDat %>%
@@ -427,8 +426,8 @@ if (combinedPlot) {
 
 
   datRib <- rbind(pdat1, pdat2) %>%
-    group_by(region, outcome) %>%
-    summarize(maxReopen = max(reopening_multiplier_4))
+    dplyr::group_by(region, outcome) %>%
+    dplyr::summarize(maxReopen = max(reopening_multiplier_4))
 
   datRib$region_label <- factor(datRib$region, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
 
