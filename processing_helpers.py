@@ -94,7 +94,7 @@ def CI_50(x) :
     return np.percentile(x, 50)
 
 
-def load_ref_df(ems_nr, add_public =False):
+def load_ref_df(ems_nr):
     ref_df_emr = pd.read_csv(os.path.join(datapath, 'covid_IDPH', 'Corona virus reports', 'emresource_by_region.csv'))
     ref_df_emr['suspected_and_confirmed_covid_icu'] = ref_df_emr['suspected_covid_icu'] + ref_df_emr['confirmed_covid_icu']
     data_channel_names_emr = ['confirmed_covid_deaths_prev_24h', 'confirmed_covid_icu', 'covid_non_icu']
@@ -115,26 +115,41 @@ def load_ref_df(ems_nr, add_public =False):
     ref_df_public = merge_county_covidregions(df_x=ref_df_public, key_x='county', key_y='County')
     ref_df_public = ref_df_public.groupby(['test_date','new_restore_region'])['confirmed_cases'].agg(np.sum).reset_index()
     ref_df_public = ref_df_public.rename(columns={'new_restore_region': 'covid_region'})
-    ref_df_public['date'] = pd.to_datetime(ref_df_public['test_date'])
+    ref_df_public['test_date'] = pd.to_datetime(ref_df_public['test_date'])
+    ref_df_public.rename(columns={"test_date" : "date"}, inplace=True)
 
-    if ems_nr > 0:
-        ref_df_emr = ref_df_emr[ref_df_emr['covid_region'] == ems_nr]
-        ref_df_ll = ref_df_ll[ref_df_ll['covid_region'] == ems_nr]
-        ref_df_cli = ref_df_cli[ref_df_cli['covid_region'] == ems_nr]
-        ref_df_public = ref_df_public[ref_df_public['covid_region'] == ems_nr]
-    else:
-        ref_df_emr = ref_df_emr.groupby('date_of_extract').agg(np.sum).reset_index()
-        ref_df_ll = ref_df_ll.groupby('date').agg(np.sum).reset_index()
-        ref_df_cli = ref_df_cli.groupby('date').agg(np.sum).reset_index()
-        ref_df_public = ref_df_public.groupby('date').agg(np.sum).reset_index()
+    if not isinstance(ems_nr, list):
+        if ems_nr > 0:
+            ref_df_emr = ref_df_emr[ref_df_emr['covid_region'] == ems_nr]
+            ref_df_ll = ref_df_ll[ref_df_ll['covid_region'] == ems_nr]
+            ref_df_cli = ref_df_cli[ref_df_cli['covid_region'] == ems_nr]
+            ref_df_public = ref_df_public[ref_df_public['covid_region'] == ems_nr]
+        else:
+            ref_df_emr = ref_df_emr.groupby('date_of_extract').agg(np.sum).reset_index()
+            ref_df_ll = ref_df_ll.groupby('date').agg(np.sum).reset_index()
+            ref_df_cli = ref_df_cli.groupby('date').agg(np.sum).reset_index()
+            ref_df_public = ref_df_public.groupby('date').agg(np.sum).reset_index()
+
+        ref_df_public = ref_df_public.sort_values('date')
+        ref_df_public['new_confirmed_cases'] = count_new(ref_df_public, 'confirmed_cases')
+
+    if isinstance(ems_nr, list):
+        inc_df = pd.DataFrame()
+        for region, df in ref_df_public.groupby('covid_region'):
+            df = df.sort_values('date')
+            sdf = pd.DataFrame({'date': df['date'], 'new_confirmed_cases': count_new(df, 'confirmed_cases')})
+            sdf['covid_region'] = region
+            inc_df = pd.concat([inc_df, sdf])
+        ref_df_public_ext = pd.merge(left=ref_df_public, right=inc_df, on=['date', 'covid_region'])
+        ref_df_public = ref_df_public_ext
 
     merge_keys = ['date', 'covid_region']
     ref_df = pd.merge(how='outer', left=ref_df_ll,  right=ref_df_emr, on=merge_keys)
     ref_df = pd.merge(how='outer', left=ref_df, right=ref_df_cli, on=merge_keys)
-    if add_public:
-        ref_df = pd.merge(how='outer', left=ref_df, right=ref_df_public, on=merge_keys)
+    ref_df = pd.merge(how='outer', left=ref_df, right=ref_df_public, on=merge_keys)
 
-    ref_df = ref_df.sort_values('date')
+    if isinstance(ems_nr, list):
+        ref_df[ref_df['covid_region'].isin(ems_nr)]
 
     return ref_df
 
