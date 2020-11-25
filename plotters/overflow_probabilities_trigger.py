@@ -83,7 +83,6 @@ def get_probs(exp_name,  file_str = 'hospitaloverflow'):
                                                                    trajectories['crit_det_EMS-' + str(ems_region)]
 
     lower_limit = (dt.datetime(month=10, day=1, year=2020) - dt.datetime(month=2, day=13, year=2020)).days
-    unique_scen = np.array(list(set(trajectories['scen_num'].values)))
     df_prob = pd.DataFrame(columns=['geography_modeled', 'icu_availforcovid','capacity_multiplier', 'prob'])
 
     for index, geography in enumerate(civis_template.geography_modeled.unique()):
@@ -93,6 +92,7 @@ def get_probs(exp_name,  file_str = 'hospitaloverflow'):
         for capacity in list(trajectories.capacity_multiplier.unique()):
             print(capacity)
             trajectories_sub = trajectories[trajectories['capacity_multiplier']== capacity]
+            unique_scen = np.array(list(set(trajectories_sub['scen_num'].values)))
             upper_limit = (dt.datetime(month=12, day=31, year=2020) - dt.datetime(month=2, day=13, year=2020)).days
             metric_root = 'crit_det_EMS-'
             region = int(re.sub('[^0-9]', '', geography))
