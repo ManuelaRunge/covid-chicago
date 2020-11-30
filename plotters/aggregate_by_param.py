@@ -14,7 +14,8 @@ from processing_helpers import *
 from load_paths import load_box_paths
 
 datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths()
-analysis_dir = os.path.join(wdir, 'simulation_output', '_overflow_simulations')
+analysis_dir = os.path.join(wdir, 'simulation_output')
+#analysis_dir = os.path.join(wdir, 'simulation_output', '_overflow_simulations')
 
 mpl.rcParams['pdf.fonttype'] = 42
 
