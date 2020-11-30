@@ -1,5 +1,5 @@
 experiment_setup_parameters:
-  'number_of_samples': 130
+  'number_of_samples': 600
   'number_of_runs': 1
   'duration': 400
   'monitoring_samples': 400 
@@ -110,7 +110,7 @@ sampled_parameters:
 intervention_parameters:
   'reopening_multiplier_4':
     np: logspace
-    function_kwargs: {'start':-3, 'stop':-0.2, 'num' : 20}                                                                                                     
+    function_kwargs: {'start':-3, 'stop':-0.2, 'num' : 11}                                                                                                     
   'd_Sym_ct1':
     np.random: uniform
     function_kwargs: {'low':0.170, 'high':0.170}

@@ -375,7 +375,7 @@ sampled_parameters:
         - {'low': 55  , 'high': 55}
         - {'low': 22  , 'high': 22}
         - {'low': 51  , 'high': 51}
-        - {'low': 58  , 'high': 58}  
+        - {'low': 58  , 'high': 58}
 ##Set threshold value for triggering a state event
 ## Default set to ICU census from 30 July 2020
 ## to switch between thresholds, remove or add the '_notused'

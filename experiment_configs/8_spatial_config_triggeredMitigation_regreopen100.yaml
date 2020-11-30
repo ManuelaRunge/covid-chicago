@@ -333,14 +333,14 @@ sampled_parameters:
       expand_by_age: True
       np.random: uniform
       function_kwargs:
-        - {'low': 0.23, 'high': 0.23}
-        - {'low': 0.18, 'high': 0.18}
-        - {'low': 0.325, 'high': 0.325}
-        - {'low': 0.235, 'high': 0.235}
-        - {'low': 0.31, 'high': 0.31}
-        - {'low': 0.63, 'high': 0.63}
+        - {'low': 0.35, 'high': 0.35}
+        - {'low': 0.25, 'high': 0.25}
+        - {'low': 0.37, 'high': 0.37}
+        - {'low': 0.34, 'high': 0.34}
+        - {'low': 0.34, 'high': 0.34}
+        - {'low': 0.71, 'high': 0.71}
         - {'low': 0.12, 'high': 0.12}
-        - {'low': 0.07, 'high': 0.07}
+        - {'low': 0.075, 'high': 0.075}
         - {'low': 0.50, 'high': 0.50}
         - {'low': 0.28, 'high': 0.28}
         - {'low': 0.12, 'high': 0.12}
