@@ -17,7 +17,7 @@ import scipy
 import gc
 import re
 import datetime
-datetime.datetime.strptime
+
 
 datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths()
 
@@ -29,17 +29,6 @@ def load_sim_data(exp_name, fname='trajectoriesDat.csv',input_wdir=None, input_s
 
     df = pd.read_csv(os.path.join(sim_output_path, fname), usecols=column_list)
     return df
-
-
-def exceeds(trajectory, metric, lower_limit, upper_limit, maximum):
-    return (trajectory[metric].values[lower_limit:upper_limit] > maximum).any()
-
-
-def when_exceeds(trajectory, metric, lower_limit, upper_limit, maximum):
-    ii = lower_limit
-    while trajectory[metric].values[ii] <= maximum:
-        ii += 1
-    return ii
 
 
 column_list = ['scen_num','time','startdate','capacity_multiplier', 'hosp_det_All', 'crit_det_All']  # 'reopening_multiplier_4'
@@ -70,7 +59,15 @@ def get_latest_filedate(file_path=os.path.join(datapath, 'covid_IDPH', 'Corona v
 def get_probs(exp_name,  file_str = 'hospitaloverflow'):
     trajectories = load_sim_data(exp_name, column_list=column_list, fname='trajectoriesDat_trim.csv')
     trajectories = trajectories.dropna()
-    template_fname = 'capacity_weekday_average_20200901.csv' #'#get_latest_filedate()
+    first_day = datetime.datetime.strptime(trajectories['startdate'].unique()[0], '%Y-%m-%d')
+    trajectories['date'] = trajectories['time'].apply(lambda x: first_day + timedelta(days=int(x)))
+
+    first_plot_day = datetime.date(2020, 10, 1)
+    last_plot_day = datetime.date(2020, 12, 31)
+    trajectories['date'] = pd.to_datetime( trajectories['date']).dt.date
+    trajectories = trajectories[(trajectories['date'] >= first_plot_day) & (trajectories['date'] <= last_plot_day)]
+
+    template_fname = 'capacity_weekday_average_20200915.csv'#'capacity_weekday_average_20200901.csv' #'#get_latest_filedate()
     civis_template = pd.read_csv(os.path.join(datapath, 'covid_IDPH', 'Corona virus reports', 'hospital_capacity_thresholds', template_fname))
     civis_template = civis_template[civis_template['resource_type'] == 'icu_availforcovid']
     civis_template = civis_template[civis_template['date_window_upper_bound'] == civis_template['date_window_upper_bound'].max()]
@@ -82,7 +79,6 @@ def get_probs(exp_name,  file_str = 'hospitaloverflow'):
         trajectories['total_hosp_census_EMS-' + str(ems_region)] = trajectories['hosp_det_EMS-' + str(ems_region)] + \
                                                                    trajectories['crit_det_EMS-' + str(ems_region)]
 
-    lower_limit = (dt.datetime(month=10, day=1, year=2020) - dt.datetime(month=2, day=13, year=2020)).days
     df_prob = pd.DataFrame(columns=['geography_modeled', 'icu_availforcovid','capacity_multiplier', 'prob'])
 
     for index, geography in enumerate(civis_template.geography_modeled.unique()):
@@ -93,18 +89,20 @@ def get_probs(exp_name,  file_str = 'hospitaloverflow'):
             print(capacity)
             trajectories_sub = trajectories[trajectories['capacity_multiplier']== capacity]
             unique_scen = np.array(list(set(trajectories_sub['scen_num'].values)))
-            upper_limit = (dt.datetime(month=12, day=31, year=2020) - dt.datetime(month=2, day=13, year=2020)).days
             metric_root = 'crit_det_EMS-'
             region = int(re.sub('[^0-9]', '', geography))
             prob = 0
             for scen in unique_scen:
                 new = trajectories_sub[(trajectories_sub['scen_num'] == scen)].reset_index()
-                if exceeds(new, metric_root + str(region), lower_limit, upper_limit, thresh):
-                    prob += 1 / len(unique_scen)
+                if new[metric_root + str(region)].max() > thresh :  # (new, metric_root + str(region), lower_limit, upper_limit, thresh):
+                    prob += 1
+            prob_overflow = prob / len(unique_scen)
             df_prob = df_prob.append({'geography_modeled': geography,
                                       'icu_availforcovid': thresh,
                                       'capacity_multiplier': capacity,
-                                      'prob': prob, }, ignore_index=True)
+                                      'prob': prob_overflow,
+                                      'n_overflow': prob,
+                                      'nscen':  len(unique_scen)}, ignore_index=True)
     df_prob.capacity_multiplier.value_counts()
     df_prob.geography_modeled.value_counts()
 
@@ -209,10 +207,11 @@ def get_numbers(exp_name, file_str = 'hospitaloverflow'):
 
 if __name__ == '__main__':
     #stem = sys.argv[1]
-    stem = '20201119'
+    stem = '20200919_IL_regreopen50perc'
     exp_names = [x for x in os.listdir(os.path.join(wdir, 'simulation_output','_overflow_simulations')) if stem in x]
 
     for exp_name in exp_names:
+        print(exp_name)
         get_probs(exp_name)
         get_numbers(exp_name)
         get_dates(exp_name)
