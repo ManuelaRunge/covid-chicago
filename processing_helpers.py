@@ -125,7 +125,7 @@ def load_ref_df(ems_nr):
             ref_df_cli = ref_df_cli[ref_df_cli['covid_region'] == ems_nr]
             ref_df_public = ref_df_public[ref_df_public['covid_region'] == ems_nr]
         else:
-            ref_df_emr = ref_df_emr.groupby('date_of_extract').agg(np.sum).reset_index()
+            ref_df_emr = ref_df_emr.groupby('date').agg(np.sum).reset_index()
             ref_df_ll = ref_df_ll.groupby('date').agg(np.sum).reset_index()
             ref_df_cli = ref_df_cli.groupby('date').agg(np.sum).reset_index()
             ref_df_public = ref_df_public.groupby('date').agg(np.sum).reset_index()
