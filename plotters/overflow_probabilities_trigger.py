@@ -2,34 +2,14 @@ import os
 import sys
 sys.path.append('../')
 from load_paths import load_box_paths
-from processing_helpers import *
-
+import re
 import pandas as pd
 import datetime as dt
-import seaborn as sns
 import numpy as np
 import matplotlib as mpl
-
-mpl.rcParams['pdf.fonttype'] = 42
-import statistics as st
-from statsmodels.distributions.empirical_distribution import ECDF
-import scipy
-import gc
-import re
-import datetime
-
+from processing_helpers import *
 
 datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths()
-
-
-def load_sim_data(exp_name, fname='trajectoriesDat.csv',input_wdir=None, input_sim_output_path=None, column_list=None):
-    input_wdir = input_wdir or wdir
-    sim_output_path_base = os.path.join(input_wdir, 'simulation_output','_overflow_simulations', exp_name)
-    sim_output_path = input_sim_output_path or sim_output_path_base
-
-    df = pd.read_csv(os.path.join(sim_output_path, fname), usecols=column_list)
-    return df
-
 
 column_list = ['scen_num','time','startdate','capacity_multiplier', 'hosp_det_All', 'crit_det_All']  # 'reopening_multiplier_4'
 for ems_region in range(1, 12):
@@ -56,14 +36,14 @@ def get_latest_filedate(file_path=os.path.join(datapath, 'covid_IDPH', 'Corona v
     return fname
 
 
-def get_probs(exp_name,  file_str = 'hospitaloverflow'):
-    trajectories = load_sim_data(exp_name, column_list=column_list, fname='trajectoriesDat_trim.csv')
+def get_probs(exp_name, file_str='hospitaloverflow', fname='trajectoriesDat_trim.csv'):
+    trajectories = pd.read_csv(os.path.join(analysis_dir, fname), usecols=column_list)
     trajectories = trajectories.dropna()
-    first_day = datetime.datetime.strptime(trajectories['startdate'].unique()[0], '%Y-%m-%d')
+    first_day = dt.datetime.strptime(trajectories['startdate'].unique()[0], '%Y-%m-%d')
     trajectories['date'] = trajectories['time'].apply(lambda x: first_day + timedelta(days=int(x)))
 
-    first_plot_day = datetime.date(2020, 10, 1)
-    last_plot_day = datetime.date(2020, 12, 31)
+    first_plot_day = dt.date(2020, 10, 1)
+    last_plot_day = dt.date(2020, 12, 31)
     trajectories['date'] = pd.to_datetime( trajectories['date']).dt.date
     trajectories = trajectories[(trajectories['date'] >= first_plot_day) & (trajectories['date'] <= last_plot_day)]
 
@@ -73,7 +53,6 @@ def get_probs(exp_name,  file_str = 'hospitaloverflow'):
     civis_template = civis_template[civis_template['date_window_upper_bound'] == civis_template['date_window_upper_bound'].max()]
     civis_template = civis_template[civis_template['overflow_threshold_percent'] == 1]
     civis_template['avg_resource_available'] = civis_template['avg_resource_available_prev2weeks']
-
 
     for ems_region in range(1, 12):
         trajectories['total_hosp_census_EMS-' + str(ems_region)] = trajectories['hosp_det_EMS-' + str(ems_region)] + \
@@ -86,7 +65,7 @@ def get_probs(exp_name,  file_str = 'hospitaloverflow'):
         thresh = int(thresh['avg_resource_available'])
 
         for capacity in list(trajectories.capacity_multiplier.unique()):
-            print(capacity)
+            #(capacity)
             trajectories_sub = trajectories[trajectories['capacity_multiplier']== capacity]
             unique_scen = np.array(list(set(trajectories_sub['scen_num'].values)))
             metric_root = 'crit_det_EMS-'
@@ -107,17 +86,16 @@ def get_probs(exp_name,  file_str = 'hospitaloverflow'):
     df_prob.geography_modeled.value_counts()
 
     df_prob['exp_name'] = exp_name
-    df_prob.to_csv(os.path.join(wdir, 'simulation_output','_overflow_simulations',  exp_name, file_str +  '.csv'), index=False)
+    df_prob.to_csv(os.path.join(analysis_dir, file_str + '.csv'), index=False)
 
-
-def get_dates(exp_name, file_str= 'hospitaloverflow'):
-    df = load_sim_data(exp_name, fname='trajectories_aggregated.csv')
+def get_dates(file_str= 'hospitaloverflow',fname='trajectories_aggregated.csv'):
+    df = pd.read_csv(os.path.join(analysis_dir, fname))
     df = df.dropna()
     df['date'] = pd.to_datetime(df['date'])
     df['capacity_multiplier'] = df['capacity_multiplier'].round(decimals=2)
     df = df[(df['date'] > pd.Timestamp(2020, 10, 1)) & (df['date'] < pd.Timestamp(2020, 12, 31))]
 
-    df_prob = pd.read_csv(os.path.join(wdir, 'simulation_output','_overflow_simulations',  exp_name, file_str +  '.csv'))
+    df_prob = pd.read_csv(os.path.join(analysis_dir, file_str +  '.csv'))
     df_prob.reset_index()
     metric_root = 'crit_det'
     df_probAll = pd.DataFrame()
@@ -158,18 +136,18 @@ def get_dates(exp_name, file_str= 'hospitaloverflow'):
         else:
             df_probAll = df_probAll.append(df_prob)
 
-    df_probAll.to_csv(os.path.join(wdir, 'simulation_output','_overflow_simulations',  exp_name, file_str + '_dates.csv'), index=False)
+    df_probAll.to_csv(os.path.join(analysis_dir, file_str + '_dates.csv'), index=False)
 
     return df_prob
 
-def get_numbers(exp_name, file_str = 'hospitaloverflow'):
-    df = load_sim_data(exp_name, fname='trajectories_aggregated.csv')
+def get_numbers(file_str = 'hospitaloverflow', fname='trajectories_aggregated.csv'):
+    df = pd.read_csv(os.path.join(analysis_dir, fname))
     df = df.dropna()
     df['date'] = pd.to_datetime(df['date'])
     df['capacity_multiplier'] = df['capacity_multiplier'].round(decimals=2)
     df = df[(df['date'] > pd.Timestamp(2020, 10, 1)) & (df['date'] < pd.Timestamp(2020, 12, 31))]
 
-    df_prob = pd.read_csv(os.path.join(wdir, 'simulation_output','_overflow_simulations',  exp_name, file_str + '.csv'))
+    df_prob = pd.read_csv(os.path.join(analysis_dir, file_str + '.csv'))
     df_prob.reset_index()
     metric_root = 'crit_det'
 
@@ -200,18 +178,71 @@ def get_numbers(exp_name, file_str = 'hospitaloverflow'):
 
         del region, thresh, capacity, new
 
-    df_prob.to_csv(os.path.join(wdir, 'simulation_output','_overflow_simulations',  exp_name, file_str +  '.csv'), index=False)
+    df_prob.to_csv(os.path.join(analysis_dir, file_str + '.csv'), index=False)
 
     return df_prob
+
+def get_duration(file_str= 'hospitaloverflow', fname='trajectories_aggregated.csv'):
+    df = pd.read_csv(os.path.join(analysis_dir, fname))
+    df = df.dropna()
+    df['date'] = pd.to_datetime(df['date'])
+    df['capacity_multiplier'] = df['capacity_multiplier'].round(decimals=2)
+    df = df[(df['date'] > pd.Timestamp(2020, 10, 1)) & (df['date'] < pd.Timestamp(2020, 12, 31))]
+
+    df_dur = pd.read_csv(os.path.join(analysis_dir, file_str +  '.csv'))
+    df_dur.reset_index()
+    metric_root = 'crit_det'
+    df_durAll = pd.DataFrame()
+
+    for tresh_multiplier in [0.25, 0.5, 0.75, 1]:
+
+        for index, row in df_dur.iterrows():
+            region = row['geography_modeled']
+            thresh = row['icu_availforcovid'] * tresh_multiplier
+            capacity = round(row['capacity_multiplier'],2)
+
+            df_dur.loc[index, 'icu_availforcovid_threshold'] = thresh
+
+            new = df[(df['geography_modeled'] == region) & (df['capacity_multiplier'] == capacity)].reset_index()
+
+            for stat in ['median', '95CI_lower', '95CI_upper', '50CI_lower', '50CI_upper', 'max', 'min']:
+                exceed = new[new[f'{metric_root}_{stat}'] >= thresh].reset_index()
+
+                if len(exceed) > 0 :
+                    duration = (exceed['date'].max() - exceed['date'].min()).days
+                    df_dur.loc[index, f'{metric_root}_exceed_duration_{stat}'] = duration
+                else:
+                    df_dur.loc[index, f'{metric_root}_exceed_duration_{stat}'] = None
+
+            del region, thresh, capacity, new, exceed
+
+        df_dur = df_dur[['geography_modeled', 'icu_availforcovid', 'capacity_multiplier','exp_name',
+                         'crit_det_exceed_duration_median','crit_det_exceed_duration_95CI_lower',
+                         'crit_det_exceed_duration_95CI_upper','crit_det_exceed_duration_50CI_lower',
+                         'crit_det_exceed_duration_50CI_upper','crit_det_exceed_duration_max',
+                         'crit_det_exceed_duration_min']]
+        if df_durAll.empty:
+            df_durAll = df_dur
+        else:
+            df_durAll = df_durAll.append(df_dur)
+
+    df_durAll.to_csv(os.path.join(analysis_dir, file_str + '_duration.csv'), index=False)
+
+    return df_dur
 
 
 if __name__ == '__main__':
     #stem = sys.argv[1]
     stem = '20200919_IL_regreopen50perc'
-    exp_names = [x for x in os.listdir(os.path.join(wdir, 'simulation_output','_overflow_simulations')) if stem in x]
+    exp_names = [x for x in os.listdir(os.path.join(wdir, 'simulation_output','_overflow_simulations', '20200919')) if stem in x]
 
     for exp_name in exp_names:
-        print(exp_name)
+        analysis_dir = os.path.join(wdir, 'simulation_output','_overflow_simulations','20200919',exp_name)
+        print("1 - get probs for " + exp_name)
         get_probs(exp_name)
-        get_numbers(exp_name)
-        get_dates(exp_name)
+        print("2 - get numbers for " + exp_name)
+        get_numbers()
+        print("3 - get dates for " + exp_name)
+        get_dates()
+        print("4 - get duration for " + exp_name)
+        get_duration()
