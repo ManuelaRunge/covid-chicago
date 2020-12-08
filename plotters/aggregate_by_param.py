@@ -13,14 +13,7 @@ sys.path.append('../')
 from processing_helpers import *
 from load_paths import load_box_paths
 
-datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths()
-analysis_dir = os.path.join(wdir, 'simulation_output')
-#analysis_dir = os.path.join(wdir, 'simulation_output', '_overflow_simulations')
-
 mpl.rcParams['pdf.fonttype'] = 42
-
-plot_first_day = pd.to_datetime('2020/3/1')
-plot_last_day = pd.to_datetime('2021/4/1')
 
 
 def parse_args():
@@ -74,23 +67,6 @@ def load_sim_data(exp_name,  region_suffix ='_All', input_wdir=None, fname='traj
 
     return df
 
-def get_scenarioName(exp_suffix):
-    scenarioName = exp_suffix
-    if exp_suffix == "regreopen100perc_0daysdelay_sm4": scenarioName = "100perc_0daysdelay_sm4"
-    if exp_suffix == "regreopen100perc_3daysdelay_sm4": scenarioName = "100perc_3daysdelay_sm4"
-    if exp_suffix == "regreopen100perc_7daysdelay_sm4": scenarioName = "100perc_7daysdelay_sm4"
-    if exp_suffix == "regreopen50perc_0daysdelay_sm4": scenarioName = "50perc_0daysdelay_sm4"
-    if exp_suffix == "regreopen50perc_3daysdelay_sm4": scenarioName = "50perc_3daysdelay_sm4"
-    if exp_suffix == "regreopen50perc_7daysdelay_sm4": scenarioName = "50perc_7daysdelay_sm4"
-
-    if exp_suffix == "regreopen100perc_0daysdelay_sm6": scenarioName = "100perc_0daysdelay_sm6"
-    if exp_suffix == "regreopen100perc_3daysdelay_sm6": scenarioName = "100perc_3daysdelay_sm6"
-    if exp_suffix == "regreopen100perc_7daysdelay_sm6": scenarioName = "100perc_7daysdelay_sm6"
-    if exp_suffix == "regreopen50perc_0daysdelay_sm6": scenarioName = "50perc_0daysdelay_sm6"
-    if exp_suffix == "regreopen50perc_3daysdelay_sm6": scenarioName = "50perc_3daysdelay_sm6"
-    if exp_suffix == "regreopen50perc_7daysdelay_sm6": scenarioName = "50perc_7daysdelay_sm6"
-
-    return (scenarioName)
 
 def plot_sim(dat, suffix, channels):
     if suffix not in ["All", "central", "southern", "northeast", "northcentral"]:
@@ -134,9 +110,7 @@ def plot_sim(dat, suffix, channels):
 
 
 def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
-    column_list = ['startdate', 'time', 'scen_num', 'sample_num', 'run_num','capacity_multiplier']
-    #column_list = ['startdate', 'time', 'scen_num', 'sample_num', 'run_num','reopening_multiplier_4']
-
+    column_list = ['startdate', 'time', 'scen_num', 'sample_num', 'capacity_multiplier']    
     #'infected', 'recovered', 'infected_cumul',
     outcome_channels = ['hosp_det_cumul', 'hosp_cumul',  'crit_cumul',
                         'crit_det_cumul', 'death_det_cumul',
@@ -145,12 +119,19 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
     for channel in outcome_channels:
         column_list.append(channel + "_" + str(ems_region))
 
-    df = load_sim_data(exp_name, region_suffix='_' + ems_region, fname=fname, column_list=column_list,
-                       input_sim_output_path= input_sim_output_path)
+    #df = load_sim_data(exp_name, region_suffix='_' + ems_region, fname=fname, column_list=column_list,
+    #                   input_sim_output_path= input_sim_output_path)
 
+    ems_nr = ems_region.replace('EMS-', "")
+    fname='trajectoriesDat_region_'+ems_nr+'.csv'
+    fname='trajectoriesDat.csv'
+    
+    df = load_sim_data(exp_name, region_suffix='_' + ems_region, fname=fname, column_list=column_list,
+    df = df.dropna()
     df['ems'] = ems_region
     first_day = datetime.strptime(df['startdate'].unique()[0], '%Y-%m-%d')
     df['date'] = df['time'].apply(lambda x: first_day + timedelta(days=int(x)))
+    df['date'] = pd.to_datetime(df['date']).dt.date
     df = df[(df['date'] >= plot_first_day) & (df['date'] <= plot_last_day)]
 
     df['ventilators'] = get_vents(df['crit_det'].values)
@@ -159,8 +140,6 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
     adf = pd.DataFrame()
     for c, channel in enumerate(channels):
         mdf = df.groupby(['date', 'ems','capacity_multiplier'])[channel].agg([np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
-        #mdf = df.groupby(['date', 'ems', 'reopening_multiplier_4'])[channel].agg([np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
-
 
         mdf = mdf.rename(columns={'amin': '%s_min' % channel,
                                   'CI_50': '%s_median' % channel,
@@ -174,7 +153,6 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
         else:
             adf = pd.merge(left=adf, right=mdf, on=['date', 'ems','capacity_multiplier'])
             #adf = pd.merge(left=adf, right=mdf, on=['date', 'ems', 'reopening_multiplier_4'])
-
 
     #if savePlot :
     #    plot_sim(adf, ems_region, channels)
@@ -217,20 +195,33 @@ if __name__ == '__main__':
 
     # args = parse_args()
     #stem = args.stem
+    #Location = args.Location
+    Location="Local"
     stem = '20201112_IL_600_baseline'
     exp_names = [x for x in os.listdir(os.path.join(analysis_dir)) if stem in x]
+    
+    plot_first_day = date(2020,3,1) 
+    plot_last_day = date(2021,5,1) 
 
+    datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location=Location)
+    if Location =="NUCLUSTER":
+        analysis_dir = os.path.join('/projects/p30781/covidproject/covid-chicago/_temp')
+    else:
+        analysis_dir = os.path.join(wdir, 'simulation_output')
+        #analysis_dir = os.path.join(wdir, 'simulation_output', '_overflow_simulations','20201121')
+    
     for exp_name in exp_names :
         #exp_name = '20200919_IL_regreopen100perc_0daysdelay_sm7'
+        print(exp_name)   
         simdate = exp_name.split("_")[0]
         processStep = 'generate_outputs'
         trajectoriesName = 'trajectoriesDat.csv'
 
-        regions = ['All', 'EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10',
+        regions = ['EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10',
                    'EMS-11']
 
         exp_suffix = exp_name.split("_IL_")[-1]
-        scenarioName = get_scenarioName(exp_suffix)
+        scenarioName = exp_suffix
 
         sim_output_path = os.path.join(analysis_dir, exp_name)
         plot_path = os.path.join(sim_output_path, '_plots')
@@ -244,14 +235,14 @@ if __name__ == '__main__':
                 dfAll = pd.concat([dfAll, adf])
                 del tdf
 
-            if len(regions) == 12:
+            if len(regions) == 11:
                 filename = f'trajectories_aggregated.csv'
                 rename_geography_and_save(dfAll, filename=filename)
 
         ### Optional
         if processStep == 'combine_outputs':
 
-            for reg in ['All', 'EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10',
+            for reg in ['EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10',
                         'EMS-11']:
                 print("Start processing" + reg)
                 filename = "trajectories_aggregated_" + reg + ".csv"
