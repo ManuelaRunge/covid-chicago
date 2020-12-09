@@ -1,8 +1,5 @@
 import os
 
-from dotenv import load_dotenv
-load_dotenv()
-
 def load_box_paths(user_path=None, Location='Local'):
     if Location == 'NUCLUSTER':
         user_path = '/projects/p30781/'

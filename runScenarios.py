@@ -11,6 +11,9 @@ import pandas as pd
 import yaml
 import yamlordereddictloader
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from load_paths import load_box_paths
 from simulation_helpers import (DateToTimestep, cleanup, combineTrajectories,
                                 generateSubmissionFile, generateSubmissionFile_quest, makeExperimentFolder,
