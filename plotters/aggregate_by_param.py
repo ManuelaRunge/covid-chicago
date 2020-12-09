@@ -19,7 +19,7 @@ mpl.rcParams['pdf.fonttype'] = 42
 def load_sim_data(exp_name,  region_suffix ='_All', input_wdir=None, fname='trajectoriesDat.csv', input_sim_output_path=None,
                   column_list=None):
     input_wdir = input_wdir or wdir
-    sim_output_path_base = os.path.join(analysis_dir, exp_name)
+    sim_output_path_base = os.path.join(input_sim_output_path, exp_name)
     sim_output_path = sim_output_path_base
 
     df = pd.read_csv(os.path.join(sim_output_path, fname), usecols=column_list)
