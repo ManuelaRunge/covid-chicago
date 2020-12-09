@@ -49,7 +49,7 @@ def get_capacity():
     capacity_df = capacity_df[capacity_df['resource_type'] == 'icu_availforcovid']
     return capacity_df
 
-def get_probs(exp_name, file_str='hospitaloverflow', regions=range(2, 12),
+def get_probs(exp_name, file_str='hospitaloverflow', regions=range(1, 12),
               first_plot_day = dt.date(2020, 10, 1),last_plot_day = dt.date(2020, 12, 31),
               random_sub=None):
 

@@ -122,7 +122,7 @@ def combineTrajectories(VarsToKeep,Nscenarios_start=0, Nscenarios_stop=1000, tim
 if __name__ == '__main__':
     sim_out_dir = "/projects/p30781/covidproject/covid-chicago/_temp/"
 
-    stem = '20201121_IL_'
+    stem = '20201209_IL_regreopen'
     exp_names = [x for x in os.listdir(sim_out_dir) if stem in x]
 
     time_start = 1

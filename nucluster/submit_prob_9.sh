@@ -16,5 +16,5 @@ ml python/anaconda3.6
 # A command you actually want to execute:
 #python /home/mrm9534/gitrepos/covid-chicago/plotters/aggregate_by_param.py  "20201121_IL_regreopen100perc_7daysdelay_sm4"
 python /home/mrm9534/gitrepos/covid-chicago/plotters/overflow_probabilities_trigger.py  "20201121_IL_regreopen100perc_7daysdelay_sm4"
-python /home/mrm9534/gitrepos/covid-chicago/plotters/trigger_Ki_extract.py  "20201121_IL_regreopen100perc_7daysdelay_sm4"
-python /home/mrm9534/gitrepos/covid-chicago/plotters/peak_exceed_extract.py  "20201121_IL_regreopen100perc_7daysdelay_sm4"
+#python /home/mrm9534/gitrepos/covid-chicago/plotters/trigger_Ki_extract.py  "20201121_IL_regreopen100perc_7daysdelay_sm4"
+#python /home/mrm9534/gitrepos/covid-chicago/plotters/peak_exceed_extract.py  "20201121_IL_regreopen100perc_7daysdelay_sm4"

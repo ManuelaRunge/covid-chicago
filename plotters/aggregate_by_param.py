@@ -90,8 +90,12 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
     for channel in outcome_channels:
         column_list.append(channel + "_" + str(ems_region))
 
+   fname = 'trajectoriesDat_region_'+ems_nr+'.csv'
+   if os.path.exists(os.path.join(analysis_dir, fname)) == False:
+         fname = 'trajectoriesDat.csv'
+            
     ems_nr = ems_region.replace('EMS-', "")
-    df = load_sim_data(exp_name, region_suffix='_' + ems_region, fname='trajectoriesDat_region_'+ems_nr+'.csv', column_list=column_list,
+    df = load_sim_data(exp_name, region_suffix='_' + ems_region, fname=fname, column_list=column_list,
                        input_sim_output_path= input_sim_output_path)
 
     df['ems'] = ems_region

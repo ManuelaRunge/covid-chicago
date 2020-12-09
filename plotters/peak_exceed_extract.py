@@ -46,7 +46,7 @@ def get_peak_exceed_table(first_plot_day = dt.date(2020, 10, 1), regions= range(
         #'time', 'startdate',
         column_list = ['date','ems', 'capacity_multiplier', 'critical_median','critical_95CI_lower','critical_95CI_upper','critical_50CI_lower']
 
-        fname = 'rajectories_aggregated_region_' + str(ems_region) + '.csv'
+        fname = 'trajectories_aggregated_region_' + str(ems_region) + '.csv'
         if os.path.exists(os.path.join(analysis_dir, fname)) == False:
             fname = 'trajectories_aggregated.csv'
 
