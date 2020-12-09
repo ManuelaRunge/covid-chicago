@@ -66,20 +66,28 @@ def trim_trajectories_Dat(df, fname, VarsToKeep, time_start, time_stop,channels=
     if grpspecific_params == None:
         grpspecific_params = ['Ki_t']  # ['Ki_t', 'triggertime','reopening_multiplier_4']
 
+    timevarying_params = ['cfr_t' ,'fraction_dead_t','fraction_hospitalized_t','frac_crit_t','d_Sys_t']
+
     column_list = VarsToKeep
     for channel in channels:
         for grp in grpnames:
             column_list.append(channel + "_" + str(grp))
 
-    #for grpspecific_param in grpspecific_params:
-    #    for grp in grpnames_ki:
-    #        column_list.append(grpspecific_param + "_" + str(grp))
+    param_list =  ['startdate', 'time', 'scen_num', 'sample_num', 'run_num'] + timevarying_params
+    for grpspecific_param in grpspecific_params:
+        for grp in grpnames_ki:
+            param_list.append(grpspecific_param + "_" + str(grp))
 
-    df = df[column_list]
+
     df = df[df['time'] > time_start]
     df = df[df['time'] < time_stop]
+    
+    pdf = df[param_list]
+    pdf.to_csv(os.path.join(temp_exp_dir, fname.replace('trajectoriesDat','observedParamDat.csv')), index=False, date_format='%Y-%m-%d')
+    
+    df = df[column_list]
     df.to_csv(os.path.join(temp_exp_dir, fname + '_trim.csv'), index=False, date_format='%Y-%m-%d')
-    del df
+
 
 def combineTrajectories(VarsToKeep,Nscenarios_start=0, Nscenarios_stop=1000, time_start=1, time_stop=400, fname='trajectoriesDat.csv',SAVE=True):
 
@@ -112,16 +120,14 @@ def combineTrajectories(VarsToKeep,Nscenarios_start=0, Nscenarios_stop=1000, tim
 
 
 if __name__ == '__main__':
-    # sim_out_dir =  "C:/Users/mrm9534/gitrepos/covid-chicago/_temp"
-    # sim_out_dir = "/home/mrm9534/gitrepos/covid-chicago/_temp/"
     sim_out_dir = "/projects/p30781/covidproject/covid-chicago/_temp/"
 
-    # stem = '20201003_IL_mr_fitsm5'
-    exp_names = ['20201025_IL_mr_local_20201003_IL_mr_fitkistartsm3_sm5and6']  # [x for x in os.listdir(sim_out_dir) if stem in x]
+    stem = '20201121_IL_'
+    exp_names = [x for x in os.listdir(sim_out_dir) if stem in x]
 
-    time_start = 90
-    time_end = 330
-    additionalVars = ['ki_multiplier_6', 'ki_multiplier_7','ki_multiplier_time_6', 'ki_multiplier_time_7']
+    time_start = 1
+    time_end = 410
+    additionalVars = ['capacity_multiplier','trigger_delay_days']
     VarsToKeepI = ['startdate',  'scen_num', 'sample_num'] + additionalVars
     VarsToKeep = ['time', 'run_num'] + VarsToKeepI
 
@@ -136,10 +142,10 @@ if __name__ == '__main__':
         sampledf = sampledf[VarsToKeepI]
         Nscenario = max(sampledf['scen_num'])
 
-        Scenario_save_limit = 500
+        Scenario_save_limit = 700
 
         if Nscenario <= Scenario_save_limit:
-            combineTrajectories(VarsToKeep=VarsToKeep,Nscenarios_start=0, Nscenarios_stop=Nscenario+1,time_start=time_start, time_stop=time_stop, fname='trajectoriesDat.csv')
+            combineTrajectories(VarsToKeep=VarsToKeep,Nscenarios_start=0, Nscenarios_stop=Nscenario+1,time_start=time_start, time_stop=time_end, fname='trajectoriesDat.csv')
         if Nscenario > Scenario_save_limit:
             n_subsets = int(Nscenario/Scenario_save_limit)
 
@@ -152,6 +158,3 @@ if __name__ == '__main__':
                                     Nscenarios_start=Nscenarios_start,
                                     Nscenarios_stop=Nscenario_stop,
                                     fname='trajectoriesDat_'+str(Nscenario_stop)+'.csv')
-            #Nscenario_stop = 7000
-            #Nscenarios_start = 5500
-            #combineTrajectories(VarsToKeep=VarsToKeep,Nscenarios_start=Nscenarios_start, Nscenarios_stop=Nscenario_stop, fname='trajectoriesDat_'+str(Nscenario_stop)+'.csv')

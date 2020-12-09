@@ -49,7 +49,7 @@ def combineTrajectories(Nscenarios, trajectories_dir, temp_exp_dir, deleteFiles=
     if addSamples == False:
         sampledf = sampledf[["scen_num", "sample_num", "startdate"]]
     df_list = []
-    for scen_i in range(Nscenarios + 1):
+    for scen_i in range(500 + 1):
         input_name = "trajectories_scen" + str(scen_i) + ".csv"
         try:
             df_i = reprocess(os.path.join(trajectories_dir, input_name))
@@ -154,12 +154,10 @@ if __name__ == '__main__':
 
     sim_out_dir = "/projects/p30781/covidproject/covid-chicago/_temp/"
     stem = sys.argv[1]
-    keepTimes = sys.argv[2]
-    lagtime_days = sys.argv[3]
+    keepTimes = 1
+    lagtime_days =1
 
     add_samples = True
-
-    # stem = "20200525_EMS_11"
     exp_names = [x for x in os.listdir(sim_out_dir) if stem in x]
 
     for exp_name in exp_names:
@@ -172,7 +170,7 @@ if __name__ == '__main__':
         dfc = combineTrajectories(Nscenarios=Nscenarios, trajectories_dir=trajectories_dir, temp_exp_dir=temp_exp_dir,
                                   addSamples=add_samples)
 
-        dfctrim = trim_trajectories_Dat(df=dfc, exp_dir=temp_exp_dir, keepTimes=keepTimes,
-                                        lagtime_days=int(lagtime_days))
-        dfctrim.to_csv(os.path.join(temp_exp_dir, 'trajectoriesDat_trim.csv'), index=False)
+        #dfctrim = trim_trajectories_Dat(df=dfc, exp_dir=temp_exp_dir, keepTimes=keepTimes,
+        #                                lagtime_days=int(lagtime_days))
+        #dfctrim.to_csv(os.path.join(temp_exp_dir, 'trajectoriesDat_trim.csv'), index=False)
 

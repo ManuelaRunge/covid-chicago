@@ -2,14 +2,14 @@
 ### Note, the simulations and trajectories folder are not zipped and should be deleted from the _temp folder.
 
 ## Common pattern across experiments to transfer
-stem = "contactTracingHS40$"
+stem = "20201207_EMS_"
 
 #temp_exp_dir <- file.path("/projects/p30781/covidproject/covid-chicago/_temp/")
 #sim_output_dir <- file.path("/projects/p30781/covidproject/projects/covid_chicago/cms_sim/simulation_outputs/")
 
 
 sim_output_dir = "/projects/p30781/covidproject/covid-chicago/_temp/"
-
+sim_output_dir = "/projects/p30781/covidproject/projects/covid_chicago/cms_sim/simulation_output/"
 
 exp_names <- list.files(sim_output_dir)[ grep(stem, list.files(sim_output_dir))]
 

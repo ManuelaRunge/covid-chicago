@@ -14,5 +14,6 @@
 ml python/anaconda3.6
 
 # A command you actually want to execute:
-python /projects/p30781/covidproject/covid-chicago/nucluster/combine.py --stem "20200908_IL_quest_test" --addsamples "True" --lagtime_days "15"
+#python /projects/p30781/covidproject/covid-chicago/nucluster/combine.py --stem "20200908_IL_quest_test" --addsamples "True" --lagtime_days "15"
+python /projects/p30781/covidproject/covid-chicago/nucluster/combine_and_trim.py
 

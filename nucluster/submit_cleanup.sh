@@ -11,8 +11,12 @@
 
 
 # load modules you need to use
-ml python/anaconda3.6
+#ml python/anaconda3.6
+ml R/4.0.0
 
 # A command you actually want to execute:
-python /projects/p30781/covidproject/covid-chicago/nucluster/cleanup.py --stem "20200828_IL_testrun" --delete_simsfiles "True"
+#python /projects/p30781/covidproject/covid-chicago/nucluster/cleanup.py --stem "20200828_IL_testrun" --delete_simsfiles "True"
+#Rscript /projects/p30781/covidproject/covid-chicago/Rfiles/simulation_plotter/Ki_dat.R
+Rscript /projects/p30781/covidproject/covid-chicago/nucluster//split_csvs_by_region.R
+
 

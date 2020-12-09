@@ -14,5 +14,8 @@
 ml python/anaconda3.6
 
 # A command you actually want to execute:
-python /projects/p30781/covidproject/covid-chicago/plotters/process_for_civis_EMSgrp.py  --exp_name "20200912_IL_baseline" --processStep "generate_outputs" --Location "NUCLUSTER"
+#python /projects/p30781/covidproject/covid-chicago/plotters/process_for_civis_EMSgrp.py  --exp_name "20200912_IL_baseline" --processStep "generate_outputs" --Location "NUCLUSTER"
+#python /projects/p30781/covidproject/covid-chicago/plotters/aggregate_by_param.py
+python /projects/p30781/covidproject/covid-chicago/plotters/overflow_probabilities_trigger.py
+#python /projects/p30781/covidproject/covid-chicago/plotters/plot_exp_by_varying_param.py
 
