@@ -34,16 +34,18 @@ def get_Ki_dat(first_plot_day = dt.date(2020, 10, 1)):
         ki_channel = f'Ki_t_EMS-{str(ems_region)}'
         column_list = ['scen_num','sample_num', 'time', 'startdate','capacity_multiplier',ki_channel]
 
-        # fname='trajectoriesDat_region_'+ems_nr+'.csv'
+
         trajectories_name = 'trajectoriesDat_region_' + str(ems_region) + '.csv'
         if os.path.exists(os.path.join(analysis_dir, trajectories_name)) == False:
             trajectories_name = 'trajectoriesDat_trim.csv'
         if os.path.exists(os.path.join(analysis_dir, trajectories_name)) == False:
             trajectories_name = 'trajectoriesDat.csv'
         Ki_dat = load_sim_data(exp_name, fname=trajectories_name, column_list=column_list,sim_output_path=analysis_dir)
+        Ki_dat = Ki_dat[(Ki_dat['date'] >= first_plot_day)]
 
-        sorted_df = Ki_dat[(Ki_dat['date'] >= first_plot_day)]
-        sorted_df = sorted_df.sort_values('date').groupby(['capacity_multiplier','scen_num','sample_num']).tail(1)
+        sorted_df = Ki_dat.sort_values('date').groupby(['capacity_multiplier','scen_num','sample_num']).tail(1)
+        ## exclude if trigger was not activated
+        sorted_df = sorted_df[(sorted_df[ki_channel] == sorted_df[ki_channel].min())]
         sorted_df = sorted_df[['capacity_multiplier', 'scen_num','sample_num', ki_channel]]
         sorted_df = sorted_df.rename(columns={ki_channel: 'Ki_last'})
         df_sub = pd.merge(how='left', left=Ki_dat, left_on=['capacity_multiplier','scen_num','sample_num'],
@@ -77,6 +79,7 @@ def get_Ki_dat(first_plot_day = dt.date(2020, 10, 1)):
             Ki_dat_All = Ki_dat_All.append(mdf)
     Ki_dat_All.to_csv(os.path.join(analysis_dir, 'Ki_dat_All.csv'), index=False)
 
+
 if __name__ == '__main__':
 
     # stem = sys.argv[1]
@@ -87,13 +90,8 @@ if __name__ == '__main__':
     sim_output_dir = os.path.join('C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/cms_sim/simulation_output/_overflow_simulations/20201121') #os.path.join('/projects/p30781/covidproject/covid-chicago/_temp/')
     exp_names = [x for x in os.listdir(sim_output_dir) if stem in x]
 
-    column_list = ['scen_num','sample_num', 'time', 'startdate',
-                   'capacity_multiplier']  # 'reopening_multiplier_4' #, 'hosp_det_All', 'crit_det_All'
-    for ems_region in range(1, 12):
-        column_list.append('hosp_det_EMS-' + str(ems_region))
-        column_list.append('crit_det_EMS-' + str(ems_region))
-
     for exp_name in exp_names:
         analysis_dir = os.path.join(sim_output_dir, exp_name)
         print("1 - get Ki for " + exp_name)
         get_Ki_dat()
+
