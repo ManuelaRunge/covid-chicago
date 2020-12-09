@@ -128,3 +128,5 @@ if __name__ == '__main__':
         analysis_dir = os.path.join(sim_output_dir, exp_name)
         print("1 - get probs for " + exp_name)
         get_probs(exp_name)
+        #for i in range(1,50):
+        #    get_probs(exp_name,regions=[1,4,11], random_sub=300)
