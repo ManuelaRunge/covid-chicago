@@ -38,10 +38,10 @@ def get_capacity():
     capacity_df = capacity_df[capacity_df['resource_type'] == 'icu_availforcovid']
     return capacity_df
 
-def get_peak_exceed_table(first_plot_day = dt.date(2020, 10, 1)):
+def get_peak_exceed_table(first_plot_day = dt.date(2020, 10, 1), regions= range(1,12)):
 
     peak_df_All = pd.DataFrame()
-    for ems_region in range(1,12):
+    for ems_region in regions:
 
         #'time', 'startdate',
         column_list = ['date','ems', 'capacity_multiplier', 'critical_median','critical_95CI_lower','critical_95CI_upper','critical_50CI_lower']
@@ -151,5 +151,5 @@ if __name__ == '__main__':
     for exp_name in exp_names:
         analysis_dir = os.path.join(sim_output_dir, exp_name)
         print("get peak, exceed dates for " + exp_name)
-        get_peak_exceed_table()
-        get_time_since_trigger()
+        get_peak_exceed_table(regions=[1,4,11])
+        get_time_since_trigger(regions=[1,4,11])

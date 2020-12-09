@@ -26,10 +26,10 @@ def custom_rename(mdf, suffix):
         mdf = mdf.rename(columns={stats: suffix + '_' + stats})
     return mdf
 
-def get_Ki_dat(first_plot_day = dt.date(2020, 10, 1)):
+def get_Ki_dat(first_plot_day = dt.date(2020, 10, 1),  regions = range(1,12)):
 
     Ki_dat_All = pd.DataFrame()
-    for ems_region in range(1,12):
+    for ems_region in regions:
         print(ems_region)
         ki_channel = f'Ki_t_EMS-{str(ems_region)}'
         column_list = ['scen_num','sample_num', 'time', 'startdate','capacity_multiplier',ki_channel]
@@ -86,12 +86,12 @@ if __name__ == '__main__':
     Location ='Local'
     datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location=Location)
 
-    stem = '20201121_IL_regreopen50perc_7daysdelay_sm4'
+    stem = '20201121_IL_regreopen'
     sim_output_dir = os.path.join('C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/cms_sim/simulation_output/_overflow_simulations/20201121') #os.path.join('/projects/p30781/covidproject/covid-chicago/_temp/')
     exp_names = [x for x in os.listdir(sim_output_dir) if stem in x]
 
     for exp_name in exp_names:
         analysis_dir = os.path.join(sim_output_dir, exp_name)
         print("1 - get Ki for " + exp_name)
-        get_Ki_dat()
+        get_Ki_dat(regions=[1,4,11])
 
