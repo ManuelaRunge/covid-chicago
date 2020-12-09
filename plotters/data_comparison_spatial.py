@@ -11,6 +11,8 @@ import sys
 sys.path.append('../')
 from load_paths import load_box_paths
 import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import date, timedelta, datetime
 import seaborn as sns
@@ -18,7 +20,7 @@ from processing_helpers import *
 
 mpl.rcParams['pdf.fonttype'] = 42
 today = datetime.today()
-datetoday = date(today.year, today.month, today.day)
+datetoday = date(2020, 12, 20)
 
 def parse_args():
 
@@ -48,8 +50,8 @@ def parse_args():
     
 def load_sim_data(exp_name, ems_nr,  input_wdir=None, fname= 'trajectoriesDat.csv', input_sim_output_path=None, column_list=None):
 
-    input_wdir = input_wdir or wdir
-    sim_output_path_base = os.path.join(input_wdir, 'simulation_output', exp_name)
+    #input_wdir = input_wdir or wdir
+    sim_output_path_base = os.path.join(git_dir, '_temp', exp_name)
     sim_output_path = input_sim_output_path or sim_output_path_base
 
     df = pd.read_csv(os.path.join(sim_output_path,fname), usecols=column_list)
@@ -71,7 +73,7 @@ def plot_sim_and_ref(df, ems_nr, ref_df, channels, data_channel_names, titles, f
         ax = fig.add_subplot(2, 3, c + 1)
 
         # for k, (ki, kdf) in enumerate(df.groupby('Ki')) :
-        mdf = df.groupby('time')[channel].agg([CI_50,CI_5, CI_95, CI_25, CI_75]).reset_index()
+        mdf = df.groupby('time')[channel].agg([CI_50, CI_5, CI_95, CI_25, CI_75]).reset_index()
         dates = [first_day + timedelta(days=int(x)) for x in mdf['time']]
         ax.plot(dates, mdf['CI_50'], color=palette[k])
         ax.fill_between(dates, mdf['CI_5'], mdf['CI_95'],
@@ -123,7 +125,7 @@ def compare_ems(exp_name,fname, ems_nr=0):
 
 
     df['date'] = df['time'].apply(lambda x: first_day + timedelta(days=int(x)))
-    df = df[df['date']  <=  datetime.today()]
+    df = df[df['date'] <= pd.Timestamp(datetoday) ]
 
     ref_df = load_ref_df(ems_nr)
 
@@ -146,14 +148,14 @@ if __name__ == '__main__':
 
     args = parse_args()  
     trajectoriesName = args.trajectoriesName
-    Location = args.Location
+    Location = 'NUCLUSTER'
     datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location = Location)
 
-    stem = args.stem
-    exp_names = [x for x in os.listdir(os.path.join(wdir, 'simulation_output')) if stem in x]
+    stem =  args.stem
+    exp_names = [x for x in os.listdir(os.path.join(git_dir, '_temp')) if stem in x]
 
     for exp_name in exp_names:
-        plot_path = os.path.join(wdir, 'simulation_output',exp_name, '_plots')
+        plot_path = os.path.join(git_dir, '_temp',exp_name, '_plots')
         for ems_nr in range(1,12):
             print("Start processing region " + str(ems_nr))
             compare_ems(exp_name,fname=trajectoriesName, ems_nr=int(ems_nr))

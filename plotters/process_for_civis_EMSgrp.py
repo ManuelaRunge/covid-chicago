@@ -111,7 +111,7 @@ def load_and_plot_data(ems_region, fname , savePlot=True) :
     for channel in outcome_channels:
         column_list.append(channel + "_" + str(ems_region))
 
-    df = load_sim_data(exp_name,region_suffix = '_'+ems_region,fname=fname, column_list=column_list)
+    df = load_sim_data(exp_name,region_suffix = '_'+ems_region,fname=fname, column_list=column_list ,input_sim_output_path=os.path.join('/projects/p30781/covidproject/covid-chicago/_temp/', exp_name))
 
     df['ems'] = ems_region
     first_day = datetime.strptime(df['startdate'].unique()[0], '%Y-%m-%d')
@@ -122,7 +122,7 @@ def load_and_plot_data(ems_region, fname , savePlot=True) :
     df['new_symptomatic'] = df['new_symptomatic_severe'] + df['new_symptomatic_mild'] + df['new_detected_symptomatic_severe'] + df['new_detected_symptomatic_mild']
 
     channels = ['infected', 'new_infected', 'new_symptomatic', 'new_deaths', 'new_detected_deaths', 'hospitalized', 'critical', 'hosp_det', 'crit_det', 'ventilators', 'recovered']
-    plotchannels = ['infected', 'new_infected', 'new_symptomatic', 'new_deaths', 'new_detected_deaths', 'hosp_det', 'crit_det', 'ventilators', 'recovered']
+    plotchannels = ['infected', 'new_infected', 'new_symptomatic', 'new_deaths', 'new_detected_deaths', 'hospitalized', 'critical', 'ventilators', 'recovered']
 
     adf = pd.DataFrame()
     for c, channel in enumerate(channels):
@@ -179,27 +179,27 @@ def rename_geography_and_save(df,filename) :
     if "geography_modeled" in dfout.columns:
         dfout['geography_modeled'] = dfout['geography_modeled'].str.replace('ems', 'covidregion_')
 
-    dfout.to_csv(os.path.join(sim_output_path, filename), index=False, date_format='%Y-%m-%d')
+    dfout.to_csv(os.path.join(sim_output_path, filename), index=False)
 
 
 if __name__ == '__main__' :
 
-    args = parse_args()
+    #args = parse_args()
 
-    exp_name = args.exp_name # "20200910_IL_RR_baseline_combined"
+    exp_name =  "20201204_IL_mr_quest_v16_testrun"
     simdate = exp_name.split("_")[0]
-    processStep = args.processStep # 'generate_outputs'
-    trajectoriesName = args.trajectoriesName
+    processStep =  'generate_outputs'
+    trajectoriesName = 'trajectoriesDat.csv'
 
-    datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location=args.Location)
+    datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location='NUCLUSTER')
 
     regions = ['All', 'EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10','EMS-11']
 
     exp_suffix = exp_name.split("_")[-1]
     scenarioName = get_scenarioName(exp_suffix)
-
-    sim_output_path = os.path.join(wdir, 'simulation_output', exp_name)
-    plot_path = os.path.join(sim_output_path, '_plots')
+    sim_out_dir = "/projects/p30781/covidproject/covid-chicago/_temp/"
+    sim_output_path = "/projects/p30781/covidproject/covid-chicago/_temp/" #os.path.join(wdir, 'simulation_output', exp_name)
+    plot_path = os.path.join(sim_output_path, exp_name,'_plots')
 
     if processStep == 'generate_outputs' :
         dfAll = pd.DataFrame()

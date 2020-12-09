@@ -14,16 +14,25 @@ from copy import copy
 
 mpl.rcParams['pdf.fonttype'] = 42
 
-datapath, projectpath, wdir,exe_dir, git_dir = load_box_paths()
+datapath, projectpath, wdir,exe_dir, git_dir = load_box_paths(Location="NUCLUSTER")
 
 first_day = date(2020, 2, 13) # IL
 first_plot_day = date(2020, 9, 1)
 #last_plot_day = date(2020, 4, 30)
+analysis_dir = os.path.join( '/projects/p30781/covidproject/covid-chicago/_temp')
 
+def load_sim_data(exp_name, fname='trajectoriesDat.csv',input_wdir=None, input_sim_output_path=None, column_list=None):
+    input_wdir = input_wdir or wdir
+    sim_output_path_base = os.path.join(analysis_dir, exp_name)
+    sim_output_path = input_sim_output_path or sim_output_path_base
+
+    df = pd.read_csv(os.path.join(sim_output_path, fname), usecols=column_list)
+    return df
+    
 def plot_main(param, channel = 'crit_det',time_param=False) :
 
     column_list = ['scen_num', param]
-    sampled_df = pd.read_csv(os.path.join(sim_output_path, "sampled_parameters.csv"), usecols=column_list)
+    sampled_df = pd.read_csv(os.path.join(exp_dir, "sampled_parameters.csv"), usecols=column_list)
     column_list = ['scen_num', 'time', 'startdate']
     for ems_region in range(1, 12):
         column_list.append('crit_det_EMS-' + str(ems_region))
@@ -83,16 +92,22 @@ def plot_main(param, channel = 'crit_det',time_param=False) :
     fig.suptitle(x=0.5, y=0.999,t=channel + ' by ' + str(param))
     fig.tight_layout()
 
-    fig.savefig(os.path.join(sim_output_path,'_plots',f'plot_by_{param}_{channel}.png'))
-    fig.savefig(os.path.join(sim_output_path,'_plots', f'plot_by_{param}_{channel}.pdf'), format='PDF')
+    fig.savefig(os.path.join(exp_dir,'_plots',f'plot_by_{param}_{channel}.png'))
+    fig.savefig(os.path.join(exp_dir,'_plots', f'plot_by_{param}_{channel}.pdf'), format='PDF')
     #plt.show()
 
 
 
 if __name__ == '__main__' :
 
-    exp_name = '20201030_IL_rollback_toki8_small_reopen'
-    sim_output_path = os.path.join(wdir, 'simulation_output', exp_name)
-    #channels = ['infected', 'new_detected', 'new_deaths', 'hospitalized', 'critical', 'ventilators']
-    #channels = ['crit_det', 'hosp_det']
-    plot_main(channel= 'crit_det', param= 'socialDistance_reopen_time', time_param=True)
+    sim_out_dir = "/projects/p30781/covidproject/covid-chicago/_temp/"
+    stem = '20201125_IL_regreopen100perc_7daysdelay_sm8'
+    exp_names = [x for x in os.listdir(analysis_dir) if stem in x]
+
+    for exp_name in exp_names:
+    
+      #exp_name = '20201030_IL_rollback_toki8_small_reopen'
+      exp_dir = os.path.join(analysis_dir, exp_name)
+      #channels = ['infected', 'new_detected', 'new_deaths', 'hospitalized', 'critical', 'ventilators']
+      #channels = ['crit_det', 'hosp_det']
+      plot_main(channel= 'crit_det', param= 'capacity_multiplier', time_param=True)

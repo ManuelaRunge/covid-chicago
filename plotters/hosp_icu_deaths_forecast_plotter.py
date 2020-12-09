@@ -15,7 +15,7 @@ from processing_helpers import *
 mpl.rcParams['pdf.fonttype'] = 42
 
 first_plot_day = pd.to_datetime( date(2020, 8, 1))
-last_plot_day = pd.to_datetime(date(2020, 12,31))
+last_plot_day = pd.to_datetime(date(2020, 12,30))
 
 def parse_args():
     description = "Simulation run for modeling Covid-19"
@@ -97,9 +97,9 @@ def plot_sim_and_ref(df, ems_nr, ref_df, channels, data_channel_names, titles, p
         if channel == "hosp_det" or channel == "crit_det":
             capacity = load_capacity(ems_nr)
             if channel == "hosp_det":
-                capacitychannel = 'hosp_det'
+                capacitychannel = 'hospitalized'
             if channel == "crit_det":
-                capacitychannel = 'crit_det'
+                capacitychannel = 'critical'
 
             ax.plot([first_plot_day,last_plot_day ], [capacity[capacitychannel], capacity[capacitychannel]], '--', linewidth=1, color='black')
             ax.plot([first_plot_day,last_plot_day ], [capacity[capacitychannel] * 0.75, capacity[capacitychannel] * 0.75], '--', linewidth=0.8, color='grey')
