@@ -38,6 +38,13 @@ def parse_args():
         help="Local or NUCLUSTER",
         default = "Local"
     )
+    parser.add_argument(
+        "-par",
+        "--param",
+        type=str,
+        help="Compare by parameter",
+        default = ""
+    )
     return parser.parse_args()
 
 def load_sim_data(exp_name, region_suffix ='_All', input_wdir=None,fname='trajectoriesDat.csv', input_sim_output_path =None, column_list=None) :
@@ -46,13 +53,10 @@ def load_sim_data(exp_name, region_suffix ='_All', input_wdir=None,fname='trajec
     sim_output_path = input_sim_output_path or sim_output_path_base
 
     df = pd.read_csv(os.path.join(sim_output_path, fname), usecols=column_list)
-    #if 'Ki' not in df.columns.values :
-    #    scen_df = pd.read_csv(os.path.join(sim_output_path, 'sampled_parameters.csv'))
-    #    df = pd.merge(left=df, right=scen_df[['scen_num', 'Ki']], on='scen_num', how='left')
 
     df.columns = df.columns.str.replace(region_suffix, '')
-   # df['infected_cumul'] = df['infected'] + df['recovered'] + df['deaths']
-   # df = calculate_incidence(df)
+    df['infected_cumul'] = df['infected'] + df['recovered'] + df['deaths']
+    df = calculate_incidence(df)
 
     return df
 
@@ -90,12 +94,11 @@ def plot_sim_and_ref_by_param(df, ems_nr, ref_df, channels, data_channel_names, 
 
         for i, par in enumerate(df[param].unique()):
             df_sub = df[df[param] == par]
-            mdf = df_sub.groupby('time')[channel].agg([CI_50, CI_5, CI_95, CI_25, CI_75]).reset_index()
-            dates = [first_day + timedelta(days=int(x)) for x in mdf['time']]
-            ax.plot(dates, mdf['CI_50'], color=palette[i], label=round(par,3))
-            ax.fill_between(dates, mdf['CI_5'], mdf['CI_95'],
+            mdf = df_sub.groupby('date')[channel].agg([CI_50, CI_5, CI_95, CI_25, CI_75]).reset_index()
+            ax.plot(mdf['date'], mdf['CI_50'], color=palette[i], label=round(par,3))
+            ax.fill_between(mdf['date'], mdf['CI_5'], mdf['CI_95'],
                             color=palette[i], linewidth=0, alpha=0.2)
-            ax.fill_between(dates, mdf['CI_25'], mdf['CI_75'],
+            ax.fill_between(mdf['date'], mdf['CI_25'], mdf['CI_75'],
                             color=palette[i], linewidth=0, alpha=0.4)
 
         ax.set_title(titles[c], y=0.8, fontsize=12)
@@ -200,15 +203,32 @@ def compare_ems(exp_name, ems=0, param=None) :
 
     ref_df = load_ref_df(ems_nr=ems)
 
-    df = load_sim_data(exp_name) #ems_nr
-    first_day = datetime.strptime(df['startdate'].unique()[0], '%Y-%m-%d')
+    column_list = ['time', 'startdate', 'scen_num', 'sample_num', 'run_num',
+                   'fraction_hospitalized_age30to39', 'fraction_hospitalized_age40to49',
+                   'fraction_hospitalized_age50to59',
+                   'fraction_hospitalized_age60to69', 'fraction_hospitalized_age70to100'
+                   ]
 
-    df['critical_with_suspected'] = df['critical']
+    outcome_channels = ['susceptible', 'infected', 'recovered', 'infected_cumul', 'asymp_cumul', 'asymp_det_cumul',
+                        'symp_mild_cumul', 'symp_severe_cumul', 'symp_mild_det_cumul',
+                        'symp_severe_det_cumul', 'hosp_det_cumul', 'hosp_cumul', 'detected_cumul', 'crit_cumul',
+                        'crit_det_cumul', 'death_det_cumul',
+                        'deaths', 'crit_det', 'critical', 'hosp_det', 'hospitalized']
 
+    for channel in outcome_channels:
+        column_list.append(channel + "_All")
+
+    df = load_sim_data(exp_name,column_list=column_list) #ems_nr
     first_day = datetime.strptime(df['startdate'].unique()[0], '%Y-%m-%d')
     df['date'] = df['time'].apply(lambda x: first_day + timedelta(days=int(x)))
-    df = df[df['date']  <=  datetime.today()]
+    df = df[df['date'] <= datetime.today()]
+    df['fract_hosp_combo'] = df['fraction_hospitalized_age30to39'] + \
+                             df['fraction_hospitalized_age40to49'] + \
+                             df['fraction_hospitalized_age50to59'] + \
+                             df['fraction_hospitalized_age60to69'] + \
+                             df['fraction_hospitalized_age70to100']
 
+    df['critical_with_suspected'] = df['critical']
     channels = ['new_detected_deaths', 'crit_det', 'hosp_det', 'new_deaths','new_detected_hospitalized',
                 'new_detected_hospitalized']
     data_channel_names = ['confirmed_covid_deaths_prev_24h',
@@ -217,6 +237,7 @@ def compare_ems(exp_name, ems=0, param=None) :
               'Covid-like illness\nadmissions (IDPH)', 'New Detected\nHospitalizations (LL)']
 
     plot_path = os.path.join(wdir, 'simulation_output', exp_name, '_plots')
+    param = 'fract_hosp_combo'
     if param == None :
         plot_sim_and_ref(df,ems_nr, ref_df, channels=channels, data_channel_names=data_channel_names, titles=titles, ymax=10000,
                          plot_path=plot_path, first_day=first_day, logscale=True)
@@ -231,17 +252,20 @@ def compare_ems(exp_name, ems=0, param=None) :
 
 if __name__ == '__main__' :
 
-    args = parse_args()
-    #Location = 'Local'
-    datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location = args.Location)
+    #args = parse_args()
+    #Location = args.Location
+    #by_param = args.param
+    datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location="Local")
 
-    stem = args.stem
-    exp_names = [x for x in os.listdir(os.path.join(wdir, 'simulation_output')) if stem in x]
+    #stem = args.stem
+    exp_names = ['20201207_EMS_1_mr_age8_testfractHosp'] #[x for x in os.listdir(os.path.join(wdir, 'simulation_output')) if stem in x]
+
+    by_param = ['fraction_hospitalized_age30to39', 'fraction_hospitalized_age40to49', 'fraction_hospitalized_age50to59',
+                'fraction_hospitalized_age60to69', 'fraction_hospitalized_age70to100']
+
 
     for exp_name in exp_names :
-
         region = exp_name.split('_')[1]
-
         if("EMS" in exp_name) :
             ems_nr = exp_name.split('_')[2]
             region = exp_name.split('_')[1]
@@ -251,8 +275,10 @@ if __name__ == '__main__' :
         elif region == 'Chicago':
             compare_county(exp_name,  county_name='Cook')
         elif region == 'EMS':
-            compare_ems(exp_name,  ems=int(ems_nr))
-            #compare_ems(exp_name,  ems=int(ems_nr), param='Ki')
+            if by_param !="":
+                compare_ems(exp_name,  ems=int(ems_nr), param=by_param)
+            else :
+                compare_ems(exp_name, ems=int(ems_nr))
             print(exp_name)
         elif region == 'IL':
             compare_ems(exp_name, source='line_list')
