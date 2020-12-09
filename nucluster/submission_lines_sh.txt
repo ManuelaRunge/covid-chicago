@@ -1,0 +1,28 @@
+
+
+dos2unix submit_prob_1.sh
+dos2unix submit_prob_2.sh
+dos2unix submit_prob_3.sh
+dos2unix submit_prob_4.sh
+dos2unix submit_prob_5.sh
+dos2unix submit_prob_6.sh
+dos2unix submit_prob_7.sh
+dos2unix submit_prob_8.sh
+dos2unix submit_prob_9.sh
+dos2unix submit_prob_10.sh
+dos2unix submit_prob_11.sh
+dos2unix submit_prob_12.sh
+
+
+sbatch submit_prob_1.sh
+sbatch submit_prob_2.sh
+sbatch submit_prob_3.sh
+sbatch submit_prob_4.sh
+sbatch submit_prob_5.sh
+sbatch submit_prob_6.sh
+sbatch submit_prob_7.sh
+sbatch submit_prob_8.sh
+sbatch submit_prob_9.sh
+sbatch submit_prob_10.sh
+sbatch submit_prob_11.sh
+sbatch submit_prob_12.sh
