@@ -13,45 +13,8 @@ sys.path.append('../')
 from processing_helpers import *
 from load_paths import load_box_paths
 
-datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths()
-analysis_dir = os.path.join( '/projects/p30781/covidproject/covid-chicago/_temp')
-
 mpl.rcParams['pdf.fonttype'] = 42
 
-plot_first_day = pd.to_datetime('2020/3/1')
-plot_last_day = pd.to_datetime('2021/5/1')
-
-
-def parse_args():
-    description = "Process simulation outputs to send to Civis"
-    parser = argparse.ArgumentParser(description=description)
-
-    parser.add_argument(
-        "-e", "--exp_name",
-        type=str,
-        help="Name of experiment and folder name",
-        default=None,
-    )
-    parser.add_argument(
-        "-p", "--processStep",
-        type=str,
-        help="Only required if files are too large to process regions in a loop",
-        default='generate_outputs',
-    )
-    parser.add_argument(
-        "-l", "--Location",
-        type=str,
-        help="Local or NUCLUSTER",
-        default='Local',
-    )
-    parser.add_argument(
-        "-t", "--trajectoriesName",
-        type=str,
-        help="Name of trajectoriesDat file, could be trajectoriesDat.csv or trajectoriesDat_trim.csv",
-        default='trajectoriesDat.csv',
-    )
-
-    return parser.parse_args()
 
 def load_sim_data(exp_name,  region_suffix ='_All', input_wdir=None, fname='trajectoriesDat.csv', input_sim_output_path=None,
                   column_list=None):
@@ -141,8 +104,8 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
 
     adf = pd.DataFrame()
     for c, channel in enumerate(channels):
-        mdf = df.groupby(['date', 'ems','capacity_multiplier'])[channel].agg([np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
-        #mdf = df.groupby(['date', 'ems', 'reopening_multiplier_4'])[channel].agg([np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
+        mdf = df.groupby(['date','startdate', 'time', 'ems','capacity_multiplier'])[channel].agg([np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
+        #mdf = df.groupby(['date','startdate', 'time', 'ems', 'reopening_multiplier_4'])[channel].agg([np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
 
 
         mdf = mdf.rename(columns={'amin': '%s_min' % channel,
@@ -155,8 +118,8 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
         if adf.empty:
             adf = mdf
         else:
-            adf = pd.merge(left=adf, right=mdf, on=['date', 'ems','capacity_multiplier'])
-            #adf = pd.merge(left=adf, right=mdf, on=['date', 'ems', 'reopening_multiplier_4'])
+            adf = pd.merge(left=adf, right=mdf, on=['date','startdate', 'time', 'ems','capacity_multiplier'])
+            #adf = pd.merge(left=adf, right=mdf, on=['date','startdate', 'time', 'ems', 'reopening_multiplier_4'])
 
 
     #if savePlot :
@@ -198,13 +161,18 @@ def rename_geography_and_save(df, filename):
 
 if __name__ == '__main__':
 
-    # args = parse_args()
-    #stem = args.stem
-    stem = '20201121_IL_regreopen100perc_1daysdelay_sm4'
+    stem = sys.argv[1]
+    Location ='NUCLUSTER'
+    
+    datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths()
+    analysis_dir = os.path.join( '/projects/p30781/covidproject/covid-chicago/_temp')
+
     exp_names = [x for x in os.listdir(os.path.join(analysis_dir)) if stem in x]
+    
+    plot_first_day = pd.to_datetime('2020/3/1')
+    plot_last_day = pd.to_datetime('2021/6/1')
 
     for exp_name in exp_names :
-        #exp_name = '20200919_IL_regreopen100perc_0daysdelay_sm7'
         print(exp_name)
         simdate = exp_name.split("_")[0]
         processStep = 'generate_outputs'
