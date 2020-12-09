@@ -152,4 +152,4 @@ if __name__ == '__main__':
         analysis_dir = os.path.join(sim_output_dir, exp_name)
         print("get peak, exceed dates for " + exp_name)
         get_peak_exceed_table(regions=[1,4,11])
-        get_time_since_trigger(regions=[1,4,11])
+        get_time_since_trigger()
