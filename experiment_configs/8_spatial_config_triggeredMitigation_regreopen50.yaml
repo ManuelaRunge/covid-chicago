@@ -343,7 +343,7 @@ sampled_parameters:
         - {'low': 0.03, 'high': 0.03}
         - {'low': 0.23, 'high': 0.23}
         - {'low': 0.055, 'high': 0.055}
-        - {'low': 0.075, 'high': 0.075}
+        - {'low': 0.068, 'high': 0.068}
   d_Sym_ct1:
     IL:
       expand_by_age: True
