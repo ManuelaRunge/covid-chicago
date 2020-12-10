@@ -272,14 +272,16 @@ def generateSubmissionFile_quest(scen_num, exp_name, experiment_config, trajecto
     file.write(header + jobname + array + err + out + module + singularity)
     file.close()
 
-    plotters_dir = os.path.join(git_dir, "plotters")
-    rfiles_dir = os.path.join(git_dir, "Rfiles")
+    plotters_dir = "/home/mrm9534/gitrepos/covid-chicago/plotters/" #os.path.join(git_dir, "plotters")
+    rfiles_dir = "/home/mrm9534/gitrepos/covid-chicago/Rfiles/"  # os.path.join(git_dir, "Rfiles")
     pymodule = '\n\nml python/anaconda3.6\n'
     rmodule = '\n\nml module load R/4.0.0\n'
 
-    pycommand = f'\npython /projects/p30781/covidproject/covid-chicago/nucluster/combine.py  "{exp_name}" "120" "10"'
+    pycommand1 = f'\npython /home/mrm9534/gitrepos/covid-chicago/nucluster/combine_and_trim.py  --stem "{exp_name}" --Location "NUCLUSTER"'
+    pycommand2 = f'\npython {plotters_dir}aggregate_by_param.py  --stem "{exp_name}" --Location "NUCLUSTER"'
     file = open(os.path.join(temp_exp_dir, 'combineSimulations.sh'), 'w')
-    file.write(header + jobname + err + out + pymodule + pycommand)
+    file.write(header + jobname + err + out + pymodule + pycommand1)
+    file.write(header + jobname + err + out + pymodule + pycommand2)
     file.close()
 
     pycommand = f'\npython /projects/p30781/covidproject/covid-chicago/nucluster/cleanup.py --stem "{exp_name}"' \
@@ -288,10 +290,12 @@ def generateSubmissionFile_quest(scen_num, exp_name, experiment_config, trajecto
     file.write(header + jobname + err + out + pymodule + plotters_dir + pycommand)
     file.close()
 
-    if experiment_config == "spatial_EMS_experiment.yaml" :
-        fname = "data_comparison_spatial.py"
-    if experiment_config != "spatial_EMS_experiment.yaml" :
+    fname = "data_comparison_spatial.py"
+    if experiment_config = "EMSspecific_sample_parameters.yaml" :
         fname = "data_comparison.py"
+    if experiment_config = "age8grp_experiment.yaml" :
+        fname = "data_comparison.py"
+
     pycommand = f'\npython {plotters_dir}{fname} --stem "{exp_name}" --Location "NUCLUSTER"'
     file = open(os.path.join(temp_exp_dir, '0_compareToData.sh'), 'w')
     file.write(header + jobname + err + out + pymodule + plotters_dir + pycommand)
@@ -320,6 +324,23 @@ def generateSubmissionFile_quest(scen_num, exp_name, experiment_config, trajecto
 
     pycommand = f'\npython {plotters_dir}NUcivis_filecopy.py "{exp_name}"'
     file = open(os.path.join(temp_exp_dir, '4_runProcessForCivis.sh'), 'w')
+    file.write(header + jobname + err + out + pymodule + plotters_dir + pycommand)
+    file.close()
+    
+    """Process for overflow simulations"""
+    rcommand = f'\nRscript {rfiles_dir}publication_scripts_ICUprob/Ki_dat.R  "{exp_name}" "NUCLUSTER" "{rfiles_dir}"'
+    file = open(os.path.join(temp_exp_dir, '1_runHospitalOverflow.sh'), 'w')
+    file.write(header + jobname + err + out + rmodule + rcommand)
+    file.close()
+    
+    pycommand = f'\npython {plotters_dir}overflow_probabilities_trigger.py  --stem "{exp_name}" --Location "NUCLUSTER"'
+    file = open(os.path.join(temp_exp_dir, '1_runHospitalOverflow.sh'), 'w')
+    file.write(header + jobname + err + out + pymodule + plotters_dir + pycommand)
+    file.close()
+    
+    pycommand = f'\npython {plotters_dir}trigger_Ki_extract.py "{exp_name}"' \
+                f'\npython {plotters_dir}peak_exceed_extract.py "{exp_name}"'
+    file = open(os.path.join(temp_exp_dir, '2_runHospitalOverflow.sh'), 'w')
     file.write(header + jobname + err + out + pymodule + plotters_dir + pycommand)
     file.close()
 

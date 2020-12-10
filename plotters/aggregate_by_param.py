@@ -15,14 +15,32 @@ from load_paths import load_box_paths
 
 mpl.rcParams['pdf.fonttype'] = 42
 
+def parse_args():
+    description = "Simulation run for modeling Covid-19"
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument(
+        "-stem",
+        "--stem",
+        type=str,
+        help="Name of simulation experiment"
+    )
+    
+    parser.add_argument(
+        "-loc",
+        "--Location",
+        type=str,
+        help="Local or NUCLUSTER",
+        default = "NUCLUSTER"
+    )
+
+    return parser.parse_args()
 
 def load_sim_data(exp_name,  region_suffix ='_All', input_wdir=None, fname='trajectoriesDat.csv', input_sim_output_path=None,
                   column_list=None):
     input_wdir = input_wdir or wdir
-    sim_output_path_base = os.path.join(input_sim_output_path, exp_name)
-    sim_output_path = sim_output_path_base
 
-    df = pd.read_csv(os.path.join(sim_output_path, fname), usecols=column_list)
+    df = pd.read_csv(os.path.join(input_sim_output_path, fname), usecols=column_list)
     df['run_num']=-9
     # df.columns = df.columns.str.replace('_All', '')
     df.columns = df.columns.str.replace(region_suffix, '')
@@ -90,8 +108,8 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
     for channel in outcome_channels:
         column_list.append(channel + "_" + str(ems_region))
 
-   fname = 'trajectoriesDat_region_'+ems_nr+'.csv'
-   if os.path.exists(os.path.join(analysis_dir, fname)) == False:
+    fname = 'trajectoriesDat_region_'+str(ems_region)+'.csv'
+    if os.path.exists(os.path.join(input_sim_output_path, fname)) == False:
          fname = 'trajectoriesDat.csv'
             
     ems_nr = ems_region.replace('EMS-', "")
@@ -165,10 +183,11 @@ def rename_geography_and_save(df, filename):
 
 if __name__ == '__main__':
 
-    stem = sys.argv[1]
-    Location ='NUCLUSTER'
+    args = parse_args()  
+    stem = args.stem
+    Location = args.Location #"NUCLUSTER"
     
-    datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths()
+    datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location=Location)
     analysis_dir = os.path.join( '/projects/p30781/covidproject/covid-chicago/_temp')
 
     exp_names = [x for x in os.listdir(os.path.join(analysis_dir)) if stem in x]

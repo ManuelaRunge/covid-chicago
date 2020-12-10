@@ -1,17 +1,43 @@
+import argparse
 import numpy as np
 import pandas as pd
 import subprocess
-import matplotlib.pyplot as plt
 import os
 import seaborn as sns
-import matplotlib as mpl
-import matplotlib.dates as mdates
 from datetime import date, timedelta
 import shutil
 
-import numpy as np
+
+def parse_args():
+    description = "Simulation run for modeling Covid-19"
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument(
+        "-stem",
+        "--stem",
+        type=str,
+        help="Name of simulation experiment"
+    )
+    
+    parser.add_argument(
+        "-loc",
+        "--Location",
+        type=str,
+        help="Local or NUCLUSTER",
+        default = "NUCLUSTER"
+    )
+    parser.add_argument(
+        "-limit",
+        "--scen_limit",
+        type=int,
+        help="Number of simulations to combine",
+        default = 700
+    )
 
 
+    return parser.parse_args()
+    
+    
 def writeTxt(txtdir, filename, textstring):
     file = open(os.path.join(txtdir, filename), 'w')
     file.write(textstring)
@@ -120,13 +146,17 @@ def combineTrajectories(VarsToKeep,Nscenarios_start=0, Nscenarios_stop=1000, tim
 
 
 if __name__ == '__main__':
-    sim_out_dir = "/projects/p30781/covidproject/covid-chicago/_temp/"
 
-    stem = '20201209_IL_regreopen'
+    args = parse_args()  
+    stem = args.stem
+    Location = args.Location #"NUCLUSTER"
+    Scenario_save_limit = args.scen_limit
+    
+    sim_out_dir = "/projects/p30781/covidproject/covid-chicago/_temp/"
     exp_names = [x for x in os.listdir(sim_out_dir) if stem in x]
 
     time_start = 1
-    time_end = 410
+    time_end = 1000
     additionalVars = ['capacity_multiplier','trigger_delay_days']
     VarsToKeepI = ['startdate',  'scen_num', 'sample_num'] + additionalVars
     VarsToKeep = ['time', 'run_num'] + VarsToKeepI
@@ -141,8 +171,6 @@ if __name__ == '__main__':
         sampledf = pd.read_csv(os.path.join(temp_exp_dir, "sampled_parameters.csv"))
         sampledf = sampledf[VarsToKeepI]
         Nscenario = max(sampledf['scen_num'])
-
-        Scenario_save_limit = 700
 
         if Nscenario <= Scenario_save_limit:
             combineTrajectories(VarsToKeep=VarsToKeep,Nscenarios_start=0, Nscenarios_stop=Nscenario+1,time_start=time_start, time_stop=time_end, fname='trajectoriesDat.csv')
