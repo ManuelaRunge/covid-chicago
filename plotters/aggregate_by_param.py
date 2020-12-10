@@ -13,54 +13,38 @@ sys.path.append('../')
 from processing_helpers import *
 from load_paths import load_box_paths
 
-datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths()
-analysis_dir = os.path.join( '/projects/p30781/covidproject/covid-chicago/_temp')
-
 mpl.rcParams['pdf.fonttype'] = 42
-
-plot_first_day = pd.to_datetime('2020/3/1')
-plot_last_day = pd.to_datetime('2021/5/1')
 
 
 def parse_args():
-    description = "Process simulation outputs to send to Civis"
+    description = "Simulation run for modeling Covid-19"
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument(
-        "-e", "--exp_name",
+        "-stem",
+        "--stem",
         type=str,
-        help="Name of experiment and folder name",
-        default=None,
+        help="Name of simulation experiment"
     )
+
     parser.add_argument(
-        "-p", "--processStep",
-        type=str,
-        help="Only required if files are too large to process regions in a loop",
-        default='generate_outputs',
-    )
-    parser.add_argument(
-        "-l", "--Location",
+        "-loc",
+        "--Location",
         type=str,
         help="Local or NUCLUSTER",
-        default='Local',
-    )
-    parser.add_argument(
-        "-t", "--trajectoriesName",
-        type=str,
-        help="Name of trajectoriesDat file, could be trajectoriesDat.csv or trajectoriesDat_trim.csv",
-        default='trajectoriesDat.csv',
+        default="NUCLUSTER"
     )
 
     return parser.parse_args()
 
-def load_sim_data(exp_name,  region_suffix ='_All', input_wdir=None, fname='trajectoriesDat.csv', input_sim_output_path=None,
+
+def load_sim_data(exp_name, region_suffix='_All', input_wdir=None, fname='trajectoriesDat.csv',
+                  input_sim_output_path=None,
                   column_list=None):
     input_wdir = input_wdir or wdir
-    sim_output_path_base = os.path.join(analysis_dir, exp_name)
-    sim_output_path = sim_output_path_base
 
-    df = pd.read_csv(os.path.join(sim_output_path, fname), usecols=column_list)
-    df['run_num']=-9
+    df = pd.read_csv(os.path.join(input_sim_output_path, fname), usecols=column_list)
+    df['run_num'] = -9
     # df.columns = df.columns.str.replace('_All', '')
     df.columns = df.columns.str.replace(region_suffix, '')
 
@@ -110,26 +94,30 @@ def plot_sim(dat, suffix, channels):
     plt.tight_layout()
     plt.subplots_adjust(top=0.88)
 
-    #plt.savefig(os.path.join(plot_path, plotname + '.png'))
+    # plt.savefig(os.path.join(plot_path, plotname + '.png'))
     plt.savefig(os.path.join(plot_path, 'pdf', plotname + '.pdf'), format='PDF')
     # plt.show()
 
 
-def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
+def load_and_plot_data(ems_region, fname, input_sim_output_path, savePlot=True):
     column_list = ['startdate', 'time', 'scen_num', 'sample_num', 'capacity_multiplier']
-    #column_list = ['startdate', 'time', 'scen_num', 'sample_num', 'run_num','reopening_multiplier_4']
+    # column_list = ['startdate', 'time', 'scen_num', 'sample_num', 'run_num','reopening_multiplier_4']
 
-    #'infected', 'recovered', 'infected_cumul',
-    outcome_channels = ['hosp_det_cumul', 'hosp_cumul',  'crit_cumul',
+    # 'infected', 'recovered', 'infected_cumul',
+    outcome_channels = ['hosp_det_cumul', 'hosp_cumul', 'crit_cumul',
                         'crit_det_cumul', 'death_det_cumul',
                         'deaths', 'crit_det', 'critical', 'hosp_det', 'hospitalized']
 
     for channel in outcome_channels:
         column_list.append(channel + "_" + str(ems_region))
 
+    fname = 'trajectoriesDat_region_' + str(ems_region) + '.csv'
+    if os.path.exists(os.path.join(input_sim_output_path, fname)) == False:
+        fname = 'trajectoriesDat.csv'
+
     ems_nr = ems_region.replace('EMS-', "")
-    df = load_sim_data(exp_name, region_suffix='_' + ems_region, fname='trajectoriesDat_region_'+ems_nr+'.csv', column_list=column_list,
-                       input_sim_output_path= input_sim_output_path)
+    df = load_sim_data(exp_name, region_suffix='_' + ems_region, fname=fname, column_list=column_list,
+                       input_sim_output_path=input_sim_output_path)
 
     df['ems'] = ems_region
     first_day = datetime.strptime(df['startdate'].unique()[0], '%Y-%m-%d')
@@ -137,13 +125,13 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
     df = df[(df['date'] >= plot_first_day) & (df['date'] <= plot_last_day)]
 
     df['ventilators'] = get_vents(df['crit_det'].values)
-    channels = ['new_deaths', 'new_detected_deaths', 'hospitalized','critical', 'hosp_det', 'crit_det']
+    channels = ['new_deaths', 'new_detected_deaths', 'hospitalized', 'critical', 'hosp_det', 'crit_det']
 
     adf = pd.DataFrame()
     for c, channel in enumerate(channels):
-        mdf = df.groupby(['date', 'ems','capacity_multiplier'])[channel].agg([np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
-        #mdf = df.groupby(['date', 'ems', 'reopening_multiplier_4'])[channel].agg([np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
-
+        mdf = df.groupby(['date', 'startdate', 'time', 'ems', 'capacity_multiplier'])[channel].agg(
+            [np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
+        # mdf = df.groupby(['date','startdate', 'time', 'ems', 'reopening_multiplier_4'])[channel].agg([np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
 
         mdf = mdf.rename(columns={'amin': '%s_min' % channel,
                                   'CI_50': '%s_median' % channel,
@@ -155,19 +143,18 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
         if adf.empty:
             adf = mdf
         else:
-            adf = pd.merge(left=adf, right=mdf, on=['date', 'ems','capacity_multiplier'])
-            #adf = pd.merge(left=adf, right=mdf, on=['date', 'ems', 'reopening_multiplier_4'])
+            adf = pd.merge(left=adf, right=mdf, on=['date', 'startdate', 'time', 'ems', 'capacity_multiplier'])
+            # adf = pd.merge(left=adf, right=mdf, on=['date','startdate', 'time', 'ems', 'reopening_multiplier_4'])
 
-
-    #if savePlot :
+    # if savePlot :
     #    plot_sim(adf, ems_region, channels)
 
     return adf
 
 
 def process_and_save(adf, ems_region, SAVE=True):
-    #col_names = civis_colnames(reverse=False)
-    #adf = adf.rename(columns=col_names)
+    # col_names = civis_colnames(reverse=False)
+    # adf = adf.rename(columns=col_names)
     adf['geography_modeled'] = adf['ems']
     adf.geography_modeled = adf.geography_modeled.str.replace('-', "")
     adf.geography_modeled = adf.geography_modeled.str.lower()
@@ -175,7 +162,6 @@ def process_and_save(adf, ems_region, SAVE=True):
 
     adf['scenario_name'] = scenarioName
     dfout = adf[adf['date'] > min(adf['date'])]
-
 
     if SAVE:
         filename = "trajectories_aggregated_" + ems_region + ".csv"
@@ -198,19 +184,25 @@ def rename_geography_and_save(df, filename):
 
 if __name__ == '__main__':
 
-    # args = parse_args()
-    #stem = args.stem
-    stem = '20201121_IL_regreopen100perc_1daysdelay_sm4'
+   # args = parse_args()
+    stem ="20201209_IL_mrtest_" # args.stem
+    Location =  "Local" #args.Location  #
+
+    datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location=Location)
+   # analysis_dir = os.path.join('/projects/p30781/covidproject/covid-chicago/_temp')
+    analysis_dir = os.path.join('C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/cms_sim/simulation_output/_overflow_simulations/20201209')
     exp_names = [x for x in os.listdir(os.path.join(analysis_dir)) if stem in x]
 
-    for exp_name in exp_names :
-        #exp_name = '20200919_IL_regreopen100perc_0daysdelay_sm7'
+    plot_first_day = pd.to_datetime('2020/3/1')
+    plot_last_day = pd.to_datetime('2021/6/1')
+
+    for exp_name in exp_names:
         print(exp_name)
         simdate = exp_name.split("_")[0]
         processStep = 'generate_outputs'
         trajectoriesName = 'trajectoriesDat.csv'
 
-        regions = [ 'EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10',
+        regions = ['EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10',
                    'EMS-11']
 
         exp_suffix = exp_name.split("_IL_")[-1]
@@ -223,7 +215,8 @@ if __name__ == '__main__':
             dfAll = pd.DataFrame()
             for reg in regions:
                 print(f'Start processing {reg}')
-                tdf = load_and_plot_data(reg, fname=trajectoriesName, savePlot=True,input_sim_output_path=sim_output_path)
+                tdf = load_and_plot_data(reg, fname=trajectoriesName, savePlot=True,
+                                         input_sim_output_path=sim_output_path)
                 adf = process_and_save(tdf, reg, SAVE=True)
                 dfAll = pd.concat([dfAll, adf])
                 del tdf
@@ -235,7 +228,7 @@ if __name__ == '__main__':
         ### Optional
         if processStep == 'combine_outputs':
 
-            for reg in [ 'EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10',
+            for reg in ['EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10',
                         'EMS-11']:
                 print("Start processing" + reg)
                 filename = "trajectories_aggregated_" + reg + ".csv"
@@ -244,3 +237,4 @@ if __name__ == '__main__':
 
             filename = f'trajectories_aggregated.csv'
             rename_geography_and_save(dfAll, filename=filename)
+
