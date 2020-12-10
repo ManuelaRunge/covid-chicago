@@ -36,8 +36,8 @@ f_getCustomTheme <- function(fontscl = 0) {
     axis.title.x = element_text(size = 12 + fontscl),
     axis.title.y = element_text(size = 12 + fontscl),
     axis.line.x = element_blank(),
-    axis.line.y = element_blank(),
-    panel.border = element_rect(colour = "black", fill = NA, size = 0.75)
+    axis.line.y = element_blank()
+    #panel.border = element_rect(colour = "black", fill = NA, size = 0.75)
   )
   return(customTheme)
 }
@@ -95,7 +95,7 @@ f_region_characteristics <- function(SAVE = FALSE) {
 
   if (!(file.exists(file.path(outdir, "region_characteristics.csv")))) {
     popDat <- load_population()
-    capacityDat <- load_new_capacity()
+    capacityDat <- load_new_capacity( filedate = '20200915')
 
     dat <- left_join(popDat, capacityDat, by = c("geography_name"))
     dat$icu_available <- as.numeric(dat$icu_available)
@@ -169,6 +169,27 @@ f_region_Rt_values <- function() {
 #### General helper functions
 #### --------------------------------------
 
+f_mergevars <- function(datX,datY){
+  mergevars <- colnames(datX)[colnames(datX) %in% colnames(datY)]
+  return(mergevars)
+}
+
+
+f_addVar <- function(datX,datY, allX=TRUE){
+  
+  nrowB <- dim(datX)[1]
+  mergevars <- f_mergevars(datX, datY)
+  
+  out <- dplyr::left_join(datX, datY, by = mergevars, all.x = TRUE)
+  
+  if(dim(out)[1] !=  nrowB)warning("Number of rows do not match")
+  message(paste0("Message: x nrow= ", dim(out)[1]," and y nrow=", dim(datX)[1], "\n Number of variables added: ",dim(out)[2]- dim(datX)[2] ))
+  
+  
+  return(out)
+  
+}
+
 f_merge_Rdata <- function(exp_dir, paramvars = NULL) {
   region_names <- c(paste0("EMS-", c(1:11)))
   outcomevars <- c(
@@ -228,6 +249,22 @@ f_combine_csv_from_list <- function(csv_file_dirs) {
     map_df(~ fread(.))
 
   return(tbl_fread)
+}
+
+
+f_combineDat <- function(sim_dir,exp_names,csvname){
+  
+  datList <- list()
+  for (exp_name in exp_names) {
+    exp_dir <- file.path(sim_dir, exp_name)
+    if (!file.exists(file.path(exp_dir, csvname))) next
+    datList[[length(datList) + 1]] <- fread(file.path(exp_dir, csvname)) %>% mutate(exp_name = exp_name)
+  }
+  
+  if(length(datList)==0)warning("List is empty")
+  dat <- datList %>% bind_rows()
+  
+  return(dat)
 }
 
 f_remove_legend <- function(p) {
@@ -996,8 +1033,8 @@ f_ICU_tolerance_plot <- function(dat = ICU_threshold_future, reg = NULL, riskTol
 
 f_get_probabilities <- function(exp_dir, SAVE = TRUE) {
   simdat <- load_sim_data(exp_dir)
-  simdat <- simdat %>% left_join(load_new_capacity(), by = "geography_name")
-  simdat <- simdat %>% left_join(load_population(), by = "geography_name")
+  simdat <- simdat %>% left_join(load_new_capacity(filedate = '20200915'), by = "geography_name")
+  simdat <- simdat %>% left_join(load_population(filedate = '20200915'), by = "geography_name")
 
   propDat_sim <- simdat %>%
     dplyr::filter(channel == "crit" & date > as.Date("2020-09-19") & date <= as.Date("2020-12-31")) %>%
