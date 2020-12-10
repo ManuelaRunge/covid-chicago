@@ -16,10 +16,10 @@ source("estimate_Rt/getRt_function.R")
 
 outdir <- file.path(project_path,"Plots + Graphs/Rt_plots")
 today <- gsub("-", "", Sys.Date())
-data_date = "200917"
+data_date = "200928"
 
 ### Load simulation outputs
-dat <- read.csv(file.path(data_path, "covid_IDPH/Cleaned Data/",data_date,"_jg_aggregated_covidregion.csv"))
+dat <- read.csv(file.path(data_path, "covid_IDPH/Cleaned Data/",paste0(data_date,"_jg_aggregated_covidregion.csv")))
 summary(as.Date(dat$date))
 
 dat <- dat %>%
@@ -124,13 +124,13 @@ scl <- mean(dat$cases) / mean(Rt_dat$rt_median)
 dat$date <- as.Date(dat$date)
 Rt_dat$date <- as.Date(Rt_dat$date)
 
-pplot <- ggplot(data = subset(Rt_dat, date >= "2020-04-01")) +
+pplot <- ggplot(data = subset(Rt_dat, date >= "2020-02-01")) +
   theme_bw() +
-  geom_bar(data = subset(dat, date >= "2020-04-01"), aes(x = date, y = cases / scl), fill = "grey", stat = "identity", alpha = 1) +
+  geom_bar(data = subset(dat, date >= "2020-02-01"), aes(x = date, y = cases / scl), fill = "grey", stat = "identity", alpha = 1) +
   geom_line(aes(x = date, y = rt_median), col = "deepskyblue4", size = 1) +
   geom_ribbon(aes(x = date, ymin = rt_lower, ymax = rt_upper), fill = "deepskyblue4", alpha = 0.5) +
   facet_wrap(~covid_region, scales = "free") +
-  geom_hline(yintercept = 1.3, linetype = "dashed", col = "red") +
+  geom_hline(yintercept = 1, linetype = "dashed", col = "red") +
   scale_y_continuous(expression(italic(R[t])), sec.axis = sec_axis(~ . * scl, name = "Cases")) +
   labs(fill = "", color = "", x = "", y = expression(italic(R[t])), caption = "method = uncertain_si") +
   scale_x_date(breaks = "30 days", date_labels = "%d\n%b") +

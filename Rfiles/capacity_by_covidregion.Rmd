@@ -1,0 +1,91 @@
+---
+title: "capacity_by_covidregion"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library("tidyverse")
+library("cowplot")
+library("scales")
+library("lubridate")
+library(RColorBrewer)
+getPalette = colorRampPalette(brewer.pal(8, "Dark2"))(12)
+theme_set(theme_cowplot())
+
+source("load_paths.R")
+plot_path <- file.path(project_path,"Plots + Graphs","capacity_by_covidregion")
+
+```
+
+
+## Capacity
+
+
+
+```{r loadDat}
+dat <- read.csv(file.path(data_path, "/covid_IDPH/Corona virus reports/capacity_by_covid_region.csv")) %>%
+        mutate(date=as.Date(date))%>%
+       filter(geography_level=="covid region")
+
+dat$geography_name <- factor(dat$geography_name, levels=c(1:11), labels=c(1:11))
+ head(dat)
+```
+
+
+## Including Plots
+```{r stacked_timeline_plots_simple}
+table(dat$geography_level)
+
+hosp_countVars <- colnames(dat)
+hosp_countVars <- hosp_countVars[which(!(hosp_countVars %in% c('date', 'geography_level','geography_name')))]
+
+days_dates <- seq(as.Date(min(dat$date)) , as.Date(max(dat$date)), "days")
+weekend_dates <- days_dates[which(weekdays(days_dates) %in% c("Saturday","Sunday"))]
+saturday_dates <- days_dates[which(weekdays(days_dates) %in% c("Saturday"))]
+sunday_dates <- days_dates[which(weekdays(days_dates) %in% c("Sunday"))]
+weekendDat <- cbind('saturday'=as.character(saturday_dates), 'sunday'=as.character(sunday_dates)) %>% as.data.frame()
+weekendDat$saturday <- as.Date(weekendDat$saturday)
+weekendDat$sunday <- as.Date(weekendDat$sunday)
+
+
+pplots <- list()
+for(var in hosp_countVars){
+dat <- as.data.frame(dat)
+dat$var <- dat[,colnames(dat)==var]
+
+pplot <- ggplot(data=dat)+
+  background_grid(major = c("y"))+
+ # geom_rect(data = weekendDat, aes(xmin = saturday, xmax = sunday, ymin = 0, ymax = Inf), alpha = 0.2) +
+  geom_vline(xintercept = sunday_dates, col="grey", size=0.5)+
+  geom_area(aes(x=date, y=var, fill=geography_name)) +
+    labs(y=var, x="", fill="Covid region")+
+  scale_fill_manual(values =getPalette)+
+  scale_y_continuous(expand=c(0,0), labels=comma) +
+  scale_x_date(expand=c(0,0), date_breaks = "30 days", date_labels = "%d\n%b")+
+  geom_hline(yintercept = Inf)+
+  geom_vline(xintercept = Inf)
+
+SAVE=FALSE
+if(SAVE){
+   ggsave(paste0(var, "_region_plot_stacked.png"),
+           plot = pplot,
+           path = file.path(plot_path), width = 10, height = 6, device = "png"
+    )
+   
+   pplots[[length(pplots)+1]] <- pplot
+   rm(pplot)
+}
+}
+
+printPLots=TRUE
+if(printPLots)pplots
+
+```
+
+

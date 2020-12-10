@@ -18,7 +18,10 @@ customThemeNoFacet <- theme(
   axis.title.x = element_text(size = 18),
   axis.text.x = element_text(size = 16),
   axis.title.y = element_text(size = 18),
-  axis.text.y = element_text(size = 16)
+  axis.text.y = element_text(size = 16),
+  axis.line.x = element_blank(),
+  axis.line.y = element_blank(),
+  panel.border = element_rect(colour = "black", fill=NA, size=0.75)
 )
 
 customThemeNoFacet <- theme(
@@ -33,7 +36,10 @@ customThemeNoFacet <- theme(
   axis.title.x = element_text(size = 18),
   axis.text.x = element_text(size = 16),
   axis.title.y = element_text(size = 18),
-  axis.text.y = element_text(size = 16)
+  axis.text.y = element_text(size = 16),
+  axis.line.x = element_blank(),
+  axis.line.y = element_blank(),
+  panel.border = element_rect(colour = "black", fill=NA, size=0.75)
 )
 
 
@@ -212,6 +218,8 @@ load_new_capacity <- function(selected_ems = NULL, filedate = NULL) {
 
   fname <- paste0("capacity_weekday_average_", filedate, ".csv")
   df <- read.csv(file.path(capacity_dir, fname))
+  colnames(df)[colnames(df)=='avg_resource_available_prev2weeks'] <- 'avg_resource_available'
+  
 
   df <- df %>%
     dplyr::filter(overflow_threshold_percent == 1) %>%

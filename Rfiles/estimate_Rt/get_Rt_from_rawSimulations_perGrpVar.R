@@ -7,8 +7,9 @@
 # install_github("annecori/EpiEstim", force = TRUE)
 library(tidyverse)
 library(EpiEstim)
+library(data.table)
 
-runinBatchMode = TRUE
+runinBatchMode = FALSE
 
 
 if(runinBatchMode){
@@ -19,19 +20,20 @@ if(runinBatchMode){
   task_id <- Sys.getenv("SLURM_ARRAY_TASK_ID")
   print(task_id)
   ems <- task_id
+  
+  setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
 } else {
   ems <- "11"
 }
 
 print(ems)
 
-setwd("/home/mrm9534/gitrepos/covid-chicago/Rfiles/")
 
 source("load_paths.R")
 source("processing_helpers.R")
 source("estimate_Rt/getRt_function.R")
 
-exp_name = "20200803_IL_baseline_reopeningScenarios"
+exp_name = "20200917_IL_gradual_reopening"
 exp_dir <- file.path(simulation_output, exp_name)
 
 Rt_dir <- file.path(simulation_output, exp_name, "estimatedRt")
@@ -39,11 +41,16 @@ if (!dir.exists(Rt_dir)) dir.create(Rt_dir)
 
 
 ### Load simulation outputs
-tempdat <- read.csv(file.path(exp_dir, "trajectoriesDat.csv")) 
+trajectoriesDat <- fread(file.path(exp_dir, "trajectoriesDat.csv"), 
+                 select = c('time','startdate', 'scen_num','reopening_multiplier_4',
+                            names(fread(file.path(exp_dir, "trajectoriesDat.csv"), nrow = 0L))[
+                              grep("infected_cumul_*", names(fread(file.path(exp_dir, "trajectoriesDat.csv"), nrow = 0L)))]
+                            )
+                 ) 
 
-
-colnames(tempdat)[colnames(tempdat)== paste0( "infected_cumul_EMS.",ems)]  = "infected_cumul"
-colnames(tempdat)[colnames(tempdat)== paste0( "infected_cumul_EMS-",ems)]  = "infected_cumul"
+for(ems in c('All',paste0("EMS-",c(1:11)))){
+tempdat <- trajectoriesDat
+colnames(tempdat)[colnames(tempdat)== paste0( "infected_cumul_",ems)]  = "infected_cumul"
 colnames(tempdat)
 
 tempdat <- tempdat %>% 
@@ -94,7 +101,7 @@ for (scen in unique(tempdat$reopening_multiplier_4)) {
   rm(Rt_tempdat, SI_tempdat)
 }
 
-save(Rt_tempdat_All, file=file.path(Rt_dir, paste0(ems,"_Rt_aggregated_scen_num.Rdata")))
+save(Rt_tempdat_All, file=file.path(Rt_dir, paste0(ems,"_estimated_Rt.Rdata")))
 
-
+}
 

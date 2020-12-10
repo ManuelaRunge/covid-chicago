@@ -1,111 +1,81 @@
-## ============================================================
-### Compare Rt estimates from data and from simulations
-## ============================================================
 
+## ============================================================
+## Compare Rt estimates between simulated experiments
+## ============================================================
 
 library(tidyverse)
 library(cowplot)
 
+
+simdate <- gsub("-", "", Sys.Date())
+plot_start_date = as.Date("2020-08-01")
+plot_end_date = as.Date("2020-12-30")
+
 source("load_paths.R")
 source("processing_helpers.R")
-outdir <- file.path("estimate_Rt")
+source("estimate_Rt/getRt_function.R")
 
-simdate = "20200610"
+exp_name1 = "20200831_IL_regreopen100perc_7daysdelay_sm6"
+exp_name2 = "20200831_IL_regreopen50perc_7daysdelay_sm6"
+
+##-------------------------------------------
+exp_name =exp_name1
+fname = "_estimated_Rt"
+Rt_dir <- file.path(simulation_output, exp_name,  "estimatedRt")
+load(file.path(Rt_dir, paste0("combined",fname, ".Rdata")))
+Rt_dat100 =Rt_dat%>% mutate(reopen="hard", exp="100perc")
+
+rm(Rt_dat)
+exp_name =exp_name2
+fname = "_estimated_Rt"
+Rt_dir <- file.path(simulation_output, exp_name,  "estimatedRt")
+load(file.path(Rt_dir, paste0("combined",fname, ".Rdata")))
+Rt_dat50 =Rt_dat%>% mutate(reopen="soft", exp="50perc")
+
+Rt_dat= rbind(Rt_dat100, Rt_dat50)
+
+### Combine list to dataframe
+Rt_dat <- Rt_dat %>%
+  mutate(time = t_end) %>%
+  rename(meanRt = `Mean(R)`,
+         medianRt = `Median(R)`,
+         q2.5Rt = `Quantile.0.025(R)`,
+         q97.5Rt = `Quantile.0.975(R)`,
+         q25Rt = `Quantile.0.25(R)`,
+         q75Rt = `Quantile.0.75(R)`)%>%
+  dplyr::mutate(time=time+120) %>%
+  dplyr::mutate(Date = as.Date("2020-02-13") + time) %>%
+  filter(Date <= "2020-12-14") 
 
 
-Rtdat <- read.csv(file.path(outdir, "/nu_il_fromdata_estimated_Rt.csv")) %>% mutate(source = "data")
-Rtsim <- read.csv(file.path(paste0(outdir,"/nu_il_baseline_estimated_Rt_",simdate,".csv"))) %>%
-  mutate(source = "simulations") %>%
-  mutate(geography_modeled = gsub("ems", "EMS_", geography_modeled)) %>%
-  filter(
-    Date <= "2020-08-01",
-    geography_modeled %in% paste0("EMS_", c(1:11))
-  )
+Rt_dat$region <- factor(Rt_dat$region, levels =c(1:11), labels = c(1:11))
 
-Rtdat$Date <- as.Date(Rtdat$Date)
-Rtsim$Date <- as.Date(Rtsim$Date)
-
-Rt_comb <- as.data.frame(rbind(Rtdat, Rtsim))
-tapply(Rt_comb$Date, Rt_comb$source, summary)
-
-
-Rt_comb$geography_modeled <- factor(Rt_comb$geography_modeled, levels = paste0("EMS_", c(1:11)), labels = paste0("EMS_", c(1:11)))
-
-tapply(subset(Rt_comb, Date >= as.Date("2020-03-12"))$Median.of.covid.19.Rt, subset(Rt_comb, Date >= as.Date("2020-03-12"))$source, summary)
-
-pplot <- ggplot(data = subset(Rt_comb, Date >= as.Date("2020-03-01"))) +
+pplot <- Rt_dat %>%
+  filter(Date >= plot_start_date & Date <= plot_end_date) %>%
+  #filter(scen_num %in% c(798)) %>%
+  ggplot() +
   theme_cowplot() +
-  geom_line(aes(x = Date, y = Median.of.covid.19.Rt, group = source), col = "grey", size = 0.7, alpha = 0.7) +
-  geom_ribbon(aes(x = Date, ymin = Lower.error.bound.of.covid.19.Rt, ymax = Upper.error.bound.of.covid.19.Rt, fill = source), alpha = 0.5) +
-  geom_smooth(aes(x = Date, y = Median.of.covid.19.Rt, col = source), size = 1.3, se = FALSE, span = 0.3) +
-  facet_wrap(~geography_modeled, scales = "free_y") +
-  customThemeNoFacet +
-  labs(
-    title = "Estimated Rt \n",
-    y = "Estimated Rt",
-    subtitle = "mean after shelter in place ~ 0.9740  \n Using EpiEstim and an uncertain serial interval distribution (mean 4.6, min 1, max 6.47 )",
-    caption = "using 2 week sliding window for Rt estimation"
-  ) +
-  geom_hline(yintercept = 1, linetype = "dashed", col = "darkred", size = 1) +
-  geom_vline(xintercept = c(as.Date("2020-03-12"), as.Date("2020-06-01")), linetype = "solid") +
+  geom_rect(xmin = -Inf, xmax = as.Date(Sys.Date()), ymin = -Inf, ymax = Inf, fill = "lightgrey", alpha = 0.02) +
+  geom_ribbon(aes(x = Date, ymin = q2.5Rt, ymax = q97.5Rt, fill=reopen),  alpha = 0.3) +
+  geom_ribbon(aes(x = Date, ymin = q25Rt, ymax = q75Rt, fill=reopen),  alpha = 0.4) +
+  geom_line(aes(x = Date, y = medianRt, col=reopen)) +
+  facet_wrap(~region) +
+  # background_grid() +
+  # geom_hline(yintercept = seq(0.6, 1.4, 0.2), col="grey", size=0.7)+
+  geom_hline(yintercept = 1) +
   geom_hline(yintercept = c(-Inf, Inf)) +
   geom_vline(xintercept = c(-Inf, Inf)) +
-  scale_color_manual(values = c("deepskyblue4", "darkorange")) +
-  scale_fill_manual(values = c("deepskyblue4", "darkorange"))
-print(pplot)
+  customThemeNoFacet+
+  labs(x="",y=expression(italic(R[t])))+
+  scale_color_manual(values=c("#084594","red"))+
+  scale_fill_manual(values=c("#084594","red"))
 
-ggsave(paste0("Rt_comparison_uncertain_si.png"),
-  plot = pplot, width = 14, height = 8, dpi = 300, device = "png"
+
+ggsave(paste0("estimatedRt_overtime.png"),
+       plot = pplot, path = file.path(simulation_output, exp_name, "estimatedRt"), width = 12, height = 6, device = "png"
 )
-
-
-pplot <- ggplot(data = subset(Rt_comb, source == "simulations" & Date >= as.Date("2020-03-01"))) +
-  theme_cowplot() +
-  geom_line(aes(x = Date, y = Median.of.covid.19.Rt, group = source), col = "grey", size = 0.7, alpha = 0.7) +
-  geom_ribbon(aes(x = Date, ymin = Lower.error.bound.of.covid.19.Rt, ymax = Upper.error.bound.of.covid.19.Rt, fill = source), alpha = 0.5) +
-  geom_smooth(aes(x = Date, y = Median.of.covid.19.Rt, col = source), size = 1.3, se = FALSE, span = 0.3) +
-  facet_wrap(~geography_modeled, scales = "free_y") +
-  customThemeNoFacet +
-  labs(
-    title = "Estimated Rt \n",
-    y = "Estimated Rt",
-    subtitle = "mean after shelter in place ~ 0.9740  \n Using EpiEstim and an uncertain serial interval distribution (mean 4.6, min 1, max 6.47 )",
-    caption = "using 2 week sliding window for Rt estimation"
-  ) +
-  geom_hline(yintercept = 1, linetype = "dashed", col = "darkred", size = 1) +
-  geom_vline(xintercept = c(as.Date("2020-03-12"), as.Date("2020-06-01")), linetype = "solid") +
-  geom_hline(yintercept = c(-Inf, Inf)) +
-  geom_vline(xintercept = c(-Inf, Inf)) +
-  scale_color_manual(values = c("darkorange")) +
-  scale_fill_manual(values = c("darkorange"))
-print(pplot)
-
-ggsave(paste0("Rt_simulations_uncertain_si.png"),
-  plot = pplot, width = 14, height = 8, dpi = 300, device = "png"
+ggsave(paste0("estimatedRt_overtime.pdf"),
+       plot = pplot, path = file.path(simulation_output, exp_name, "estimatedRt"), width = 12, height = 6, device = "pdf"
 )
+rm(pplot)
 
-
-pplot <- ggplot(data = subset(Rt_comb, source != "simulations" & Date >= as.Date("2020-03-01"))) +
-  theme_cowplot() +
-  geom_line(aes(x = Date, y = Median.of.covid.19.Rt, group = source), col = "grey", size = 0.7, alpha = 0.7) +
-  geom_ribbon(aes(x = Date, ymin = Lower.error.bound.of.covid.19.Rt, ymax = Upper.error.bound.of.covid.19.Rt, fill = source), alpha = 0.5) +
-  geom_smooth(aes(x = Date, y = Median.of.covid.19.Rt, col = source), size = 1.3, se = FALSE, span = 0.3) +
-  facet_wrap(~geography_modeled, scales = "free_y") +
-  customThemeNoFacet +
-  labs(
-    title = "Estimated Rt \n",
-    y = "Estimated Rt",
-    subtitle = "mean after shelter in place ~ 0.9740  \n Using EpiEstim and an uncertain serial interval distribution (mean 4.6, min 1, max 6.47 )",
-    caption = "using 2 week sliding window for Rt estimation"
-  ) +
-  geom_hline(yintercept = 1, linetype = "dashed", col = "darkred", size = 1) +
-  geom_vline(xintercept = c(as.Date("2020-03-12"), as.Date("2020-06-01")), linetype = "solid") +
-  geom_hline(yintercept = c(-Inf, Inf)) +
-  geom_vline(xintercept = c(-Inf, Inf)) +
-  scale_color_manual(values = c("deepskyblue4")) +
-  scale_fill_manual(values = c("deepskyblue4"))
-print(pplot)
-
-ggsave(paste0("Rt_data_uncertain_si.png"),
-  plot = pplot, width = 14, height = 8, dpi = 300, device = "png"
-)

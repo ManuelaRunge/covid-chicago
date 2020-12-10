@@ -1,0 +1,79 @@
+## =====================================================================================
+# R script that analyses contact tracing simulations
+# Simulations are stored by date under the "contact_tracing" folder in simulation_output
+# Contact tracing simulations are specified by having varying detection and isolation parameters for As+P and/or Sym
+# Simulations are run with fixed sample parameters, only varying the contact tracing specific parameters
+## =====================================================================================
+
+
+## Load packages
+Location="LOCAL"
+LOCAL=TRUE
+packages_needed <- c( 'tidyverse','reshape', 'cowplot', 'scales', 'readxl', 'viridis', 'stringr', 'broom') 
+lapply(packages_needed, require, character.only = TRUE) 
+
+## Load directories and custom objects and functions
+source("load_paths.R")
+source("setup.R")
+source("processing_helpers.R")
+source("ct_analysis/helper_functions_CT.R")
+
+simdate <- "20200902" #"20200827" #
+
+exp_names <- list.dirs(file.path(ct_dir, simdate), recursive = FALSE, full.names = FALSE)
+exp_names <- exp_names[grep("contact",exp_names)]
+
+### Define which analysis scripts to run
+describeDat <- FALSE
+heatmapCritical <- TRUE
+
+estimateRt <- FALSE 
+heatmapRt <- FALSE 
+
+tresholdsAll <- FALSE
+generateMap <- FALSE
+
+### Loop through each EMS or the operational 'super-regions' 
+geography <- "Region"  # 'EMS'
+
+## When plotting heatmaps, should the legend show predictions per 100'000 population ? 
+scalePop <- TRUE
+
+## Run analysis scripts for each experiment in exp_names (must have same contact tracing parameters!)
+for (exp_name in exp_names) {
+  # exp_name <- exp_names[2]
+  # exp_name ="20200731_IL_reopen_contactTracing"
+  print(exp_name)
+   
+  ## Load trajectories dat and define parameters for analysis
+  source('ct_analysis/loadData_defineParam.R')
+
+  ### Run analysis scripts for selected outcome
+  if (describeDat) source(file.path("ct_analysis/describeTrajectoriesDat.R"))
+  
+  if (heatmapCritical){
+    source(file.path("ct_analysis/heatmap_loess_contactTracing.R"))  
+    # source(file.path("ct_analysis/combine_thresholds_dat.R"))
+  }
+  
+  if (estimateRt){ 
+     #source(file.path("ct_analysis/get_Rt_from_contactTracingSimulations.R"))
+    # source(file.path("ct_analysis/combine_Rt_and_plot.R"))
+    source(file.path("ct_analysis/heatmap_loess_contactTracing_Rt.R"))
+  }
+  
+  
+
+  
+}
+
+### Generate pointrange plots with minimum detection level aggregated for Illinois
+### Running either with Rt or critical (and includes plot comparing both )
+summary1 <- FALSE
+if (summary1){
+  selected_outcome <- "Rt" # critical
+  compareOutcomes <- FALSE
+  generateMap=TRUE
+  source(file.path("ct_analysis/combined_exp_summary_plot_IL.R"))
+}
+

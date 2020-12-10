@@ -1,18 +1,18 @@
 ## Load packages
-packages_needed <- c("tidyverse", "lubridate", "cowplot", "gridGraphics", "readxl")
+packages_needed <- c("tidyverse", "lubridate", "cowplot", "gridGraphics","scales", "readxl")
 lapply(packages_needed, require, character.only = TRUE)
 
 ## Load directories and custom objects and functions
 source("load_paths.R")
 source("processing_helpers.R")
 
-LL_date <- "200727"
+LL_date <- "200806"
 
 plot_dir <- file.path(project_path, "Plots + Graphs")
 data_path <- file.path(data_path, "covid_IDPH") # covid_IDPH
 shp_path <- file.path(data_path, "shapefiles")
 plot_dir <- file.path(plot_dir, "_trend_tracking")
-plot_dir_date <- file.path(plot_dir, "_trend_tracking", LL_date)
+plot_dir_date <- file.path(plot_dir,  LL_date)
 if (!dir.exists(plot_dir_date)) dir.create(plot_dir_date)
 
 customTheme <- theme(
@@ -70,7 +70,7 @@ dfAggr <- df %>%
   )
 
 
-dfAggr$nweek <- cut(dfAggr$nday, breaks = seq(0, max(dfAggr$nday), 7), labels = (c(1:19)))
+dfAggr$nweek <- cut(dfAggr$nday, breaks = seq(0, max(dfAggr$nday), 7), labels = (c(1:20)))
 dfAggr$new_restor = factor(dfAggr$new_restore_region, levels=c(1:11), labels=c(1:11))
 dfAggr$new_restor_label = factor(dfAggr$new_restor, levels=c(1:11), labels=paste0("covid region ", c(1:11)))
 
@@ -112,7 +112,7 @@ weekendDat <- cbind(saturdays, sundays)
 
 
 #### Create map
-dfAggr2
+#dfAggr2
 
 
 
@@ -123,10 +123,11 @@ for (reg in unique(dfAggr2$restore_region)) {
 
   pplot <- ggplot(data = subset(dat1, update_date >= "2020-06-01")) +
     theme_minimal() +
-    geom_rect(data = subset(weekendDat, saturday >= "2020-06-01"), aes(xmin = saturday, xmax = sunday, ymin = 0, ymax = Inf), alpha = 0.2) +
-    geom_line(aes(x = update_date, y = test_per1000, col = as.factor(County)), size = 0.7, col = "deepskyblue3") +
-    geom_point(aes(x = update_date, y = test_per1000, col = as.factor(County)), size = 1.7, col = "deepskyblue3") +
+    geom_rect(data = subset(weekendDat, saturday >= "2020-06-01"), aes(xmin = saturday, xmax = sunday, ymin = 0, ymax = Inf), alpha = 0.1) +
+    geom_line(aes(x = update_date, y = test_per1000, col = as.factor(County)), size = 0.7,  alpha = 0.7, col = "deepskyblue3") +
+    geom_point(aes(x = update_date, y = test_per1000, col = as.factor(County)), size = 1.7, alpha = 0.7, col = "deepskyblue3") +
     geom_area(aes(x = update_date, y = test_per1000, fill = as.factor(County)), fill = "deepskyblue3", alpha = 0.3) +
+    geom_smooth(aes(x = update_date, y = test_per1000, group=month), size = 1.3, col = "orange", se=FALSE, method = "lm") +
     geom_hline(yintercept = 1) +
     scale_fill_brewer(palette = "RdYlBu") +
     scale_color_brewer(palette = "RdYlBu") +
@@ -157,6 +158,7 @@ for (reg in unique(dfAggr2$restore_region)) {
     theme_minimal() +
     geom_line(aes(x = update_date, y = test_per1000, col = as.factor(County)), size = 1, col = "deepskyblue3") +
     geom_area(aes(x = update_date, y = test_per1000, fill = as.factor(County)), fill = "deepskyblue3", alpha = 0.3) +
+    geom_smooth(aes(x = update_date, y = test_per1000, group=month), size = 1.3, col = "orange", se=FALSE, method = "lm") +
     geom_hline(yintercept = 1) +
     scale_fill_brewer(palette = "RdYlBu") +
     scale_color_brewer(palette = "RdYlBu") +
@@ -209,11 +211,12 @@ for (i in c(1:length(regions))) {
     ) %>%
     filter(update_date >= "2020-06-01") %>%
     ggplot() +
-    theme_cowplot() +
+    theme_minimal() +
     facet_wrap(~restore_region, scales = "free", nrow = 1) +
     geom_line(aes(x = update_date, y = test_per1000), size = 1.3, col = "deepskyblue3") +
     geom_point(aes(x = update_date, y = test_per1000), size = 2.3, fill = "deepskyblue3", shape = 21, col = "white") +
     geom_area(aes(x = update_date, y = test_per1000), fill = "deepskyblue3", alpha = 0.3) +
+   # geom_smooth(aes(x = update_date, y = test_per1000, group=month), size = 1.3, col = "orange", se=FALSE, method = "lm") +
     geom_hline(yintercept = 1, linetype = "dashed") +
     scale_fill_brewer(palette = "RdYlBu") +
     scale_color_brewer(palette = "RdYlBu") +
@@ -241,11 +244,12 @@ for (i in c(1:length(regions))) {
     ) %>%
     filter(update_date >= "2020-06-01") %>%
     ggplot() +
-    theme_cowplot() +
+    theme_minimal() +
     geom_line(aes(x = update_date, y = test_per1000), size = 1.3, col = "deepskyblue3") +
     geom_point(aes(x = update_date, y = test_per1000), size = 2.3, fill = "deepskyblue3", shape = 21, col = "white") +
     geom_area(aes(x = update_date, y = test_per1000), fill = "deepskyblue3", alpha = 0.3) +
     geom_hline(yintercept = 1, linetype = "dashed") +
+   # geom_smooth(aes(x = update_date, y = test_per1000, group=month), size = 1.3, col = "orange", se=FALSE, method = "lm") +
     scale_fill_brewer(palette = "RdYlBu") +
     scale_color_brewer(palette = "RdYlBu") +
     facet_wrap(~new_restor_label, scales = "free", nrow = 1) +
@@ -310,11 +314,12 @@ p3sub1 <- dfAggr %>%
   ) %>%
   filter(update_date >= "2020-06-01") %>%
   ggplot() +
-  theme_cowplot() +
+  theme_minimal() +
   geom_line(aes(x = update_date, y = test_per1000), size = 1.3, col = "deepskyblue3") +
   geom_point(aes(x = update_date, y = test_per1000), size = 2.3, fill = "deepskyblue3", shape = 21, col = "white") +
   geom_area(aes(x = update_date, y = test_per1000), fill = "deepskyblue3", alpha = 0.3) +
   geom_hline(yintercept = 1, linetype = "dashed") +
+ # geom_smooth(aes(x = update_date, y = test_per1000, group=month), size = 1.3, col = "orange", se=FALSE, method = "lm") +
   scale_fill_brewer(palette = "RdYlBu") +
   scale_color_brewer(palette = "RdYlBu") +
   facet_wrap(~new_restor_label, scales = "free", nrow = 1) +
@@ -337,10 +342,11 @@ p3sub2 <- dfAggr %>%
   ) %>%
   filter(update_date >= "2020-06-01") %>%
   ggplot() +
-  theme_cowplot() +
+  theme_minimal() +
   geom_line(aes(x = update_date, y = test_per1000), size = 1.3, col = "deepskyblue3") +
   geom_point(aes(x = update_date, y = test_per1000), size = 2.3, fill = "deepskyblue3", shape = 21, col = "white") +
   geom_area(aes(x = update_date, y = test_per1000), fill = "deepskyblue3", alpha = 0.3) +
+  #geom_smooth(aes(x = update_date, y = test_per1000, group=month), size = 1.3, col = "orange", se=FALSE, method = "lm") +
   geom_hline(yintercept = 1, linetype = "dashed") +
   scale_fill_brewer(palette = "RdYlBu") +
   scale_color_brewer(palette = "RdYlBu") +
@@ -377,7 +383,7 @@ ggsave(paste0("Regions_7dayAvr_testingRates_Champaign_", LL_date, "LLpublic.pdf"
 
 
 
-plotRestoreCovidSeparate=FALSE
+plotRestoreCovidSeparate=TRUE
 if(plotRestoreCovidSeparate){
   ## ================================================
   ## PER RESTORE REGION
@@ -540,3 +546,4 @@ if(plotRestoreCovidSeparate){
   )
   
 }
+
