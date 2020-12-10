@@ -335,15 +335,15 @@ sampled_parameters:
       function_kwargs:
         - {'low': 0.020, 'high': 0.020}
         - {'low': 0.09, 'high': 0.09}
-        - {'low': 0.21, 'high': 0.21}
+        - {'low': 0.23, 'high': 0.23}
         - {'low': 0.09, 'high': 0.09}
         - {'low': 0.09, 'high': 0.09}
         - {'low': 0.12, 'high': 0.12}
-        - {'low': 0.04, 'high': 0.04}
-        - {'low': 0.01, 'high': 0.01}
-        - {'low': 0.023, 'high': 0.023}
-        - {'low': 0.04, 'high': 0.04}
         - {'low': 0.06, 'high': 0.06}
+        - {'low': 0.03, 'high': 0.03}
+        - {'low': 0.23, 'high': 0.23}
+        - {'low': 0.055, 'high': 0.055}
+        - {'low': 0.075, 'high': 0.075}
   d_Sym_ct1:
     IL:
       expand_by_age: True

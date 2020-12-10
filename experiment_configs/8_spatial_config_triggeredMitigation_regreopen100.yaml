@@ -335,12 +335,12 @@ sampled_parameters:
       function_kwargs:
         - {'low': 0.35, 'high': 0.35}
         - {'low': 0.25, 'high': 0.25}
-        - {'low': 0.37, 'high': 0.37}
-        - {'low': 0.34, 'high': 0.34}
+        - {'low': 0.40, 'high': 0.40}
+        - {'low': 0.35, 'high': 0.35}
         - {'low': 0.34, 'high': 0.34}
         - {'low': 0.71, 'high': 0.71}
-        - {'low': 0.12, 'high': 0.12}
-        - {'low': 0.075, 'high': 0.075}
+        - {'low': 0.13, 'high': 0.13}
+        - {'low': 0.08, 'high': 0.08}
         - {'low': 0.50, 'high': 0.50}
         - {'low': 0.28, 'high': 0.28}
         - {'low': 0.12, 'high': 0.12}
