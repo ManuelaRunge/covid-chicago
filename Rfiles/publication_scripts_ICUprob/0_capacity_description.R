@@ -72,7 +72,7 @@ pplot <- ggplot(data = capacityDat) +
     y = icu_availforcovid * 0.8
   ), vjust = 0.5, col = "dodgerblue4", label = "ICU beds available\nfor covid") +
   geom_text(data = subset(capacityDat, date == as.Date("2020-12-01")), aes(
-    x = as.Date("2020-11-25"),
+    x = as.Date("2020-11-10"),
     y = icu_covid * 1.5
   ), vjust = 0.5, col = "black", label = "ICU beds used\nfor covid") +
   # geom_vline(xintercept = as.Date("2020-09-15"), linetype="dashed")+
@@ -87,7 +87,9 @@ pplot <- ggplot(data = capacityDat) +
   )
 
 
-pplot_wide <- pplot +   facet_wrap(~geography_name, scales = "free") 
+pplot_wide <- pplot +   facet_wrap(~geography_name, scales = "free") +
+  theme(panel.spacing = unit(1, "lines"))+
+  theme(plot.margin = unit(c(1,1,1,1), "cm"))
 
 ggsave(paste0("capacity_timeline_reg1-4-11_wide.pdf"),
   plot = pplot_wide,
@@ -99,7 +101,9 @@ ggsave(paste0("capacity_timeline_reg1-4-11_wide.png"),
   path = file.path(outdir), width = 16, height = 6, device = "png"
 )
 
-pplot_long <- pplot +   facet_wrap(~geography_name, scales = "free", ncol=1) 
+pplot_long <- pplot +   facet_wrap(~geography_name, scales = "free", ncol=1) +
+  theme(panel.spacing = unit(1, "lines"))+
+  theme(plot.margin = unit(c(1,1,1,1), "cm"))
 
 ggsave(paste0("capacity_timeline_reg1-4-11_long.pdf"),
        plot = pplot_long,
