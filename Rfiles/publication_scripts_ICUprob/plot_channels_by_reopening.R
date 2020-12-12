@@ -36,66 +36,69 @@ outcomevars2 <- c(
 
 paramvars <- c("reopening_multiplier_4")
 keepvars <- c("time", "startdate", "scen_num", paramvars, outcomevars)
-
-if(!file.exists(file.path(exp_dir, "trajectoriesDat.csv"))){
-  count=0
-  for(i in c(1:11)){
-    count=count+1
-    load(file.path(exp_dir,paste0("trajectoriesDat_region_",i,".RData")))
-    if(count ==1)trajectoriesDat <- subdat
-    if(count >1)trajectoriesDat <- left_join(trajectoriesDat, subdat, by=c('time',  'startdate' ,'scen_num','sample_num', 'reopening_multiplier_4'))
-    rm(subdat)
-    fwrite(trajectoriesDat, file=file.path(exp_dir, "trajectoriesDat.csv"), quote = FALSE)
-  }
-}
-
-trajectoriesDat <- fread(file.path(exp_dir, "trajectoriesDat.csv"), select = c(keepvars))
-
-
-if (!(paramvars %in% colnames(trajectoriesDat))) {
-  samplesDat <- read_csv(file.path(exp_dir, "sampled_parameters.csv"))
-  mergevars <- colnames(samplesDat)[colnames(samplesDat) %in% colnames(trajectoriesDat)]
-  trajectoriesDat <- left_join(trajectoriesDat, samplesDat, by = mergevars)
-}
-
-#### Summarize only crit_det and hosp_det, and after that pivot longer - too slow otherwise
-keepvars <- c("time", "startdate",  paramvars, outcomevars)
-paramvalues <- trajectoriesDat %>%
-  dplyr::select(keepvars) %>%
-  filter(time > 120) %>%
-  dplyr::mutate(date = as.Date(startdate) + time) %>%
-  pivot_longer(cols = -c("time", "date", "startdate", "reopening_multiplier_4"), names_to = "region") %>%
-  separate(region, into = c("outcome", "region"), sep = "_EMS-") %>%
-  mutate(
-    exp_name = exp_name,
-  ) %>%
-  dplyr::group_by(date, region, exp_name, reopening_multiplier_4, outcome) %>%
-  dplyr::summarize(
-    median.value = median(value, na.rm = TRUE),
-    min.value = min(value, na.rm = TRUE),
-    max.value = max(value, na.rm = TRUE),
-    q25.value = quantile(value, probs = 0.25, na.rm = TRUE),
-    q75.value = quantile(value, probs = 0.75, na.rm = TRUE),
-    q2.5.value = quantile(value, probs = 0.025, na.rm = TRUE),
-    q97.5.value = quantile(value, probs = 0.975, na.rm = TRUE)
-  )
-
-table(paramvalues$outcome)
-
 capacityDat <- load_new_capacity(filedate = "20200901") %>% mutate(region = as.character(geography_name))
 
-table(paramvalues$region, exclude = NULL)
-paramvalues$region[is.na(paramvalues$region)] <- "illinois"
-paramvalues$region_label <- factor(paramvalues$region, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
-capacityDat$region_label <- factor(capacityDat$region, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
-paramvalues$reopening_multiplier_4 <- round(paramvalues$reopening_multiplier_4, 2) * 100
 
-paramvalues <- paramvalues[!is.na(paramvalues$region_label), ]
-
-paramvalues$outcome <- gsub("_All","",paramvalues$outcome )
-dat <- paramvalues
-save(dat, file = file.path(exp_dir, "aggregatedDat_forR.Rdata"))
-
+if(!file.exists(file.path(exp_dir, "aggregatedDat_forR.Rdata"))){
+  
+  if(!file.exists(file.path(exp_dir, "trajectoriesDat.csv"))){
+    count=0
+    for(i in c(1:11)){
+      count=count+1
+      load(file.path(exp_dir,paste0("trajectoriesDat_region_",i,".RData")))
+      if(count ==1)trajectoriesDat <- subdat
+      if(count >1)trajectoriesDat <- left_join(trajectoriesDat, subdat, by=c('time',  'startdate' ,'scen_num','sample_num', 'reopening_multiplier_4'))
+      rm(subdat)
+      fwrite(trajectoriesDat, file=file.path(exp_dir, "trajectoriesDat.csv"), quote = FALSE)
+    }
+  }
+  
+  trajectoriesDat <- fread(file.path(exp_dir, "trajectoriesDat.csv"), select = c(keepvars))
+  
+  if (!(paramvars %in% colnames(trajectoriesDat))) {
+    samplesDat <- read_csv(file.path(exp_dir, "sampled_parameters.csv"))
+    mergevars <- colnames(samplesDat)[colnames(samplesDat) %in% colnames(trajectoriesDat)]
+    trajectoriesDat <- left_join(trajectoriesDat, samplesDat, by = mergevars)
+  }
+  
+  #### Summarize only crit_det and hosp_det, and after that pivot longer - too slow otherwise
+  keepvars <- c("time", "startdate",  paramvars, outcomevars)
+  paramvalues <- trajectoriesDat %>%
+    dplyr::select(keepvars) %>%
+    filter(time > 120) %>%
+    dplyr::mutate(date = as.Date(startdate) + time) %>%
+    pivot_longer(cols = -c("time", "date", "startdate", "reopening_multiplier_4"), names_to = "region") %>%
+    separate(region, into = c("outcome", "region"), sep = "_EMS-") %>%
+    mutate(
+      exp_name = exp_name,
+    ) %>%
+    dplyr::group_by(date, region, exp_name, reopening_multiplier_4, outcome) %>%
+    dplyr::summarize(
+      median.value = median(value, na.rm = TRUE),
+      min.value = min(value, na.rm = TRUE),
+      max.value = max(value, na.rm = TRUE),
+      q25.value = quantile(value, probs = 0.25, na.rm = TRUE),
+      q75.value = quantile(value, probs = 0.75, na.rm = TRUE),
+      q2.5.value = quantile(value, probs = 0.025, na.rm = TRUE),
+      q97.5.value = quantile(value, probs = 0.975, na.rm = TRUE)
+    )
+  
+  table(paramvalues$outcome)
+  table(paramvalues$region, exclude = NULL)
+  paramvalues$region[is.na(paramvalues$region)] <- "illinois"
+  paramvalues$region_label <- factor(paramvalues$region, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
+  capacityDat$region_label <- factor(capacityDat$region, levels = c("illinois", c(1:11)), labels = c("illinois", c(1:11)))
+  paramvalues$reopening_multiplier_4 <- round(paramvalues$reopening_multiplier_4, 2) * 100
+  
+  paramvalues <- paramvalues[!is.na(paramvalues$region_label), ]
+  
+  paramvalues$outcome <- gsub("_All","",paramvalues$outcome )
+  dat <- paramvalues
+  save(dat, file = file.path(exp_dir, "aggregatedDat_forR.Rdata"))
+  
+}
+load(file = file.path(exp_dir, "aggregatedDat_forR.Rdata"))
+paramvalues <- dat
 # library(RColorBrewer)
 # getPalette <- colorRampPalette(brewer.pal(9, "PuBuGn"))(12)
 
@@ -255,12 +258,9 @@ rm(pplot)
 
 
 ### Identify soft and hard reopening
-
-
 ### Generate prediction dataset
 get_fit <- function(df=paramvalues, outputVar ="median.value"){
   
-
   df <- as.data.frame(df)
   df$outputVar <- df[, colnames(df)==outputVar]
   xnew <- seq(0, max(df$reopening_multiplier_4), 0.1)
@@ -279,8 +279,9 @@ get_fit <- function(df=paramvalues, outputVar ="median.value"){
              y =log(outputVar) )  
     
     # plot(tempdat$y, tempdat$x)
-    dfModel <- lm(y~ poly(x,3), data=tempdat )
-    
+    mod2=try(dfModel <- lm(y~ poly(x,3), data=tempdat ),TRUE)
+    if(isTRUE(class(mod2)=="try-error")) { next } else { dfModel <- lm(y~ poly(x,3), data=tempdat ) }
+
     t_matdat <- expand.grid(x = xnew)
     
     t_matdat <- as.data.frame(cbind(t_matdat, predict(dfModel, newdata = t_matdat, interval = "confidence")))
@@ -298,13 +299,19 @@ get_fit <- function(df=paramvalues, outputVar ="median.value"){
   
 }
 
-
-fitDat_median <- get_fit(df=paramvalues, outputVar ="median.value") %>% dplyr::rename(reopening_multiplier_4=x) %>% dplyr::select(-c(fit ,lwr ,upr))
-fitDat_lwr <- get_fit(df=paramvalues, outputVar ="q2.5.value") %>% dplyr::rename(reopening_multiplier_4=x) %>% dplyr::select(-c(fit ,lwr ,upr))
-fitDat_upr <- get_fit(df=paramvalues, outputVar ="q97.5.value") %>% dplyr::rename(reopening_multiplier_4=x) %>% dplyr::select(-c(fit ,lwr ,upr))
+fitDat_median <- get_fit(df=paramvalues, outputVar ="median.value") %>% 
+                    dplyr::rename(reopening_multiplier_4 = x) %>%
+                    dplyr::select(-c(fit ,lwr ,upr))
+fitDat_lwr <- get_fit(df=paramvalues, outputVar ="q2.5.value") %>%
+  dplyr::rename(reopening_multiplier_4 = x) %>%
+  dplyr::select(-c(fit ,lwr ,upr))
+fitDat_upr <- get_fit(df=paramvalues, outputVar ="q97.5.value") %>% 
+  dplyr::rename(reopening_multiplier_4 = x) %>%
+  dplyr::select(-c(fit ,lwr ,upr))
 
 mergevars <- colnames(fitDat_median)[colnames(fitDat_median) %in% colnames(fitDat_lwr)]
-fitDat <- fitDat_median %>% left_join( fitDat_lwr,  by=mergevars) %>%
+fitDat <- fitDat_median %>% 
+           left_join( fitDat_lwr,  by=mergevars) %>%
           left_join(fitDat_upr, by=mergevars)
 
 pplot  <- ggplot(data=fitDat) + 
@@ -338,6 +345,9 @@ tdat$region <- factor(tdat$region , levels=c(1:11), labels=c(1:11))
 pplot <- ggplot(data=subset(fitDat,!is.na(region))) +
   geom_ribbon(aes(x =reopening_multiplier_4,ymin=q2.5.value, ymax=q97.5.value), alpha=0.3) + 
    geom_line(aes(x =reopening_multiplier_4, y = median.value), size=1) +
+  geom_errorbar(data=subset(tdat,!is.na(region)),aes(x = reopening_multiplier_4,
+                                                     ymin = q2.5.value, ymax = q97.5.value, col = as.factor(belowCapacity)), 
+                width = 0.3) +
   geom_point(data=subset(tdat,!is.na(region)),aes(x =reopening_multiplier_4, y = median.value, fill = as.factor(belowCapacity)), 
              shape = 21, show.legend = F, size = 2) +
   facet_wrap(~region, scales = "free") +
