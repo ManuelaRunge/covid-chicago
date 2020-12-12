@@ -13,13 +13,15 @@ source("publication_scripts_ICUprob/functions.R")
 theme_set(theme_minimal())
 
 #simdate <-'20200919'
-simdate <-'20201121'
+#simdate <-'20201121'
+simdate <-'20201212'
 sim_dir <- file.path(simulation_output,'_overflow_simulations', simdate)
 if(!dir.exists(file.path(sim_dir, "ICU_prob_plots")))dir.create(file.path(sim_dir, "ICU_prob_plots"))
 
 exp_names <- list.dirs(sim_dir, recursive = FALSE, full.names = FALSE)
 exp_names <- exp_names[grep("IL_regreopen",exp_names)]
 exp_names <- exp_names[c(grep("daysdelay",exp_names),grep("counterfactual",exp_names))]
+exp_names <- exp_names[!(grepl("counterfactual",exp_names))]
 
 dat <- f_combineDat(sim_dir,exp_names, "hospitaloverflow.csv")
 table(dat$exp_name)
@@ -27,7 +29,7 @@ table(dat$exp_name,dat$geography_modeled)
 unique(dat$geography_modeled)
 
 #subregions=
-subregions=c(c(1,4,11),c('covidregion_1','covidregion_4','covidregion_11'))
+subregions=c(1,4,11) #,c('covidregion_1','covidregion_4','covidregion_11'))
 dat <- dat %>% filter(geography_modeled %in% subregions)
 table(dat$exp_name,dat$geography_modeled)
 
@@ -35,8 +37,9 @@ dat$scen_name <- gsub(paste0(simdate, "_IL_regreopen"), "", dat$exp_name)
 dat <- dat %>% separate(scen_name, into = c("reopen", "delay", "rollback"), sep = "_")
 dat$rollback[is.na(dat$rollback)] <- "counterfactual"
 
-dat$region <- factor(dat$geography_modeled, levels=subregions, labels=gsub("covidregion_","Region ",subregions))
-
+dat$region <- factor(dat$geography_modeled, levels=subregions, labels=paste0("Region ",subregions))
+table(dat$geography_modeled)
+table(dat$region)
 table(dat$rollback)
 table(dat$reopen)
 table(dat$delay)
@@ -62,8 +65,9 @@ pplot <- ggplot(data = subset(dat, delay=="7daysdelay")) + theme_minimal()+
 
 ggsave(paste0("ICU_prob.pdf"), plot = pplot, path =  file.path(sim_dir, "ICU_prob_plots"), width = 12, height=4, device = "pdf")
 
-
-pplot2 <-   ggplot(data = subset(dat, rollback=="sm4")) + theme_minimal()+
+# rollback=="sm4"
+pplot2 <-   ggplot(data = subset(dat, rollback=="pr8")) +
+  theme_minimal()+
   geom_vline(xintercept = c(-Inf, Inf)) +
   geom_hline(yintercept = c(-Inf, Inf)) +
   geom_rect(xmin = 75, xmax = Inf, ymin = -Inf, ymax =Inf, fill = "grey", alpha = 0.01) +
