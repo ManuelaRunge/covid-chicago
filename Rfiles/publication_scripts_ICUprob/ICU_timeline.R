@@ -93,19 +93,23 @@ table(dat$region, dat$delay)
 table(dat$region, dat$rollback)
 
 ### load capacity
-capacityDat <- load_new_capacity(filedate = "20200915") %>% mutate(geography_modeled = paste0("covidregion_", geography_name))
+capacityDat <- load_new_capacity(filedate = "20200915") %>% 
+  mutate(geography_modeled = paste0("covidregion_", geography_name))
+
 dat <- f_addVar(dat, capacityDat)
 
 ### prepare
 dat_counterfactual <- dat %>%
   filter(rollback == "counterfactual") %>%
   dplyr::select(-rollback, -delay, -capacity_multiplier_fct)
+
 dat_scen <- dat %>% filter(rollback != "counterfactual" & delay == unique(dat$delay)[1])
 
-
-### PLOTS
+####====================================
+### PLOTS - basic descriptive
+####====================================
 customTheme <- f_getCustomTheme()
-subregions <- regions # c("covidregion_1", "covidregion_4", "covidregion_11")
+subregions <-  regions #c("covidregion_1", "covidregion_4", "covidregion_11")
 
 if (length(unique(dat$rollback)) > 1) {
   for (reg in subregions) {
@@ -206,3 +210,65 @@ for (reg in subregions) {
   )
   rm(pplot, reg)
 }
+
+####====================================
+## Recommended versus selected
+####====================================
+subregions <-  c("covidregion_1", "covidregion_4", "covidregion_11")
+
+
+unique(dat_scen$capacity_multiplier_fct)
+dat_scen_sub <- dat_scen %>% filter(geography_modeled %in% subregions) %>%
+  mutate(trigger_recommended= ifelse(geography_modeled=="covidregion_1", "44","67"  ),
+         trigger_recommended= ifelse(geography_modeled=="covidregion_4", "89", trigger_recommended)) %>% 
+  filter(capacity_multiplier_fct == trigger_recommended | capacity_multiplier_fct == "78") 
+
+dat_counterfactual_sub <- dat_counterfactual %>% filter(geography_modeled %in% subregions)
+
+plotdat <- dat_scen_sub%>% filter(rollback=="sm4" & delay=="0daysdelay")
+pplot <-
+  ggplot(data = plotdat) +
+  #geom_rect(xmin=-Inf, xmax=as.Date("2020-10-01"), ymin=-Inf, ymax-Inf, alpha=0.01, fill="lightgrey") +
+ # geom_line(
+ #   data = dat_counterfactual_sub,
+ #   aes(x = date, y = crit_det_median/icu_available)
+ # ) +
+ # geom_ribbon(
+ #   data = dat_counterfactual_sub,
+ #   aes(x = date, ymin = crit_det_50CI_lower/icu_available, ymax = crit_det_50CI_upper/icu_available), 
+  #  alpha = 0.3
+ # ) +
+  geom_ribbon(
+    data =plotdat,
+    aes(x = date, ymin = crit_det_50CI_lower/icu_available, ymax = crit_det_50CI_upper/icu_available, 
+        fill = capacity_multiplier_fct, 
+        group = capacity_multiplier_fct), alpha = 0.4
+  ) +
+  geom_ribbon(
+    data =plotdat,
+    aes(x = date, ymin = crit_det_95CI_lower/icu_available, ymax = crit_det_95CI_upper/icu_available, 
+        fill = capacity_multiplier_fct, 
+        group = capacity_multiplier_fct), alpha = 0.2
+  ) +
+  geom_line(
+    data = plotdat,
+    aes(x = date, y = crit_det_median/icu_available, 
+        col = capacity_multiplier_fct, 
+        group = capacity_multiplier_fct),size=1.3
+  ) +
+  geom_hline(aes(yintercept = icu_available/icu_available), 
+             linetype = "dashed", col = "dodgerblue3") +
+  # geom_vline(xintercept=as.Date("2020-10-01"))+
+  facet_wrap(reopen ~ geography_modeled, scales = "free") +
+  scale_x_date(date_breaks = "30 days", date_labels = "%b", lim=c(as.Date("2020-09-01"), as.Date("2021-01-15"))) +
+  scale_y_continuous(lim=c(0, 2), expand=c(0,0))+
+  labs(
+    x = "",
+    y = "predicted ICU census of available ICUs (%)",
+    col = "ICU trigger threshold",
+    fill = "ICU trigger threshold",
+    caption = "median and 50% IQR"
+  ) +
+  customTheme
+
+pplot
