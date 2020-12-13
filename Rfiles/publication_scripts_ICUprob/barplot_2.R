@@ -11,13 +11,15 @@ source("publication_scripts_ICUprob/functions.R")
 ## Run script
 ## -------------------------------
 
-simdate <-'20200919'
+#simdate <-'20200919'
 #simdate <-'20201121'
+simdate <-'20201212'
 sim_dir <- file.path(simulation_output,'_overflow_simulations', simdate)
 
 exp_names <- list.dirs(sim_dir, recursive = FALSE, full.names = FALSE)
 exp_names <- exp_names[grep("IL_regreopen",exp_names)]
 exp_names <- exp_names[c(grep("daysdelay",exp_names),grep("counterfactual",exp_names))]
+exp_names <- exp_names[!(grepl("_reopen",exp_names))]
 
 dat <- f_combineDat(sim_dir,exp_names, "ICU_peak.csv")
 

@@ -9,18 +9,20 @@ source("load_paths.R")
 source("setup.R")
 source("processing_helpers.R")
 source("publication_scripts_ICUprob/functions.R")
-
+TwoCols_seq <- c("#00a79d", "#f7941d")
 theme_set(theme_minimal())
 
 #simdate <-'20200919'
 #simdate <-'20201121'
 simdate <-'20201212'
 sim_dir <- file.path(simulation_output,'_overflow_simulations', simdate)
-if(!dir.exists(file.path(sim_dir, "ICU_prob_plots")))dir.create(file.path(sim_dir, "ICU_prob_plots"))
+if(!dir.exists(file.path(sim_dir, "ICU_bar_plots")))dir.create(file.path(sim_dir, "ICU_bar_plots"))
+
 
 exp_names <- list.dirs(sim_dir, recursive = FALSE, full.names = FALSE)
 exp_names <- exp_names[grep("IL_regreopen",exp_names)]
 exp_names <- exp_names[c(grep("daysdelay",exp_names),grep("counterfactual",exp_names))]
+exp_names <- exp_names[!(grepl("_reopen",exp_names))]
 exp_names <- exp_names[!(grepl("counterfactual",exp_names))]
 
 dat <- f_combineDat(sim_dir,exp_names, "hospitaloverflow.csv")
@@ -36,6 +38,10 @@ table(dat$exp_name,dat$geography_modeled)
 dat$scen_name <- gsub(paste0(simdate, "_IL_regreopen"), "", dat$exp_name)
 dat <- dat %>% separate(scen_name, into = c("reopen", "delay", "rollback"), sep = "_")
 dat$rollback[is.na(dat$rollback)] <- "counterfactual"
+
+rollback_val <- unique(dat$rollback)
+delay_val <- unique(dat$delay)
+
 
 dat$region <- factor(dat$geography_modeled, levels=subregions, labels=paste0("Region ",subregions))
 table(dat$geography_modeled)
@@ -53,9 +59,9 @@ pplot <- ggplot(data = subset(dat, delay=="7daysdelay")) + theme_minimal()+
   geom_rect(xmin = 75, xmax = Inf, ymin = -Inf, ymax =Inf, fill = "grey", alpha = 0.01) +
   geom_line(aes(x = capacity_multiplier*100, y = prob*100, linetype = rollback , col = reopen ), size = 1.1) +
   geom_hline(yintercept = 25, col="red",size=0.5) +
-  scale_color_manual(values=c("orange2","#35978f"))+
-  scale_fill_manual(values=c("orange2","#35978f"))+
-  scale_linetype_manual(values=c('solid','dashed')) + 
+  scale_color_manual(values=c(TwoCols_seq))+
+  scale_fill_manual(values=c(TwoCols_seq))+
+  #scale_linetype_manual(values=c('solid','dashed')) + 
   scale_y_continuous(lim = c(0, 101), expand=c(0,0)) +
   customTheme +
   background_grid() +
@@ -63,15 +69,48 @@ pplot <- ggplot(data = subset(dat, delay=="7daysdelay")) + theme_minimal()+
   theme(panel.spacing = unit(2, "lines") , legend.position = 'None')+
   labs(y='Probability of ICU overflow (%)',x='Trigger threshold (% of available ICU beds)')
 
+pplot
+
 ggsave(paste0("ICU_prob.pdf"), plot = pplot, path =  file.path(sim_dir, "ICU_prob_plots"), width = 12, height=4, device = "pdf")
 
+
+### with shading 
+
+dat_wide <- dat %>% dplyr::select(capacity_multiplier,rollback, prob, region, delay, reopen) %>% pivot_wider(names_from="rollback", values_from="prob")
+pplot_f <- ggplot(data=dat_wide) + 
+  geom_ribbon(data=subset(dat_wide, delay=="7daysdelay" ),
+              aes(x = capacity_multiplier*100, ymin= pr4*100, ymax = pr2*100, group=reopen, fill=reopen),alpha = 0.2)+
+  geom_ribbon(data=subset(dat_wide, delay=="7daysdelay" ),
+              aes(x = capacity_multiplier*100, ymin= pr6*100,  ymax = pr4*100,  group=reopen, fill=reopen),alpha = 0.6)+
+  geom_ribbon(data=subset(dat_wide, delay=="7daysdelay" ),
+              aes(x = capacity_multiplier*100, ymin= pr8*100,  ymax = pr6*100,  group=reopen, fill=reopen),alpha = 1)+
+  geom_line(data = subset(dat, delay=="7daysdelay"),
+            aes(x = capacity_multiplier*100, y = prob*100, linetype = rollback , col = reopen ), size = 0.5) +
+  customTheme +
+  scale_linetype_manual(values=rev(c('solid','longdash','dotdash','dashed'))) + 
+  background_grid() +
+  facet_wrap( ~ region,scales="free" ) +
+  scale_color_manual(values=c(TwoCols_seq))+
+  scale_fill_manual(values=c(TwoCols_seq))+
+  theme(panel.spacing = unit(2, "lines") , legend.position = 'None')+
+  labs(y='Probability of ICU overflow (%)',x='Trigger threshold (% of available ICU beds)')
+
+pplot_f
+ggsave(paste0("ICU_prob_filled.pdf"), plot = pplot_f, path =  file.path(sim_dir, "ICU_prob_plots"), width = 12, height=4, device = "pdf")
+
 # rollback=="sm4"
+dat_wide <- dat %>% filter( rollback=="pr6") %>%
+  dplyr::select(capacity_multiplier,rollback, prob, region, delay, reopen) %>% pivot_wider(names_from="delay", values_from="prob")
+
 pplot2 <-   ggplot(data = subset(dat, rollback=="pr8")) +
   theme_minimal()+
   geom_vline(xintercept = c(-Inf, Inf)) +
   geom_hline(yintercept = c(-Inf, Inf)) +
   geom_rect(xmin = 75, xmax = Inf, ymin = -Inf, ymax =Inf, fill = "grey", alpha = 0.01) +
-  geom_line(aes(x = capacity_multiplier*100, y = prob*100, linetype = delay , col = reopen, group=interaction(delay,reopen) ), size = 1.1) +
+  geom_line(aes(x = capacity_multiplier*100, y = prob*100, linetype = delay ,
+                col = reopen, group=interaction(delay,reopen) ), size = 0.75) +
+  geom_ribbon(data=dat_wide,
+              aes(x = capacity_multiplier*100, ymin= `7daysdelay`*100,  ymax = `1daysdelay`*100,  group=reopen, fill=reopen),alpha = 0.4)+
   geom_hline(yintercept = 25, col="red",size=0.5) +
   scale_color_manual(values=c("orange2","#35978f"))+
   scale_fill_manual(values=c("orange2","#35978f"))+
@@ -82,13 +121,19 @@ pplot2 <-   ggplot(data = subset(dat, rollback=="pr8")) +
   facet_wrap( ~ region,scales="free" ) +
   theme(panel.spacing = unit(2, "lines") , legend.position = 'None')+
   labs(y='Probability of ICU overflow (%)',x='Trigger threshold (% of available ICU beds)')
-
 ggsave(paste0("ICU_prob_delay.pdf"), plot = pplot2, path =  file.path(sim_dir, "ICU_prob_plots"), width = 12, height=4, device = "pdf")
 
 
 pplotall <- plot_grid(pplot,pplot2, ncol=1)
 ggsave(paste0("ICU_prob_pplotall.pdf"), plot = pplotall, path = file.path(sim_dir, "ICU_prob_plots"), width = 12, height=8, device = "pdf")
 
+
+pplotall_f <- plot_grid(pplot_f,pplot2, ncol=1)
+ggsave(paste0("ICU_prob_pplotall_filled.pdf"), plot = pplotall_f, path = file.path(sim_dir, "ICU_prob_plots"), width = 12, height=8, device = "pdf")
+
+
+
+  
 
 #### For text
 dat %>% filter(rollback %in%  c("sm4","sm8")) %>% 
