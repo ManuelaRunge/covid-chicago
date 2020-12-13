@@ -1,7 +1,7 @@
 experiment_setup_parameters:
   'number_of_samples': 400
   'number_of_runs': 1
-  'duration': 455
+  'duration': 600
   'monitoring_samples': 455
   'random_seed': 751
   'initialAs': 10
