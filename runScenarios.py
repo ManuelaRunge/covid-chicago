@@ -519,6 +519,8 @@ if __name__ == '__main__':
     args = parse_args()
 
     _, _, wdir, exe_dir, git_dir = load_box_paths(Location=args.running_location)
+    # using personal git dir but project git for location of simulations due to file storage constraints
+    GIT_DIR_HOME =  os.path.join('/home/mrm9534/gitrepos/covid-chicago/') 
     Location = os.getenv("LOCATION") or args.running_location
     if not Location:
         raise ValueError("Please provide a running location via environment "
@@ -577,7 +579,7 @@ if __name__ == '__main__':
         region=region    )
 
     if Location == 'NUCLUSTER':
-        generateSubmissionFile_quest(nscen, exp_name, args.experiment_config, trajectories_dir,git_dir,  temp_exp_dir,sim_output_path)
+        generateSubmissionFile_quest(nscen, exp_name, args.experiment_config, trajectories_dir,GIT_DIR_HOME,  temp_exp_dir,sim_output_path)
         runExp(trajectories_dir=temp_exp_dir, Location='NUCLUSTER')
 
     if Location == 'Local':

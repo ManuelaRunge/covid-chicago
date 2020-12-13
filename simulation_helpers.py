@@ -20,6 +20,7 @@ from processing_helpers import CI_50, CI_25, CI_75,CI_2pt5, CI_97pt5
 #sys.path.append("C:\\Users\\garrett\\Documents\\GitHub\\covid-chicago") #added for the loadpaths for garrett
 from load_paths import load_box_paths
 datapath, projectpath, WDIR, EXE_DIR, GIT_DIR = load_box_paths()
+GIT_DIR_HOME =  os.path.join('/home/mrm9534/gitrepos/covid-chicago/')
 
 log = logging.getLogger(__name__)
 
@@ -291,9 +292,9 @@ def generateSubmissionFile_quest(scen_num, exp_name, experiment_config, trajecto
     file.close()
 
     fname = "data_comparison_spatial.py"
-    if experiment_config = "EMSspecific_sample_parameters.yaml" :
+    if experiment_config == "EMSspecific_sample_parameters.yaml" :
         fname = "data_comparison.py"
-    if experiment_config = "age8grp_experiment.yaml" :
+    if experiment_config == "age8grp_experiment.yaml" :
         fname = "data_comparison.py"
 
     pycommand = f'\npython {plotters_dir}{fname} --stem "{exp_name}" --Location "NUCLUSTER"'
