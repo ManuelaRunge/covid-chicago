@@ -6,6 +6,7 @@ def load_box_paths(user_path=None, Location='Local'):
         home_path = os.path.join(user_path, 'covidproject', 'projects')
         data_path = os.path.join(user_path, 'covidproject', 'data')
         git_dir = os.path.join(user_path, 'covidproject', 'covid-chicago')
+        GIT_DIR_HOME =  os.path.join('/home/mrm9534/gitrepos/covid-chicago/')
         project_path = os.path.join(home_path, 'covid_chicago')
         wdir = os.path.join(project_path, 'cms_sim')
         exe_dir = os.path.join(home_path, 'binaries', 'compartments')
