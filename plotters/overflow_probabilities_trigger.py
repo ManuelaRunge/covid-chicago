@@ -118,15 +118,12 @@ if __name__ == '__main__':
     stem = sys.argv[1]
     Location ='NUCLUSTER'
     datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location=Location)
-
-    #stem = '20201121_IL_regreopen50perc_7daysdelay_sm4'
-    #sim_output_dir = os.path.join(wdir, 'simulation_output/_overflow_simulations/20201121/')
     sim_output_dir = os.path.join('/projects/p30781/covidproject/covid-chicago/_temp/')
     exp_names = [x for x in os.listdir(sim_output_dir) if stem in x]
-
+    
     for exp_name in exp_names:
         analysis_dir = os.path.join(sim_output_dir, exp_name)
         print("1 - get probs for " + exp_name)
         get_probs(exp_name)
         for i in range(1,50):
-            get_probs(exp_name,regions=[1,4,11], random_sub=300)
+            get_probs(exp_name,regions=[1,4,11], random_sub=100)

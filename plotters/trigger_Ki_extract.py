@@ -37,9 +37,9 @@ def get_Ki_dat(first_plot_day = dt.date(2020, 10, 1),  regions = range(1,12)):
 
         trajectories_name = 'trajectoriesDat_region_' + str(ems_region) + '.csv'
         if os.path.exists(os.path.join(analysis_dir, trajectories_name)) == False:
-            trajectories_name = 'trajectoriesDat_trim.csv'
-        if os.path.exists(os.path.join(analysis_dir, trajectories_name)) == False:
             trajectories_name = 'trajectoriesDat.csv'
+        if os.path.exists(os.path.join(analysis_dir, trajectories_name)) == False:
+            trajectories_name = 'trajectoriesDat_trim.csv'
         Ki_dat = load_sim_data(exp_name, fname=trajectories_name, column_list=column_list,sim_output_path=analysis_dir)
         Ki_dat = Ki_dat[(Ki_dat['date'] >= first_plot_day)]
 
@@ -82,7 +82,7 @@ def get_Ki_dat(first_plot_day = dt.date(2020, 10, 1),  regions = range(1,12)):
 
 if __name__ == '__main__':
 
-    stem = sys.argv[1]
+    stem =sys.argv[1]
     Location ='NUCLUSTER'
     datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location=Location)
 

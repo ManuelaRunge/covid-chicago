@@ -49,6 +49,7 @@ def load_sim_data(exp_name,  region_suffix ='_All', input_wdir=None, fname='traj
     df['new_hospitalized'] = count_new(df, 'hosp_cumul')
     df['new_critical'] = count_new(df, 'crit_cumul')
     df['new_detected_critical'] = count_new(df, 'crit_det_cumul')
+    df['new_infected'] = count_new(df, 'infected_cumul')
     df['new_detected_deaths'] = count_new(df, 'death_det_cumul')
     df['new_deaths'] = count_new(df, 'deaths')
 
@@ -101,18 +102,19 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
     #column_list = ['startdate', 'time', 'scen_num', 'sample_num', 'run_num','reopening_multiplier_4']
 
     #'infected', 'recovered', 'infected_cumul',
-    outcome_channels = ['hosp_det_cumul', 'hosp_cumul',  'crit_cumul',
+    outcome_channels = ['infected','infected_cumul','hosp_det_cumul', 'hosp_cumul',  'crit_cumul',
                         'crit_det_cumul', 'death_det_cumul',
                         'deaths', 'crit_det', 'critical', 'hosp_det', 'hospitalized']
 
     for channel in outcome_channels:
         column_list.append(channel + "_" + str(ems_region))
 
-    fname = 'trajectoriesDat_region_'+str(ems_region)+'.csv'
+    ems_nr = ems_region.replace('EMS-', "")
+    fname = 'trajectoriesDat_region_'+str(ems_nr)+'.csv'
     if os.path.exists(os.path.join(input_sim_output_path, fname)) == False:
          fname = 'trajectoriesDat.csv'
             
-    ems_nr = ems_region.replace('EMS-', "")
+
     df = load_sim_data(exp_name, region_suffix='_' + ems_region, fname=fname, column_list=column_list,
                        input_sim_output_path= input_sim_output_path)
 
@@ -122,7 +124,7 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
     df = df[(df['date'] >= plot_first_day) & (df['date'] <= plot_last_day)]
 
     df['ventilators'] = get_vents(df['crit_det'].values)
-    channels = ['new_deaths', 'new_detected_deaths', 'hospitalized','critical', 'hosp_det', 'crit_det']
+    channels = [ 'new_infected', 'infected_cumul', 'new_deaths', 'new_detected_deaths', 'hospitalized','critical', 'hosp_det', 'crit_det']
 
     adf = pd.DataFrame()
     for c, channel in enumerate(channels):
@@ -185,7 +187,7 @@ if __name__ == '__main__':
 
     args = parse_args()  
     stem = args.stem
-    Location = args.Location #"NUCLUSTER"
+    Location = args.Location
     
     datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location=Location)
     analysis_dir = os.path.join( '/projects/p30781/covidproject/covid-chicago/_temp')

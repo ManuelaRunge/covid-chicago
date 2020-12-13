@@ -103,15 +103,16 @@ def trim_trajectories_Dat(df, fname, VarsToKeep, time_start, time_stop,channels=
     for grpspecific_param in grpspecific_params:
         for grp in grpnames_ki:
             param_list.append(grpspecific_param + "_" + str(grp))
-
+            column_list.append(grpspecific_param + "_" + str(grp))
 
     df = df[df['time'] > time_start]
     df = df[df['time'] < time_stop]
     
     pdf = df[param_list]
-    pdf.to_csv(os.path.join(temp_exp_dir, fname.replace('trajectoriesDat','observedParamDat.csv')), index=False, date_format='%Y-%m-%d')
+    pdf.to_csv(os.path.join(temp_exp_dir, fname.replace('trajectoriesDat','observedParamDat')+".csv"), index=False, date_format='%Y-%m-%d')
     
-    df = df[column_list]
+    
+    df = df[column_list ]
     df.to_csv(os.path.join(temp_exp_dir, fname + '_trim.csv'), index=False, date_format='%Y-%m-%d')
 
 
@@ -149,7 +150,7 @@ if __name__ == '__main__':
 
     args = parse_args()  
     stem = args.stem
-    Location = args.Location #"NUCLUSTER"
+    Location = "NUCLUSTER"
     Scenario_save_limit = args.scen_limit
     
     sim_out_dir = "/projects/p30781/covidproject/covid-chicago/_temp/"

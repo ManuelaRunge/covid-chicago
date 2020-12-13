@@ -75,35 +75,39 @@ def get_peak_exceed_table(first_plot_day = dt.date(2020, 10, 1), regions= range(
 
         """Exceed"""
         exceed_df_All = pd.DataFrame()
+        exceed_df_metric = pd.DataFrame()
         for tresh_multiplier in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]:
-            exceed_df = df[df['critical_median'] >= df['avg_resource_available'] * tresh_multiplier]
-            exceed_df = exceed_df[['date','region', 'capacity_multiplier', 'avg_resource_available','resource_type','geography_modeled','ems']]
-            #exceed_df_from = exceed_df[exceed_df['time'] == exceed_df.groupby(grp_channels)['time'].transform(min)]
-            #exceed_df_to = exceed_df[exceed_df['time'] == exceed_df.groupby(grp_channels)['time'].transform(max)]
-            exceed_df_from = exceed_df.sort_values('date').groupby(grp_channels).head(1)
-            exceed_df_to = exceed_df.sort_values('date').groupby(grp_channels).tail(1)
+            for metric in ['median', '95CI_lower', '95CI_upper']:
+                exceed_df = df[df[f'critical_{metric}'] >= df['avg_resource_available'] * tresh_multiplier]
+                exceed_df = exceed_df[['date','region', 'capacity_multiplier', 'avg_resource_available','resource_type','geography_modeled','ems']]
+                exceed_df_from = exceed_df.sort_values('date').groupby(grp_channels).head(1)
+                exceed_df_to = exceed_df.sort_values('date').groupby(grp_channels).tail(1)
 
-            exceed_df_from = exceed_df_from.rename(columns={'date': f'exceed_date_from_{tresh_multiplier}',
-                                                            'time': f'exceed_time_from_{tresh_multiplier}'})
+                exceed_df_from = exceed_df_from.rename(columns={'date': f'exceed_date_from_{tresh_multiplier}_{metric}',
+                                                                'time': f'exceed_time_from_{tresh_multiplier}_{metric}'})
 
-            exceed_df_to = exceed_df_to.rename(columns={'date': f'exceed_date_to_{tresh_multiplier}',
-                                                        'time': f'exceed_time_to_{tresh_multiplier}'})
+                exceed_df_to = exceed_df_to.rename(columns={'date': f'exceed_date_to_{tresh_multiplier}_{metric}',
+                                                            'time': f'exceed_time_to_{tresh_multiplier}_{metric}'})
 
-            del exceed_df
-            exceed_df = pd.merge(how='left', left=exceed_df_from, left_on=grp_channels, right=exceed_df_to, right_on=grp_channels)
+                del exceed_df
+                exceed_df = pd.merge(how='left', left=exceed_df_from, left_on=grp_channels, right=exceed_df_to, right_on=grp_channels)
 
-            """Duration"""
-            exceed_df[f'exceed_diff_{tresh_multiplier}'] = exceed_df[f'exceed_date_to_{tresh_multiplier}'] - \
-                                                            exceed_df[f'exceed_date_from_{tresh_multiplier}']
-            if not exceed_df.empty :
-                exceed_df[f'exceed_diff_{tresh_multiplier}'] = exceed_df[f'exceed_diff_{tresh_multiplier}'].dt.days
+                """Duration"""
+                exceed_df[f'exceed_diff_{tresh_multiplier}_{metric}'] = exceed_df[f'exceed_date_to_{tresh_multiplier}_{metric}'] - \
+                                                                exceed_df[f'exceed_date_from_{tresh_multiplier}_{metric}']
+                if not exceed_df.empty :
+                    exceed_df[f'exceed_diff_{tresh_multiplier}_{metric}'] = exceed_df[f'exceed_diff_{tresh_multiplier}_{metric}'].dt.days
+                if exceed_df_metric.empty:
+                    exceed_df_metric = exceed_df
+                else:
+                    exceed_df_metric = pd.merge(how='left', left=exceed_df_metric, left_on=grp_channels, right=exceed_df, right_on=grp_channels)
 
-            if exceed_df_All.empty:
-                exceed_df_All = exceed_df
-            else:
-                exceed_df_All = pd.merge(how='left', left=exceed_df_All, left_on=grp_channels, right=exceed_df, right_on=grp_channels)
+            #if exceed_df_All.empty:
+            #    exceed_df_All = exceed_df_metric
+            #else:
+            #    exceed_df_All = pd.merge(how='left', left=exceed_df_All, left_on=grp_channels, right=exceed_df_metric, right_on=grp_channels)
 
-        peak_exceed_df = pd.merge(how='left', left=peak_df, left_on=grp_channels, right=exceed_df_All,right_on=grp_channels)
+        peak_exceed_df = pd.merge(how='left', left=peak_df, left_on=grp_channels, right=exceed_df_metric,right_on=grp_channels)
 
         if peak_df_All.empty:
             peak_df_All = peak_exceed_df
@@ -129,9 +133,9 @@ def get_time_since_trigger():
     adf['trigger_to_peak'] = adf['trigger_to_peak'].dt.days
 
     for tresh_multiplier in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]:
-        adf[f'exceed_date_to_{tresh_multiplier}'] = pd.to_datetime(adf[f'exceed_date_to_{tresh_multiplier}'])
-        adf[f'trigger_to_exceed_{tresh_multiplier}'] = adf[f'exceed_date_to_{tresh_multiplier}'] - adf['trigger_date_CI_50']
-        adf[f'trigger_to_exceed_{tresh_multiplier}'] = adf[f'trigger_to_exceed_{tresh_multiplier}'].dt.days
+        adf[f'exceed_date_to_{tresh_multiplier}_median'] = pd.to_datetime(adf[f'exceed_date_to_{tresh_multiplier}_median'])
+        adf[f'trigger_to_exceed_{tresh_multiplier}_median'] = adf[f'exceed_date_to_{tresh_multiplier}_median'] - adf['trigger_date_CI_50']
+        adf[f'trigger_to_exceed_{tresh_multiplier}_median'] = adf[f'trigger_to_exceed_{tresh_multiplier}_median'].dt.days
 
     adf.to_csv(os.path.join(analysis_dir, 'trigger_peak_exceed_df.csv'), index=False)
 
@@ -142,11 +146,12 @@ if __name__ == '__main__':
     Location ='NUCLUSTER'
     datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location=Location)
 
+    #sim_output_dir = os.path.join('C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/cms_sim/simulation_output/_overflow_simulations/20200919')
     sim_output_dir =  os.path.join('/projects/p30781/covidproject/covid-chicago/_temp/')
     exp_names = [x for x in os.listdir(sim_output_dir) if stem in x]
 
     for exp_name in exp_names:
         analysis_dir = os.path.join(sim_output_dir, exp_name)
         print("get peak, exceed dates for " + exp_name)
-        get_peak_exceed_table(regions=range(1,12))
+        get_peak_exceed_table(regions=[1,4,11])
         get_time_since_trigger()
