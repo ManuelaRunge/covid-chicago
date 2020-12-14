@@ -48,7 +48,7 @@ def load_sim_data(region_suffix='_All', fname='trajectoriesDat.csv', input_sim_o
     df['new_detected_critical'] = count_new(df, 'crit_det_cumul')
     df['new_detected_deaths'] = count_new(df, 'death_det_cumul')
     df['new_deaths'] = count_new(df, 'deaths')
-
+    df['new_infected'] = count_new(df, 'infected_cumul')
     return df
 
 
@@ -92,11 +92,10 @@ def plot_sim(dat, suffix, channels):
     plt.savefig(os.path.join(plot_path, 'pdf', plotname + '.pdf'), format='PDF')
 
 
-def load_and_plot_data(ems_region, fname, input_sim_output_path, savePlot=True):
+def load_and_plot_data(ems_region, savePlot=True):
     column_list = ['startdate', 'time', 'scen_num', 'sample_num', 'capacity_multiplier']
 
-    # 'infected', 'recovered', 'infected_cumul',
-    outcome_channels = ['hosp_det_cumul', 'hosp_cumul', 'crit_cumul',
+    outcome_channels = ['infected',  'infected_cumul', 'hosp_det_cumul', 'hosp_cumul', 'crit_cumul',
                         'crit_det_cumul', 'death_det_cumul',
                         'deaths', 'crit_det', 'critical', 'hosp_det', 'hospitalized']
 
@@ -105,11 +104,11 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path, savePlot=True):
 
     ems_nr = ems_region.replace('EMS-', "")
     fname = 'trajectoriesDat_region_' + str(ems_nr) + '.csv'
-    if os.path.exists(os.path.join(input_sim_output_path, fname)) == False:
+    if os.path.exists(os.path.join(sim_output_path, fname)) == False:
         fname = 'trajectoriesDat.csv'
 
-    df = load_sim_data(exp_name, region_suffix='_' + ems_region, fname=fname, column_list=column_list,
-                       input_sim_output_path=input_sim_output_path)
+    df = load_sim_data(region_suffix= f'_{ems_region}', fname=fname, column_list=column_list,
+                       input_sim_output_path=sim_output_path)
 
     df['ems'] = ems_region
     first_day = datetime.strptime(df['startdate'].unique()[0], '%Y-%m-%d')
@@ -175,13 +174,13 @@ if __name__ == '__main__':
 
     args = parse_args()
     stem = args.stem
-    Location = args.Location  #
+    Location = args.Location
 
     datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location=Location)
-    if Location =="NUCLUSTER":
+    if Location == "NUCLUSTER":
         analysis_dir = os.path.join('/projects/p30781/covidproject/covid-chicago/_temp')
     else:
-        analysis_dir = os.path.join(wdir, "simulation_output') #/_overflow_simulations/20201212
+        analysis_dir = os.path.join(wdir, "simulation_output/_overflow_simulations/20201212") #/_overflow_simulations/20201212
 
     exp_names = [x for x in os.listdir(os.path.join(analysis_dir)) if stem in x]
     plot_first_day = pd.to_datetime('2020/3/1')
@@ -191,10 +190,6 @@ if __name__ == '__main__':
         print(exp_name)
         simdate = exp_name.split("_")[0]
         processStep = 'generate_outputs'
-        trajectoriesName = 'trajectoriesDat.csv'
-
-        regions = ['EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10',
-                   'EMS-11']
 
         exp_suffix = exp_name.split("_IL_")[-1]
         scenarioName = exp_suffix
@@ -202,23 +197,25 @@ if __name__ == '__main__':
         sim_output_path = os.path.join(analysis_dir, exp_name)
         plot_path = os.path.join(sim_output_path, '_plots')
 
+        regions = ['EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10', 'EMS-11']
+
         if processStep == 'generate_outputs':
             dfAll = pd.DataFrame()
+
             for reg in regions:
                 print(f'Start processing {reg}')
-                tdf = load_and_plot_data(reg, fname=trajectoriesName, savePlot=True,  input_sim_output_path=sim_output_path)
+                tdf = load_and_plot_data(reg, savePlot=False)
                 adf = process_and_save(tdf, reg, SAVE=True)
                 dfAll = pd.concat([dfAll, adf])
                 del tdf
 
             if len(regions) == 11:
-                filename = f'trajectories_aggregated.csv'
+                filename = 'trajectories_aggregated.csv'
                 rename_geography_and_save(dfAll, filename=filename)
 
         ### Optional
         if processStep == 'combine_outputs':
-            for reg in ['EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10',
-                        'EMS-11']:
+            for reg in regions:
                 print("Start processing" + reg)
                 filename = "trajectories_aggregated_" + reg + ".csv"
                 adf = pd.read_csv(os.path.join(sim_output_path, filename))
