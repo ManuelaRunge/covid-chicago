@@ -1,25 +1,12 @@
 import os
 import sys
-
 sys.path.append('../')
 from load_paths import load_box_paths
 import re
 import pandas as pd
 import datetime as dt
 import numpy as np
-import matplotlib as mpl
-import random
 from processing_helpers import *
-
-def load_sim_data(exp_name,  region_suffix ='_All', sim_output_path=None, fname='trajectoriesDat.csv', column_list=None):
-    df = pd.read_csv(os.path.join(sim_output_path, fname), usecols=column_list)
-    df = df.dropna()
-    df.columns = df.columns.str.replace(region_suffix, '')
-    first_day = datetime.strptime(df['startdate'].unique()[0], '%Y-%m-%d')
-    df['date'] = df['time'].apply(lambda x: first_day + timedelta(days=int(x)))
-    df['date'] = pd.to_datetime(df['date']).dt.date
-
-    return df
 
 def custom_rename(mdf, suffix):
     for stats in ['CI_50', 'CI_2pt5', 'CI_97pt5', 'CI_25', 'CI_75']:
@@ -44,13 +31,18 @@ def get_peak_exceed_table(first_plot_day = dt.date(2020, 10, 1), regions= range(
     for ems_region in regions:
 
         #'time', 'startdate',
-        column_list = ['date','ems', 'capacity_multiplier', 'critical_median','critical_95CI_lower','critical_95CI_upper','critical_50CI_lower']
+        column_list = ['date','ems', 'capacity_multiplier', 'critical_median','critical_95CI_lower','critical_95CI_upper','critical_50CI_lower','critical_50CI_upper']
+        if exp_name =="20201212_IL_regreopen50perc_counterfactual" or exp_name =="20201212_IL_regreopen100perc_counterfactual":
+            column_list = ['date','ems',  'critical_median','critical_95CI_lower','critical_95CI_upper','critical_50CI_lower','critical_50CI_upper']
 
         fname = 'trajectories_aggregated_region_' + str(ems_region) + '.csv'
         if os.path.exists(os.path.join(analysis_dir, fname)) == False:
             fname = 'trajectories_aggregated.csv'
 
         tdf = pd.read_csv(os.path.join(analysis_dir, fname), usecols=column_list)
+        if not 'capacity_multiplier' in tdf.columns:
+            tdf['capacity_multiplier'] = -9
+
         tdf['date'] = pd.to_datetime(tdf['date']).dt.date
         tdf = tdf[(tdf['date'] >= first_plot_day)]
         tdf['region'] = tdf['ems'].str.replace("EMS-","")
@@ -142,17 +134,18 @@ def get_time_since_trigger():
 
 if __name__ == '__main__':
 
-    # stem = sys.argv[1]
-    Location ='Local'
+    stem = sys.argv[1]
+    Location = 'Local'
     datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location=Location)
 
-    stem = '20200919_IL_regreopen'
-    sim_output_dir = os.path.join('C:/Users/mrm9534/Box/NU-malaria-team/projects/covid_chicago/cms_sim/simulation_output/_overflow_simulations/20200919')
-    #sim_output_dir =  os.path.join('/projects/p30781/covidproject/covid-chicago/_temp/')
+    if Location =="NUCLUSTER":
+        sim_output_dir = os.path.join('/projects/p30781/covidproject/covid-chicago/_temp/')
+    else:
+        sim_output_dir = os.path.join(wdir,'simulation_output') #/_overflow_simulations/20201212
     exp_names = [x for x in os.listdir(sim_output_dir) if stem in x]
 
     for exp_name in exp_names:
         analysis_dir = os.path.join(sim_output_dir, exp_name)
         print("get peak, exceed dates for " + exp_name)
-        #get_peak_exceed_table(regions=[1,4,11])
+        get_peak_exceed_table(regions=[1,4,11])
         get_time_since_trigger()
