@@ -12,8 +12,7 @@ source("publication_scripts_ICUprob/functions.R")
 TwoCols_seq <- c("#00a79d", "#f7941d")
 theme_set(theme_minimal())
 
-#simdate <-'20200919'
-#simdate <-'20201121'
+
 simdate <-'20201212'
 sim_dir <- file.path(simulation_output,'_overflow_simulations', simdate)
 if(!dir.exists(file.path(sim_dir, "ICU_bar_plots")))dir.create(file.path(sim_dir, "ICU_bar_plots"))
@@ -132,10 +131,9 @@ pplotall_f <- plot_grid(pplot_f,pplot2, ncol=1)
 ggsave(paste0("ICU_prob_pplotall_filled.pdf"), plot = pplotall_f, path = file.path(sim_dir, "ICU_prob_plots"), width = 12, height=8, device = "pdf")
 
 
-
-  
-
 #### For text
+dat_prob <- dat
+
 dat %>% filter(rollback %in%  c("sm4","sm8")) %>% 
   group_by(geography_modeled,rollback) %>% 
   summarize(prob=mean(prob)) %>%
@@ -147,6 +145,8 @@ dat %>% filter(delay %in%  c("1daysdelay","7daysdelay")) %>%
   summarize(prob=mean(prob)) %>%
   pivot_wider(names_from="delay", values_from="prob") %>%
   mutate(diff = (`0daysdelay`- `7daysdelay`)*100)
+
+
 
 #### TODO Run regression ?
 

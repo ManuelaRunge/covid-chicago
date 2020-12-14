@@ -1,6 +1,5 @@
 
 
-
 library(tidyverse)
 library(cowplot)
 library(data.table)
@@ -114,3 +113,45 @@ ggsave(paste0("capacity_timeline_reg1-4-11_long.png"),
        plot = pplot_long,
        path = file.path(outdir), width = 6, height = 12, device = "png"
 )
+
+
+###-------------------------------------------------
+### For text
+## All IL
+capacityDat_0915 <- fread(file.path(data_path, "covid_IDPH", "Corona virus reports", "hospital_capacity_thresholds/capacity_weekday_average_20200915.csv"))
+capacityDat_0915 <- capacityDat_0915 %>%
+  filter(
+           resource_type == "icu_availforcovid" &
+           overflow_threshold_percent == 1) %>%
+  select(-date_window_upper_bound) %>%
+  unique() %>%
+  mutate(geography_name = gsub("covidregion_", "", geography_modeled))
+
+capacityDat <- fread(file.path(data_path, "covid_IDPH", "Corona virus reports", "capacity_by_covid_region.csv"))
+capacityDat <- capacityDat %>%
+  filter(geography_level == "covid region" ) %>%
+  mutate(date = as.Date(date))
+
+capacityDat$geography_name <- factor(capacityDat$geography_name, levels = c(1:11), labels = c(1:11))
+capacityDat_1208$geography_name <- factor(capacityDat_1208$geography_name, levels = c(1:11), labels = c(1:11))
+capacityDat_0915$geography_name <- factor(capacityDat_0915$geography_name, levels = c(1:11), labels = c(1:11))
+
+
+
+capacityDat %>% group_by(geography_name) %>% 
+  mutate(ratio=icu_availforcovid/icu_total ) %>% summarize(mean(ratio, na.rm=TRUE))
+
+mean(capacityDat$icu_availforcovid/ capacityDat$icu_total, na.rm=TRUE)
+
+
+capacityDat %>% filter(date==as.Date("2020-09-30")) %>% left_join(capacityDat_0915, by="geography_name") %>%
+  mutate(ratio=icu_covid/icu_availforcovid,
+         ratio2=icu_covid/avg_resource_available_prev2weeks) %>% 
+  group_by(geography_name,icu_covid, icu_availforcovid,avg_resource_available_prev2weeks) %>% 
+  summarize(mean1=mean(ratio, na.rm=TRUE),
+            mean2=mean(ratio2, na.rm=TRUE))
+
+capacityDat %>% filter(date==as.Date("2020-09-30")) %>% left_join(capacityDat_0915, by="geography_name") %>%
+  mutate(ratio=icu_covid/icu_availforcovid,
+         ratio2=icu_covid/avg_resource_available_prev2weeks ) %>% summarize(mean1=mean(ratio, na.rm=TRUE),
+                                                                            mean2=mean(ratio2, na.rm=TRUE))

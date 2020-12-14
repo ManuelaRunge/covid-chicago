@@ -12,13 +12,9 @@ TwoCols_seq <- c("#00a79d", "#f7941d")
 ## -------------------------------
 ## Run script
 ## -------------------------------
-
-#simdate <-'20200919'
-#simdate <-'20201121'
 simdate <-'20201212'
 sim_dir <- file.path(simulation_output,'_overflow_simulations', simdate)
 if(!dir.exists(file.path(sim_dir, "ICU_bar_plots")))dir.create(file.path(sim_dir, "ICU_bar_plots"))
-
 
 exp_names <- list.dirs(sim_dir, recursive = FALSE, full.names = FALSE)
 exp_names <- exp_names[grep("IL_regreopen",exp_names)]
@@ -33,9 +29,11 @@ dat <- dat %>% separate(scen_name, into = c("reopen", "delay", "rollback"), sep 
 table(dat$rollback, dat$exp_name)
 dat$rollback[is.na(dat$rollback)] <- "counterfactual"
 
-rollback_val <- unique(dat$rollback)
-delay_val <- unique(dat$delay)
+rollback_values <- unique(dat$rollback)
+delay_values <- unique(dat$delay)
 
+rollback_val <- rollback_values[2]
+delay_val <- delay_values[1]
 
 dat$capacity_multiplier_fct <- round(dat$capacity_multiplier * 100, 0)
 fct_labels <-  sort(unique(dat$capacity_multiplier_fct))
@@ -60,7 +58,7 @@ dat$region <- factor(dat$ems, levels = c(paste0("EMS-", c(1:11)), "All"), labels
 palldat_best <- dat %>%
   filter(ems %in% c("EMS-1", "EMS-4", "EMS-11") &
     (delay == "counterfactual" |
-      delay == delay_val[1] & rollback == rollback_val[2]))
+      delay == delay_val & rollback == rollback_val))
 
 palldat_worst <- dat %>%
   filter(ems %in% c("EMS-1", "EMS-4", "EMS-11") &
@@ -70,16 +68,16 @@ palldat_worst <- dat %>%
 p1dat <- dat %>%
   filter(ems %in% c("EMS-1", "EMS-4", "EMS-11") &
            (delay != "counterfactual" &
-              delay ==  delay_val[1] &
-              rollback ==  rollback_val[2])) %>%
+              delay ==  delay_val &
+              rollback ==  rollback_val)) %>%
   as.data.frame()
 
 
 p1bdat <- dat %>%
   filter(ems %in% c("EMS-1", "EMS-4", "EMS-11") &
            (delay != "counterfactual" &
-              delay ==  delay_val[1] &
-              rollback ==  rollback_val[2])) %>%
+              delay ==  delay_val &
+              rollback ==  rollback_val)) %>%
   as.data.frame()
 
 p2dat <- subset(dat, ems %in% c("EMS-1", "EMS-4", "EMS-11") & (delay == "counterfactual")) %>% as.data.frame()
@@ -131,32 +129,8 @@ ggsave(paste0("barplot_pall.pdf"),
   path = file.path(sim_dir, "ICU_bar_plots"), width = 10, height = 8, device = "pdf"
 )
 
-
-#### Pointrange
-
-ggplot(data = p1dat) +
-  geom_pointrange(aes(x = capacity_multiplier_fct, y = perc_ICU_occup_median,  ymin = perc_ICU_occup_95CI_lower, ymax = perc_ICU_occup_95CI_upper, 
-                      group = interaction(delay, rollback, reopen), fill = reopen),
-            position = position_dodge(width = 0.91), shape=21
-  ) +
-  geom_line(aes(x = capacity_multiplier_fct, y = perc_ICU_occup_median,  
-                      group = interaction(delay, rollback, reopen), fill = reopen),
-                  position = position_dodge(width = 0.91), width = 0.7,shape=21
-  ) +
-  labs(y="% of ICU capacity at predicted peak\nuntil end of December", x="Trigger treshold\n(as % of ICU capacity at which mitigation is triggered )")+
-  geom_hline(aes(yintercept = 100), linetype="dashed", col="dodgerblue") +
-  facet_wrap(~region, scales = "free", ncol = 1) +
-  scale_fill_manual(values = c(TwoCols_seq)) +
-  customTheme +
-  geom_hline(yintercept = c(0))+
-  theme_minimal()
-
-
-
-
+dat_peak <-dat
 ###### Text to describe figures
-
-
 p2dat %>%
   group_by(ems, reopen, exp_name) %>%
   mutate(ratio =  counter_critical_median / icu_available) %>%
