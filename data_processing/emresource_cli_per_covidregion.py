@@ -57,7 +57,7 @@ def plot_emresource(ems_list, scale= '', channels = None, palette = None, add_gr
         axes = [fig.add_subplot(1, 2, x + 1) for x in range(len(ems_list))]
     else:
         fig = plt.figure(figsize=(14, 12))
-        fig.subplots_adjust(right=0.97, wspace=0.5, left=0.1, hspace=0.9, top=0.95, bottom=0.07)
+        fig.subplots_adjust(right=0.97, wspace=0.3, left=0.07, hspace=0.3, top=0.95, bottom=0.07)
         axes = [fig.add_subplot(4, 3, x + 1) for x in range(len(ems_list))]
 
     for ei, ems in enumerate(ems_list):
