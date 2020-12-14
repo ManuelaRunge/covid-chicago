@@ -180,7 +180,7 @@ if __name__ == '__main__':
     if Location == "NUCLUSTER":
         analysis_dir = os.path.join('/projects/p30781/covidproject/covid-chicago/_temp')
     else:
-        analysis_dir = os.path.join(wdir, "simulation_output/_overflow_simulations/20201212") #/_overflow_simulations/20201212
+        analysis_dir = os.path.join(wdir, "simulation_output") #/_overflow_simulations/20201212
 
     exp_names = [x for x in os.listdir(os.path.join(analysis_dir)) if stem in x]
     plot_first_day = pd.to_datetime('2020/3/1')
