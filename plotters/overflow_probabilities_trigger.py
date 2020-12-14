@@ -1,6 +1,6 @@
 import os
 import sys
-
+import argparse
 sys.path.append('../')
 from load_paths import load_box_paths
 import re
@@ -11,6 +11,27 @@ import matplotlib as mpl
 import random
 from processing_helpers import *
 
+def parse_args():
+    description = "Simulation run for modeling Covid-19"
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument(
+        "-stem",
+        "--stem",
+        type=str,
+        help="Name of simulation experiment"
+    )
+    
+    parser.add_argument(
+        "-loc",
+        "--Location",
+        type=str,
+        help="Local or NUCLUSTER",
+        default = "NUCLUSTER"
+    )
+
+    return parser.parse_args()
+    
 def load_sim_data(exp_name,  region_suffix ='_All', sim_output_path=None, fname=None, column_list=None):
     df = pd.read_csv(os.path.join(sim_output_path, fname), usecols=column_list)
     df = df.dropna()
@@ -115,8 +136,10 @@ def get_probs(exp_name, file_str='hospitaloverflow', regions=range(1, 12),
 
 if __name__ == '__main__':
 
-    stem = sys.argv[1]
-    Location ='NUCLUSTER'
+    args = parse_args()  
+    stem = args.stem
+    Location = args.Location
+    
     datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location=Location)
     sim_output_dir = os.path.join('/projects/p30781/covidproject/covid-chicago/_temp/')
     exp_names = [x for x in os.listdir(sim_output_dir) if stem in x]
