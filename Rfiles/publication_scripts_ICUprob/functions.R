@@ -278,6 +278,116 @@ f_save_plot <- function(pplot, plot_name, plot_dir, width = 14, height = 8) {
 }
 
 
+f_simdat <- function(dat, subregions=c(1, 4, 11), grpVars=NULL,stopdate=as.Date("2020-08-01")){
+  
+  if(is.null(grpVars))grpVars <- c("date", "ems", "scenario_name", "geography_modeled")
+  
+  dat <- dat %>%
+    filter(geography_modeled %in% c("covidregion_1", "covidregion_4", "covidregion_11")) %>%
+    pivot_longer(cols = -grpVars) %>%
+    mutate(
+      name = gsub("_m", "__m", name),
+      name = gsub("_9", "__9", name),
+      name = gsub("_5", "__5", name)
+    ) %>%
+    separate(name, into = c("channel", "stat"), sep = "__") %>%
+    filter(channel %in% c("hosp_det", "crit_det", "new_detected_deaths", "new_deaths")) %>%
+    pivot_wider(names_from = "channel", values_from = "value") %>%
+    rename(
+      covid_non_icu = hosp_det,
+      confirmed_covid_icu = crit_det,
+      death_det = new_detected_deaths,
+      deaths = new_deaths
+    ) %>%
+    pivot_longer(cols = -c(grpVars, "stat")) %>%
+    mutate(source = "sim") %>%
+    pivot_wider(names_from = "stat", values_from = "value") %>%
+    dplyr::rename(
+      median.val = median,
+      q25.val = `50CI_lower`,
+      q75.val = `50CI_upper`,
+      q2.5.val = `95CI_lower`,
+      q97.5.val = `95CI_upper`
+    ) %>%
+    mutate(Date = as.Date(date))
+  dat$region <- factor(dat$ems, levels = paste0("EMS-",subregions), labels = paste0("Region ", subregions))
+  
+  dat <- subset(
+    dat,
+    Date > as.Date("2020-03-01") &
+      Date <= as.Date("2020-12-31") &
+      name %in% c("confirmed_covid_icu", "covid_non_icu", "deaths") 
+  )
+  
+  if("reopening_multiplier_4" %in% colnames(simdat_reopen)){
+    dat <- subset(
+      dat,
+      Date <= as.Date("2020-12-31") &
+        name %in% c("confirmed_covid_icu", "covid_non_icu", "deaths") &
+        region %in% c("Region 1", "Region 4", "Region 11") &
+        Date > as.Date("2020-06-01") &
+        reopening_multiplier_4 < 0.2&
+        !( reopening_multiplier_4 %in%  unique(simdat_reopen$reopening_multiplier_4)[c(2,3,4,5)])
+    )
+    #unique(simdatSub_reopen$reopening_multiplier_4)
+  }
+  
+  return(dat)
+}
+
+f_load_ref_data <- function(subregions=c(1, 4, 11),startdate=as.Date("2020-03-01"), stopdate=as.Date("2020-08-01")){
+  LLdat <- f_loadData(data_path) %>%
+    mutate(
+      Date = as.Date(Date),
+      week = week(Date),
+      month = month(Date)
+    ) %>%
+    dplyr::select(Date, region, LL_admissions, LL_deaths) %>%
+    dplyr::rename(
+      deaths = LL_deaths,
+      covid_non_icu = LL_admissions
+    ) %>%
+    pivot_longer(cols = -c("Date", "region")) %>%
+    mutate(source = "LL")
+  
+  emresource <- f_loadData(data_path) %>%
+    mutate(
+      Date = as.Date(Date),
+      week = week(Date),
+      month = month(Date)
+    ) %>%
+    dplyr::rename(deaths = confirmed_covid_deaths_prev_24h) %>%
+    dplyr::select(Date, region, confirmed_covid_icu, covid_non_icu, deaths) %>%
+    pivot_longer(cols = -c("Date", "region")) %>%
+    dplyr::mutate(source = "EMResource") %>%
+    rbind(LLdat)
+  
+  pplot7dAvr <- emresource %>%
+    dplyr::group_by(Date, name, source, region) %>%
+    dplyr::summarize(
+      value = sum(value, na.rm = TRUE),
+    ) %>%
+    dplyr::group_by(name, source, region) %>%
+    arrange(name, Date, source) %>%
+    mutate(value7 = zoo::rollmean(value, k = 7, fill = NA)) %>%
+    ungroup()
+  
+  pplot7dAvrSub <- subset(
+    pplot7dAvr,
+    Date > startdate &
+      Date <= stopdate &
+      name %in% c("confirmed_covid_icu", "covid_non_icu", "deaths") &
+      region %in% subregions
+  ) %>%
+    filter((name == "confirmed_covid_icu" & source == "EMResource") |
+             (name == "covid_non_icu" & source == "EMResource") |
+             (name == "deaths" & source == "LL"))
+  
+  pplot7dAvrSub$region <- factor(pplot7dAvrSub$region, levels =subregions, labels = paste0("Region ", subregions))
+  return(pplot7dAvrSub)
+}
+
+
 load_sim_data <- function(exp_dir) {
   trajectoriesDat <- fread(file = file.path(exp_dir, "trajectoriesDat_trim.csv"))
 
