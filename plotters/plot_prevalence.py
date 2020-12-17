@@ -51,9 +51,8 @@ def trim_trajectories(simpath, scenario, colnames, ems) :
     df.to_csv(os.path.join(simpath, 'trimmed_trajectoriesDat_%s.csv' % scenario), index=False)
 
 
-def plot_prevalences(exp_name,first_day,last_day, channels = ['prevalence'], fname='trajectoriesDat.csv'):
+def plot_prevalences(exp_name,first_day,last_day, channels = ['prevalence'], fname='trajectoriesDat.csv',save_fname="prevalenceDat.csv"):
 
-    simpath = os.path.join(wdir, 'simulation_output', exp_name)
     ems = ['EMS-%d' % x for x in range(1, 12)] + ['All']
     column_list = ['time', 'startdate', 'scen_num','run_num','sample_num', 'infected_All', 'susceptible_All', 'exposed_All', 'recovered_All']
     for ems_num in ems:
@@ -77,6 +76,10 @@ def plot_prevalences(exp_name,first_day,last_day, channels = ['prevalence'], fna
         df['seroprevalence_%s' % ems_num] = (df['infected_%s' % ems_num] + df['recovered_%s' % ems_num]) / df[
             'N_%s' % ems_num]
 
+        if save_fname != None:
+            simpath = os.path.join(wdir, 'simulation_output', exp_name)
+            df.to_csv(os.path.join(simpath, "prevalenceDat.csv"), index=False, date_format='%Y-%m-%d')
+
         ax = fig.add_subplot(3,4,e+1)
         ax.grid(b=True, which='major', color='#999999', linestyle='-', alpha=0.3)
         for k, channel in enumerate(channels) :
@@ -85,9 +88,9 @@ def plot_prevalences(exp_name,first_day,last_day, channels = ['prevalence'], fna
                 plot_label = channel.split('_')[0]
             channel_label = channel
             channel = f'{channel}_{ems_num}'
-            mdf = df.groupby('date')[channel].agg([CI_50, CI_5, CI_95, CI_25, CI_75]).reset_index()
+            mdf = df.groupby('date')[channel].agg([CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75]).reset_index()
             ax.plot(mdf['date'], mdf['CI_50'], color=palette[k], label=plot_label)
-            ax.fill_between(mdf['date'].values, mdf['CI_5'], mdf['CI_95'],
+            ax.fill_between(mdf['date'].values, mdf['CI_2pt5'], mdf['CI_97pt5'],
                             color=palette[k], linewidth=0, alpha=0.2)
             ax.fill_between(mdf['date'].values, mdf['CI_25'], mdf['CI_75'],
                             color=palette[k], linewidth=0, alpha=0.4)
