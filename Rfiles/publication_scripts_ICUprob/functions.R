@@ -435,6 +435,41 @@ load_sim_data <- function(exp_dir) {
 }
 
 ## Load simulation data
+f_load_trajectories <- function(sim_dir, exp_name, region_nr){
+  
+  fname <- paste0("trajectoriesDat_region_",region_nr,".csv")
+  gsubname <- paste0("_EMS-",region_nr)
+  
+  dat <- fread(file.path(sim_dir,exp_name,fname)) %>% 
+          rename_with( ~ gsub(gsubname, "", .x)) %>%
+          mutate(startdate=as.Date(startdate),
+                 date=as.Date(startdate+time)) %>%
+          filter(date >=as.Date("2020-09-01")) %>%
+          dplyr::select(-time, -startdate) %>%
+          dplyr::group_by(capacity_multiplier, date) %>%
+          add_tally() %>%
+          dplyr::group_by(sample_num, date) %>%
+          dplyr::rename(nsamples=n) %>%
+          add_tally() %>%
+          rename(nmultiplier_per_sample=n)
+  
+
+  dat$capacity_multiplier_fct <- round(dat$capacity_multiplier * 100, 0)
+  fct_labels <-  sort(unique(dat$capacity_multiplier_fct))
+  dat$capacity_multiplier_fct <- factor(dat$capacity_multiplier_fct,
+                                        levels = c(fct_labels,"counterfactual"),
+                                        labels = c(fct_labels,"counterfactual")
+  )
+  dat$capacity_multiplier_fct2 <- factor(dat$capacity_multiplier_fct,
+                                         levels = rev(c(fct_labels,"counterfactual")),
+                                         labels = rev(c(fct_labels,"counter\nfactual"))
+  )
+
+  dat$geography_modeled <- region_nr
+  dat$region <- factor(dat$geography_modeled, levels=c(1,4,11), labels=paste0("Region ",c(1,4,11)))
+  return(dat)
+}
+
 f_load_single_exp <- function(exp_dir, paramvars = NULL, summarize = TRUE, maxDate = as.Date("2020-12-31")) {
   
   if (!(file.exists(file.path(exp_dir, "trajectoriesDat_sub_long.csv")))) {
