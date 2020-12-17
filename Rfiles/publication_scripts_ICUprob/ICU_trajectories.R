@@ -246,6 +246,85 @@ pplot1
 f_save_plot(plot_name=paste0("timeline_region1_100perc"), pplot = pplot1, 
             plot_dir = file.path(sim_dir, "ICU_trajectories_plots"), width = 14, height = 7)
 
+datesDat <- plotdat %>% ungroup() %>%
+            select(exp_name, scen_num, sample_num, capacity_multiplier_fct2,capacity_multiplier_fct, peak_date ,trigger_capacity_date) %>% 
+            unique() %>% 
+            filter(!is.na(trigger_capacity_date)) %>%
+            mutate(diff_trigger_peak= peak_date - trigger_capacity_date)
+
+datesDatAggr <- datesDat %>% 
+  group_by(exp_name, capacity_multiplier_fct2,capacity_multiplier_fct) %>% 
+  summarize(peak_date_min=min(peak_date),
+            peak_date_max=max(peak_date),
+            peak_date_mean=mean(peak_date),
+            trigger_capacity_date_min=min(trigger_capacity_date),
+            trigger_capacity_date_max=max(trigger_capacity_date),
+            trigger_capacity_date_mean=mean(trigger_capacity_date),
+            diff_trigger_peak_min=min(diff_trigger_peak),
+            diff_trigger_peak_max=max(diff_trigger_peak),
+            diff_trigger_peak_mean=mean(diff_trigger_peak))
+  
+datesDat_long <- datesDat%>% 
+  dplyr::select(-c(diff_trigger_peak)) %>% 
+  pivot_longer(col=-c(exp_name, capacity_multiplier_fct2,capacity_multiplier_fct, scen_num, sample_num), names_to="date_type") 
+
+datesDatAggr_long <- datesDatAggr %>% 
+  dplyr::select(-c(diff_trigger_peak_max,diff_trigger_peak_min,diff_trigger_peak_mean)) %>% 
+  pivot_longer(col=-c(exp_name, capacity_multiplier_fct2,capacity_multiplier_fct)) %>%
+  mutate(name=gsub("_m","__m",name)) %>%
+  separate(name, into=c("date_type","stat"), sep="__") %>%
+  pivot_wider(names_from="stat", values_from="value")
+
+datesDatAggr_long$date_type <- factor(datesDatAggr_long$date_type,
+                                      levels=c("trigger_capacity_date","peak_date"), 
+                                      labels=c("trigger\ndate",'peak\ndate'))
+
+datesDat_long$date_type <- factor(datesDat_long$date_type,
+                                      levels=c("trigger_capacity_date","peak_date"), 
+                                      labels=c("trigger\ndate",'peak\ndate'))
+
+pplot <- ggplot(data=datesDatAggr_long)+
+  geom_jitter(data=datesDat_long,aes(x=date_type, y=value, group=date_type, fill=capacity_multiplier_fct2), 
+              width=0.08, height=0.01, alpha=0.5,shape=21) +
+  geom_pointrange(aes(x=date_type, ymin=min, ymax=max, y=mean, fill=capacity_multiplier_fct2),shape=21,size=1) +
+  coord_flip()+
+  facet_wrap(~capacity_multiplier_fct, nrow=1)+
+  scale_color_brewer(palette="Dark2")+
+  scale_fill_brewer(palette="Dark2")+
+  scale_y_date(date_breaks = "30 days",date_minor_breaks = "5 days",
+               lim=c(as.Date("2020-09-01"), 
+                     as.Date("2020-12-31")), date_labels = "%d\n%b")+
+  customTheme+
+  theme(legend.position = "none",
+        panel.grid.major.y = element_blank(),
+        axis.ticks = element_line())+
+  geom_hline(yintercept = c(0, Inf)) + 
+  geom_vline(xintercept = c(-Inf, Inf)) 
+
+pplot
+
+f_save_plot(plot_name=paste0("trajectories_dates_100perc_pall"), pplot = pplot, 
+            plot_dir = file.path(sim_dir, "ICU_trajectories_plots"), width = 10, height = 4)
+
+
+
+#### For text
+datesDat %>% group_by(capacity_multiplier_fct2) %>% summarize(mean(diff_trigger_peak))
+
+datesDatAggr %>% ungroup() %>% select(-exp_name) %>%as.data.frame()
+
+datesDatAggr %>% ungroup() %>% select(-exp_name) %>%as.data.frame() %>% 
+  group_by(capacity_multiplier_fct) %>% 
+  summarize(range = trigger_capacity_date_max - trigger_capacity_date_min)
+
+datesDatAggr %>% ungroup() %>% select(-exp_name) %>%as.data.frame() %>% 
+  group_by(capacity_multiplier_fct) %>% 
+  select(capacity_multiplier_fct, trigger_capacity_date_mean) %>%
+  mutate(diff= lag(trigger_capacity_date_mean) -trigger_capacity_date_mean)
+
+datesDatAggr %>% ungroup() %>% select(-exp_name) %>%as.data.frame() %>% 
+  group_by(capacity_multiplier_fct) %>% 
+  summarize(range = peak_date_mean - trigger_capacity_date_mean)
 
 
 ###=======================================
