@@ -1,3 +1,4 @@
+
 library(tidyverse)
 library(cowplot)
 library(data.table)
@@ -9,13 +10,15 @@ source("publication_scripts_ICUprob/functions.R")
 
 TwoCols_seq <- c("#00a79d", "#f7941d")
 capacity_col <- "#2a3b90"
-
+customTheme <- f_getCustomTheme()
 ## -------------------------------
 ## Run script
 ## -------------------------------
 simdate <-'20201212'
 sim_dir <- file.path(simulation_output,'_overflow_simulations', simdate)
 if(!dir.exists(file.path(sim_dir, "ICU_bar_plots")))dir.create(file.path(sim_dir, "ICU_bar_plots"))
+if(!dir.exists(file.path(sim_dir, "ICU_reduction_plots")))dir.create(file.path(sim_dir, "ICU_reduction_plots"))
+
 
 exp_names <- list.dirs(sim_dir, recursive = FALSE, full.names = FALSE)
 exp_names <- exp_names[grep("IL_regreopen",exp_names)]
@@ -60,7 +63,7 @@ dat$perc_ICU_occup_median = (dat$critical_median/  dat$avg_resource_available)*1
 
 plotdat <- dat %>% filter((delay == "counterfactual" |delay == delay_val & rollback == rollback_val)) 
 
-customTheme <- f_getCustomTheme()
+
 pplot <- ggplot(data = plotdat) +
   geom_bar(aes(x = capacity_multiplier_fct2, y = critical_median, group = reopen, fill = reopen),
     stat = "identity", position = position_dodge(width = 0.91), width = 0.7, alpha=0.4
@@ -90,49 +93,108 @@ pplot
 f_save_plot(plot_name=paste0("barplot_pall"), pplot = pplot, 
             plot_dir = file.path(sim_dir, "ICU_bar_plots"), width = 6, height = 8)
 
+
+##====================
 dat_peak <-dat
+##====================
+
 ###### Text to describe figures
-p2dat %>%
-  group_by(ems, reopen, exp_name) %>%
-  mutate(ratio =  counter_critical_median / icu_available) %>%
+dat_peak %>%
+  filter(delay=="counterfactual" ) %>%
+  group_by(region, reopen, exp_name) %>%
+  mutate(ratio =  critical_median / avg_resource_available) %>%
   as.data.frame() %>%
-  group_by(ems,reopen) %>%
+  group_by(reopen,rollback) %>%
   summarize(ratio = mean(ratio))
 
-p2dat %>%
-  group_by(ems, reopen, exp_name) %>%
-  mutate(ratio = counter_crit_det_95CI_lower / icu_available) %>%
+counterfactualDat <- dat_peak %>%
+  filter(delay=="counterfactual" ) %>%
+  group_by(region, reopen, exp_name, rollback) %>%
+  mutate(ratio =  critical_median / avg_resource_available,
+         diff =  avg_resource_available - critical_median,
+         red= (1-(avg_resource_available/critical_median))*100) %>%
   as.data.frame() %>%
-  group_by(reopen) %>%
-  summarize(ratio = mean(ratio))
+  group_by(region,reopen) %>%
+  rename(counter_ratio = ratio,
+            counter_diff = diff,
+         required_reduction = red,
+            counter_critical_95CI_lower=critical_95CI_lower,
+            counter_critical_95CI_upper=critical_95CI_upper,
+             counter_critical_median=critical_median)  %>%
+    dplyr::select(region, reopen , counter_ratio, counter_diff, required_reduction,
+                  counter_critical_95CI_lower, counter_critical_95CI_upper, counter_critical_median) 
+counterfactualDat
 
-p2dat %>%
-  group_by(ems, reopen, exp_name) %>%
-  mutate(ratio = counter_crit_det_95CI_upper / icu_available) %>%
-  as.data.frame() %>%
-  group_by(reopen) %>%
-  summarize(ratio = mean(ratio))
 
-#####
-p2dat %>%
-  group_by(ems, reopen, exp_name) %>%
-  mutate(ratio = critical_median / icu_available) %>%
+### reduction required per region
+mitigationDat <- dat_peak %>%
+  filter(delay==delay_val ) %>%
+  group_by(region, reopen, exp_name, rollback,capacity_multiplier) %>%
+  mutate(ratio =  critical_median / avg_resource_available,
+         diff =  avg_resource_available - critical_median) %>%
   as.data.frame() %>%
-  group_by(ems, reopen, ) %>%
-  summarize(ratio = mean(ratio))
+  group_by(region,reopen,rollback,capacity_multiplier) %>%
+  rename(mitigation_ratio = ratio,
+            mitigation_diff = diff,
+            mitigation_critical_median=critical_median,
+         mitigation_critical_95CI_lower=critical_95CI_lower,
+         mitigation_critical_95CI_upper=critical_95CI_upper) %>%
+  dplyr::select(region, reopen, rollback, capacity_multiplier , 
+                mitigation_ratio, mitigation_diff,mitigation_critical_95CI_lower, mitigation_critical_95CI_upper, mitigation_critical_median)  %>%
+  f_addVar(counterfactualDat) %>%
+  group_by(region,reopen,rollback,capacity_multiplier) %>%
+  mutate(red_median = (1-(mitigation_critical_median/counter_critical_median))*100,
+         red_lower = (1-(mitigation_critical_95CI_lower/counter_critical_95CI_lower))*100,
+         red_upper = (1-(mitigation_critical_95CI_upper/counter_critical_95CI_upper))*100) 
 
-p2dat %>%
-  group_by(ems, reopen, exp_name) %>%
-  mutate(ratio = crit_det_95CI_lower / icu_available) %>%
-  as.data.frame() %>%
-  group_by(ems, reopen, ) %>%
-  summarize(ratio = mean(ratio))
-p2dat %>%
-  group_by(ems, reopen, exp_name) %>%
-  mutate(ratio = crit_det_95CI_upper / icu_available) %>%
-  as.data.frame() %>%
-  group_by(ems, reopen, ) %>%
-  summarize(ratio = mean(ratio))
+mitigationDat %>%
+  filter(rollback %in% c("pr4","pr8")) %>% arrange(region, rollback, reopen)
+
+mitigationDat %>%
+  filter(rollback %in% c("pr4","pr8")) %>% arrange(rollback, reopen,region)
+
+mitigationDat %>% filter(capacity_multiplier==1) %>%
+  arrange(rollback, reopen,region,capacity_multiplier) %>%
+  group_by(rollback, reopen,capacity_multiplier) %>% 
+  summarize(red_median=mean(red_median))
+
+
+mitigationDat$reopen_fct <- factor(mitigationDat$reopen, 
+                                   levels=c("100perc","50perc"),
+                                   labels=c("High\ntransmission\nncrease","Low\ntransmission\nincrese"))
+
+mitigationDat$reopen_fct2 <- factor(mitigationDat$reopen, 
+                                   levels=c("100perc","50perc"),
+                                   labels=c("High","Low"))
+
+mitigationDat$rollback_fct <- factor(mitigationDat$rollback, 
+                                     levels=c("pr8","pr6", "pr4","pr2"),
+                                   labels=rev(seq(20,80,20)))
+
+
+pplot <- ggplot(data=mitigationDat)+
+  geom_rect(xmin=80, xmax=Inf, ymin=-Inf, ymax=Inf, fill="grey", alpha=0.01)+
+  #geom_ribbon(aes(x=capacity_multiplier, ymin=red_lower, ymax=red_upper,  group=interaction(rollback,reopen), fill=as.factor(reopen)), alpha=0.4) +
+  geom_line(aes(x=capacity_multiplier*100, y=red_median, linetype=rollback_fct, col=reopen_fct2),size=1) +
+  facet_grid(reopen_fct~region)+
+  geom_text(data=unique(mitigationDat[,c("region","reopen_fct","required_reduction")]),
+            aes(x=11, y=required_reduction, label="required\nreduction"),col="red") +
+  geom_hline(aes(yintercept=required_reduction), linetype="solid", col="red")+
+  scale_color_manual(values=TwoCols_seq)+
+  geom_hline(yintercept = c(-Inf, Inf)) +   geom_vline(xintercept = c(-Inf, Inf))+
+  #geom_vline(xintercept = 80) +
+  scale_y_continuous(lim=c(0,100))+
+  theme( axis.ticks = element_line())+
+  scale_x_continuous(breaks=seq(0,100,20),labels=seq(0,100,20))+
+  customTheme+
+  labs(x="Trigger threshold\n(% of ICU capacity)",
+       y="Relative reduction\nin predicted ICU peak (%)",
+       linetype="Mitigation\neffectiveness (%)",col="Transmission\nincrease") 
+
+pplot
+
+f_save_plot(plot_name=paste0("mitigation_effectiveness"), pplot = pplot, 
+            plot_dir = file.path(sim_dir, "ICU_reduction_plots"), width = 12, height = 8)
 
 
 
