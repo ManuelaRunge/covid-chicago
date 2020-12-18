@@ -2,7 +2,7 @@ import numpy as np
 import os
 import pandas as pd
 from load_paths import load_box_paths
-from datetime import datetime, timedelta
+from datetime import date, timedelta, datetime
 
 datapath, projectpath, wdir,exe_dir, git_dir = load_box_paths()
 
@@ -166,7 +166,12 @@ def load_ref_df(ems_nr):
             ref_df_ll = ref_df_ll[ref_df_ll['covid_region'] == ems_nr]
             ref_df_cli = ref_df_cli[ref_df_cli['covid_region'] == ems_nr]
             ref_df_public = ref_df_public[ref_df_public['covid_region'] == ems_nr]
-        else:
+        if ems_nr == 0:
+            ref_df_emr['covid_region'] = 0
+            ref_df_ll['covid_region'] = 0
+            ref_df_cli['covid_region'] = 0
+            ref_df_public['covid_region'] = 0
+
             ref_df_emr = ref_df_emr.groupby('date').agg(np.sum).reset_index()
             ref_df_ll = ref_df_ll.groupby('date').agg(np.sum).reset_index()
             ref_df_cli = ref_df_cli.groupby('date').agg(np.sum).reset_index()
@@ -195,6 +200,9 @@ def load_ref_df(ems_nr):
 
     ref_df = ref_df.sort_values(['covid_region', 'date'])
     ref_df['date'] = pd.to_datetime(ref_df['date']).dt.date
+    ref_df = ref_df[(ref_df['date'] > pd.to_datetime(date(2020,1,1))) &
+                    (ref_df['date'] <= pd.to_datetime(date.today()))]
+
     return ref_df
 
 
@@ -274,7 +282,7 @@ def calculate_incidence_by_age(adf, age_group, output_filename=None) :
     return adf
 
 
-def load_capacity(ems, fname=None):
+def load_capacity(ems):
     ### note, names need to match, simulations and capacity data already include outputs for all illinois
 
     file_path = os.path.join(datapath, 'covid_IDPH', 'Corona virus reports', 'hospital_capacity_thresholds')
@@ -284,11 +292,9 @@ def load_capacity(ems, fname=None):
     filedates = [item.replace('.csv', '') for item in filedates]
     latest_filedate = max([int(x) for x in filedates])
 
-    if fname == None :
-        fname = 'capacity_weekday_average_' + str(latest_filedate) + '.csv'
+    fname = 'capacity_weekday_average_' + str(latest_filedate) + '.csv'
     ems_fname = os.path.join(datapath, 'covid_IDPH/Corona virus reports/hospital_capacity_thresholds/', fname)
     df = pd.read_csv(ems_fname)
-    df['avg_resource_available'] = df['avg_resource_available_prev2weeks']
 
     df = df[df['overflow_threshold_percent'] == 1]
     df['ems'] = df['geography_modeled']
@@ -297,18 +303,18 @@ def load_capacity(ems, fname=None):
     df = df.drop_duplicates()
 
     df = df.pivot(index='ems', columns='resource_type', values='avg_resource_available')
-
     df.index.name = 'ems'
     df.reset_index(inplace=True)
 
-    if ems == 'illinois':
+    if ems == 'illinois' or ems == 0:
         df['ems'] = 'illinois'
-    #df = df.groupby('ems')[['hb_availforcovid', 'icu_availforcovid', 'vent_availforcovid']].agg(np.sum).reset_index()
-    if ems != 'illinois':
+        df = df.groupby('ems')[['hb_availforcovid', 'icu_availforcovid', 'vent_availforcovid']].agg(np.sum).reset_index()
+    else :
         df = df[df['ems'] == str(ems)]
 
-    capacity = {'hosp_det': int(df['hb_availforcovid']), 'crit_det': int(df['icu_availforcovid'])}
-    #capacity = {'hosp_det': int(df['hb_availforcovid']), 'crit_det': int(df['icu_availforcovid']), 'ventilators': int(df['vent_availforcovid'])}
+    capacity = {'hosp_det': int(df['hb_availforcovid']),
+                'crit_det': int(df['icu_availforcovid']),
+                'ventilators': int(df['vent_availforcovid'])}
     return capacity
 
 
