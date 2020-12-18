@@ -298,7 +298,7 @@ pplot <- ggplot(data=datesDatAggr_long)+
   theme(legend.position = "none",
         panel.grid.major.y = element_blank(),
         axis.ticks = element_line())+
-  geom_hline(yintercept = c(0, Inf)) + 
+  geom_hline(yintercept = c(-Inf, Inf)) + 
   geom_vline(xintercept = c(-Inf, Inf)) 
 
 pplot

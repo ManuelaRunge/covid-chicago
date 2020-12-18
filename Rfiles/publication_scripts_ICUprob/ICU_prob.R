@@ -32,6 +32,7 @@ unique(dat$geography_modeled)
 #subregions=
 subregions=c(1,4,11) #,c('covidregion_1','covidregion_4','covidregion_11'))
 dat <- dat %>% filter(geography_modeled %in% subregions)
+dat$region <- factor(dat$geography_modeled, levels=subregions, labels=paste0("Region ",subregions))
 table(dat$exp_name,dat$geography_modeled)
 
 dat$scen_name <- gsub(paste0(simdate, "_IL_regreopen"), "", dat$exp_name)
@@ -42,7 +43,7 @@ rollback_val <- unique(dat$rollback)
 delay_val <- unique(dat$delay)
 
 
-dat$region <- factor(dat$geography_modeled, levels=subregions, labels=paste0("Region ",subregions))
+
 table(dat$geography_modeled)
 table(dat$region)
 table(dat$rollback)
@@ -98,8 +99,9 @@ pplot_f
 ggsave(paste0("ICU_prob_filled.pdf"), plot = pplot_f, path =  file.path(sim_dir, "ICU_prob_plots"), width = 12, height=4, device = "pdf")
 
 # rollback=="sm4"
-dat_wide <- dat %>% filter( rollback=="pr6") %>%
-  dplyr::select(capacity_multiplier,rollback, prob, region, delay, reopen) %>% pivot_wider(names_from="delay", values_from="prob")
+dat_wide <- dat %>% filter( rollback=="pr8") %>%
+  dplyr::select(capacity_multiplier,rollback, prob, region, delay, reopen) %>% 
+  pivot_wider(names_from="delay", values_from="prob")
 
 pplot2 <-   ggplot(data = subset(dat, rollback=="pr8")) +
   theme_minimal()+
@@ -120,6 +122,8 @@ pplot2 <-   ggplot(data = subset(dat, rollback=="pr8")) +
   facet_wrap( ~ region,scales="free" ) +
   theme(panel.spacing = unit(2, "lines") , legend.position = 'None')+
   labs(y='Probability of ICU overflow (%)',x='Trigger threshold (% of available ICU beds)')
+
+pplot2
 ggsave(paste0("ICU_prob_delay.pdf"), plot = pplot2, path =  file.path(sim_dir, "ICU_prob_plots"), width = 12, height=4, device = "pdf")
 
 
@@ -134,19 +138,51 @@ ggsave(paste0("ICU_prob_pplotall_filled.pdf"), plot = pplotall_f, path = file.pa
 #### For text
 dat_prob <- dat
 
-dat %>% filter(rollback %in%  c("sm4","sm8")) %>% 
-  group_by(geography_modeled,rollback) %>% 
-  summarize(prob=mean(prob)) %>%
-  pivot_wider(names_from="rollback", values_from="prob") %>%
-  mutate(diff = (sm4- sm8)*100)
+dat %>% filter(delay=="7daysdelay")  %>% filter(capacity_multiplier==0.8) %>%
+  dplyr::select(region, capacity_multiplier,rollback, reopen, delay, prob) %>% 
+  pivot_wider(names_from="rollback", values_from="prob") 
 
-dat %>% filter(delay %in%  c("1daysdelay","7daysdelay")) %>% 
-  group_by(geography_modeled,delay) %>% 
+dat %>% filter(delay=="7daysdelay")  %>% filter(prob >= 0.45 & prob <=0.55) %>%
+  dplyr::select(region, capacity_multiplier,rollback, reopen, delay, prob) %>% 
+  pivot_wider(names_from="rollback", values_from="prob") %>%
+  arrange(region, reopen, capacity_multiplier)
+
+dat %>% filter(delay=="7daysdelay")  %>% 
+  dplyr::group_by(region,rollback, reopen, delay) %>% 
+  summarize(prob=mean(prob)) %>%
+  pivot_wider(names_from="rollback", values_from="prob") 
+
+
+dat %>% filter(delay=="7daysdelay")  %>% 
+  dplyr::group_by(rollback, reopen, delay) %>% 
+  summarize(prob=mean(prob)) %>%
+  pivot_wider(names_from="rollback", values_from="prob") 
+
+
+dat %>% filter(rollback=="pr8")  %>% 
+  dplyr::group_by(region,rollback, reopen, delay) %>% 
+  summarize(prob=mean(prob)) %>%
+  pivot_wider(names_from="delay", values_from="prob") 
+
+dat %>% filter(rollback=="pr8")  %>% 
+  dplyr::group_by(rollback, reopen, delay) %>% 
+  summarize(prob=mean(prob)) %>%
+  pivot_wider(names_from="delay", values_from="prob") 
+
+dat %>% filter(rollback=="pr8")  %>% 
+  dplyr::group_by(rollback,capacity_multiplier, reopen, delay) %>% 
   summarize(prob=mean(prob)) %>%
   pivot_wider(names_from="delay", values_from="prob") %>%
-  mutate(diff = (`0daysdelay`- `7daysdelay`)*100)
+  mutate(diff = round(`1daysdelay` -`7daysdelay` ,3)*100) %>%
+  arrange(reopen, capacity_multiplier) %>%
+  as.data.frame()
 
 
+
+dat %>% filter(delay=="7daysdelay")  %>% filter(prob >= 0.15 & prob <=0.25) %>%
+  dplyr::select(region, capacity_multiplier,rollback, reopen, delay, prob) %>% 
+  pivot_wider(names_from="rollback", values_from="prob") %>%
+  arrange(reopen,region, capacity_multiplier)
 
 #### TODO Run regression ?
 

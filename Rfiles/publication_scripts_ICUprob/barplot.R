@@ -182,7 +182,7 @@ pplot <- ggplot(data=mitigationDat)+
   geom_hline(aes(yintercept=required_reduction), linetype="solid", col="red")+
   scale_color_manual(values=TwoCols_seq)+
   geom_hline(yintercept = c(-Inf, Inf)) +   geom_vline(xintercept = c(-Inf, Inf))+
-  #geom_vline(xintercept = 80) +
+  scale_linetype_manual(values=c('solid','longdash','dotdash','dashed')) + 
   scale_y_continuous(lim=c(0,100))+
   theme( axis.ticks = element_line())+
   scale_x_continuous(breaks=seq(0,100,20),labels=seq(0,100,20))+

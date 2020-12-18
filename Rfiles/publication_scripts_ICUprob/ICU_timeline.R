@@ -29,7 +29,7 @@ source("load_paths.R")
 source("setup.R")
 source("processing_helpers.R")
 source("publication_scripts_ICUprob/functions.R")
-
+customTheme <- f_getCustomTheme()
 
 if (Location == "Local") sim_dir <- file.path(simulation_output, "_overflow_simulations", simdate)
 if (Location == "NUCLUSTER") sim_dir <- "/projects/p30781/covidproject/covid-chicago/_temp"
@@ -81,6 +81,26 @@ dat$capacity_multiplier_fct <- factor(dat$capacity_multiplier_fct,
   labels = c(fct_labels, "counterfactual")
 )
 
+rollback_values <- unique(dat$rollback)
+delay_values <- unique(dat$delay)
+
+rollback_val <- rollback_values[2]
+delay_val <- delay_values[1]
+
+dat$reopen_fct <- factor(dat$reopen, 
+                         levels=c("100perc","50perc"),
+                         labels=c("High\ntransmission\nncrease",
+                                  "Low\ntransmission\nincrese"))
+
+dat$reopen_fct2 <- factor(dat$reopen, 
+                          levels=c("100perc","50perc"),
+                          labels=c("High","Low"))
+
+dat$rollback_fct <- factor(dat$rollback, 
+                           levels=c("pr8","pr6", "pr4","pr2"),
+                           labels=rev(seq(20,80,20)))
+
+
 ### check
 str(dat)
 table(dat$region)
@@ -95,21 +115,34 @@ capacityDat <- load_new_capacity(filedate = "20200915") %>%
 
 dat <- f_addVar(dat, capacityDat) %>% filter(date >= as.Date("2020-09-01"))
 
+
 ### prepare
 dat_counterfactual <- dat %>%
   filter(rollback == "counterfactual") %>%
   dplyr::select(-rollback, -delay, -capacity_multiplier_fct)
-dat_counterfactual$reopen_fct <- gsub("100perc", "High\ntransmission increase", gsub("50perc", "Low\ntransmission increase", dat_counterfactual$reopen))
+dat_counterfactual$reopen_fct <- gsub(
+  "100perc", "High\ntransmission increase",
+  gsub(
+    "50perc", "Low\ntransmission increase",
+    dat_counterfactual$reopen
+  )
+)
 
 
 dat_scen <- dat %>% filter(rollback != "counterfactual" & delay == unique(dat$delay)[1])
-dat_scen$rollback_fct <- gsub("pr8", "80%", gsub("pr6", "60%", gsub("pr4", "40%", gsub("pr2", "20%", dat_scen$rollback))))
-dat_scen$reopen_fct <- gsub("100perc", "High\ntransmission increase", gsub("50perc", "Low\ntransmission increase", dat_scen$reopen))
+
+dat_scen$reopen_fct <- gsub(
+  "100perc", "High\ntransmission increase",
+  gsub(
+    "50perc", "Low\ntransmission increase",
+    dat_scen$reopen
+  )
+)
 
 #### ====================================
 ### PLOTS - basic descriptive
 #### ====================================
-customTheme <- f_getCustomTheme()
+
 
 if (length(unique(dat$rollback)) > 1) {
   for (reg in subregions) {
@@ -230,13 +263,15 @@ dat_scen <- dat_scen %>%
     trigger_recommended = ifelse(geography_modeled == "covidregion_11", "60", trigger_recommended)
   )
 
-dat_counterfactual_sub <- dat_counterfactual  %>% filter( date >= as.Date("2020-09-01") &
-                                                            date <= as.Date("2020-12-31")) %>% 
-  mutate(grp="counterfactual\n(no mitigation)")
+dat_counterfactual_sub <- dat_counterfactual %>%
+  filter(date >= as.Date("2020-09-01") &
+    date <= as.Date("2020-12-31")) %>%
+  mutate(grp = "counterfactual\n(no mitigation)")
 
 dat_scen_sub1 <- dat_scen %>%
   filter(capacity_multiplier_fct == trigger_recommended) %>%
   mutate(grp = "recommended\n(mitigaton triggered at\n 60% (based on high transmission incr.)))")
+
 dat_scen_sub2 <- dat_scen %>%
   filter(capacity_multiplier_fct == "80") %>%
   mutate(grp = "default\n(mitigaton triggered at 80%)")
@@ -244,58 +279,31 @@ dat_scen_sub2 <- dat_scen %>%
 
 plotdat <- rbind(dat_scen_sub1, dat_scen_sub2) %>%
   filter(rollback == rollback_values[3] & delay == delay_val &
-    date <= as.Date("2020-12-31"))
+           date >= as.Date("2020-09-01") &
+           date <= as.Date("2020-12-31"))
 
-customTheme <- f_getCustomTheme()
-pplot <-
+pplot_no_counterfactual <-
   ggplot(data = subset(plotdat)) +
-  geom_ribbon(data=dat_counterfactual_sub,
+   geom_ribbon(
     aes(
       x = date, ymin = crit_det_95CI_lower, ymax = crit_det_95CI_upper,
-      fill = grp,
-      group = grp
-    ),
-    alpha = 0.2
+      fill = grp,group = grp ),alpha = 0.2
   ) +
   geom_ribbon(
     aes(
-      x = date, ymin = crit_det_95CI_lower, ymax = crit_det_95CI_upper,
-      fill = grp,
-      group = grp
-    ),
-    alpha = 0.2
-  ) +
-  geom_ribbon(
-    aes(
-      x = date, ymin = crit_det_50CI_lower , ymax = crit_det_50CI_upper,
-      fill = grp,
-      group = grp
-    ),
-    alpha = 0.4
-  ) +
-  geom_line(
-    data = dat_counterfactual_sub,
-    aes(
-      x = date, y = crit_det_median ,
-      col = grp,
-      group = grp
-    ), size = 1.3
+      x = date, ymin = crit_det_50CI_lower, ymax = crit_det_50CI_upper,
+      fill = grp,group = grp  ), alpha = 0.4
   ) +
   geom_line(
     aes(
       x = date, y = crit_det_median,
-      col = grp,
-      group = grp
-    ),
-    size = 1.3
+      col = grp,  group = grp), size = 1.3
   ) +
-  geom_hline(aes(yintercept =  icu_available),
-    linetype = "dashed", col = "dodgerblue3"
+  geom_hline(aes(yintercept = icu_available),
+             linetype = "dashed", col = "dodgerblue3"
   ) +
-  # geom_vline(xintercept=as.Date("2020-10-01"))+
-  facet_wrap(reopen_fct~ region, scales = "free") +
+  facet_wrap(reopen_fct ~ region, scales = "free") +
   scale_x_date(date_breaks = "30 days", date_labels = "%b") +
-  #scale_y_continuous(lim = c(0, 2), expand = c(0, 0)) +
   labs(
     x = "",
     y = "Predicted ICU census",
@@ -303,51 +311,111 @@ pplot <-
     fill = "ICU trigger threshold",
     caption = "median and 50% IQR"
   ) +
-  scale_color_viridis_d(option="C")+
-  scale_fill_viridis_d(option="C")+
-  geom_hline(yintercept=c(-Inf, Inf))+  geom_vline(xintercept=c(-Inf, Inf))+
+  scale_color_viridis_d(option = "C") +
+  scale_fill_viridis_d(option = "C") +
+  geom_hline(yintercept = c(-Inf, Inf)) +
+  geom_vline(xintercept = c(-Inf, Inf)) +
+  customTheme
+pplot_no_counterfactual 
+
+
+pplot <-
+  ggplot(data = subset(plotdat)) +
+  geom_ribbon(
+    data = dat_counterfactual_sub,
+    aes(
+      x = date, ymin = crit_det_95CI_lower, ymax = crit_det_95CI_upper,
+      fill = grp,    group = grp),alpha = 0.2
+  ) +
+  geom_ribbon(
+    data = dat_counterfactual_sub,
+    aes(
+      x = date, ymin = crit_det_50CI_lower, ymax = crit_det_50CI_upper,
+      fill = grp, group = grp ), alpha = 0.4) +
+  geom_ribbon(
+    aes(
+      x = date, ymin = crit_det_95CI_lower, ymax = crit_det_95CI_upper,
+      fill = grp, group = grp ), alpha = 0.2
+  ) +
+  geom_ribbon(
+    aes(
+      x = date, ymin = crit_det_50CI_lower, ymax = crit_det_50CI_upper,
+      fill = grp, group = grp ), alpha = 0.4
+  ) +
+  geom_line(
+    data = dat_counterfactual_sub,
+    aes(
+      x = date, y = crit_det_median,
+      col = grp, group = grp), size = 1.3
+  ) +
+  geom_line(
+    aes(
+      x = date, y = crit_det_median,
+      col = grp, group = grp), size = 1.3
+  ) +
+  geom_hline(aes(yintercept = icu_available),
+    linetype = "dashed", col = "dodgerblue3"
+  ) +
+  # geom_vline(xintercept=as.Date("2020-10-01"))+
+  facet_wrap(reopen_fct ~ region, scales = "free") +
+  scale_x_date(date_breaks = "30 days", date_labels = "%b") +
+  # scale_y_continuous(lim = c(0, 2), expand = c(0, 0)) +
+  labs(
+    x = "",
+    y = "Predicted ICU census",
+    col = "ICU trigger threshold",
+    fill = "ICU trigger threshold",
+    caption = "median and 50% IQR"
+  ) +
+  scale_color_viridis_d(option = "C") +
+  scale_fill_viridis_d(option = "C") +
+  geom_hline(yintercept = c(-Inf, Inf)) +
+  geom_vline(xintercept = c(-Inf, Inf)) +
   customTheme
 
 pplot
 
 
 #### Add data points
-ref_dat <- f_load_ref_data(subregions=c(1, 4, 11),startdate=as.Date("2020-09-01"), stopdate=as.Date("2020-12-12")) %>%
-              filter(name=="confirmed_covid_icu" & source=="EMResource")
+ref_dat <- f_load_ref_data(subregions = c(1, 4, 11), 
+                           startdate = as.Date("2020-09-01"), 
+                           stopdate = as.Date("2020-12-12")) %>%
+  filter(name == "confirmed_covid_icu" & source == "EMResource")
 
-pplot_wdata <- pplot + 
+
+pplot_no_counterfactual_wdata <- pplot_no_counterfactual + 
   geom_point(
-  data = ref_dat, aes(x = Date, y = value),
-  size = 1
-) +
+    data = ref_dat, aes(x = Date, y = value),
+    size = 1
+  ) +
   geom_line(
     data = ref_dat, aes(x = Date, y = value7),
     size = 1.2
-  ) 
-  
+  )
+
+
+pplot_wdata <- pplot +
+  geom_point(
+    data = ref_dat, aes(x = Date, y = value),
+    size = 1
+  ) +
+  geom_line(
+    data = ref_dat, aes(x = Date, y = value7),
+    size = 1.2
+  )
+
+
+
 pplot_wdata
-  
-  
-pplot_wactual <- pplot +
-geom_ribbon(data=dat_scen_sub3,
-            aes(
-              x = date, ymin = crit_det_95CI_lower, ymax = crit_det_95CI_upper ,
-              fill = grp,
-              group = grp
-            ),
-            alpha = 0.2
-) +   geom_ribbon(data=dat_scen_sub3,
-              aes(
-                x = date, ymin = crit_det_50CI_lower, ymax = crit_det_50CI_upper ,
-                fill = grp,
-                group = grp
-              ),
-              alpha = 0.4
-  ) +  geom_line(
-    data = dat_scen_sub3,
-    aes(
-      x = date, y = crit_det_median ,
-      col = grp,
-      group = grp
-    ), size = 1.3
-  ) 
+pplot_no_counterfactual_wdata
+
+
+f_save_plot(plot_name=paste0("comparison_predicted_to_actual_trend"), pplot = pplot_wdata, 
+            plot_dir = file.path(sim_dir, "ICU_timeline_plots"), width = 12, height = 6)
+
+
+f_save_plot(plot_name=paste0("comparison_predicted_to_actual_trend_no_counterfactual"), 
+            pplot = pplot_no_counterfactual_wdata, 
+            plot_dir = file.path(sim_dir, "ICU_timeline_plots"), width = 12, height = 6)
+
+
