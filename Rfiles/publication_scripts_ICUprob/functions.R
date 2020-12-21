@@ -322,7 +322,7 @@ f_simdat <- function(dat, subregions=c(1, 4, 11), grpVars=NULL,stopdate=as.Date(
       name %in% c("confirmed_covid_icu", "covid_non_icu", "deaths") 
   )
   
-  if("reopening_multiplier_4" %in% colnames(simdat_reopen)){
+  if("reopening_multiplier_4" %in% colnames(dat)){
     dat <- subset(
       dat,
       Date <= as.Date("2020-12-31") &
@@ -330,7 +330,7 @@ f_simdat <- function(dat, subregions=c(1, 4, 11), grpVars=NULL,stopdate=as.Date(
         region %in% c("Region 1", "Region 4", "Region 11") &
         Date > as.Date("2020-06-01") &
         reopening_multiplier_4 < 0.2&
-        !( reopening_multiplier_4 %in%  unique(simdat_reopen$reopening_multiplier_4)[c(2,3,4,5)])
+        !( reopening_multiplier_4 %in%  unique(dat$reopening_multiplier_4)[c(2,3,4,5)])
     )
     #unique(simdatSub_reopen$reopening_multiplier_4)
   }

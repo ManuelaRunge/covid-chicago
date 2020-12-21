@@ -7,33 +7,33 @@ library(data.table)
 source("load_paths.R")
 source("setup.R")
 source("processing_helpers.R")
+source("publication_scripts_ICUprob/functions.R")
 
 theme_set(theme_minimal())
+simcolor <- "#F6921E" 
+capacitycolor <- "dodgerblue2"
 
-plot_path <- file.path(project_path,"project_notes","publications","covid_model_IL_overflow","analysis_files","figures")
 
-## Functions
-ref_dat <- f_load_ref_data(subregions=c(1, 4, 11),startdate=as.Date("2020-09-01"), stopdate=as.Date("2020-12-31"))
-
-#### Run script 
+###------------------------------
+### Run script 
+###------------------------------
 subregions = c(1,4,11)
 stopdate=  as.Date("2020-09-01") #as.Date("2020-12-31")
 enddate = as.character(stopdate)
 
 simdate <- "20201212"
-exp_name_gradualReoepen <- "20201120_IL_mr_gradual_reopening2_Sep"
-exp_name_baseline <- "20201212_IL_fit_to_Sep_baseline/"
-
 sim_dir <- file.path(simulation_output, "_overflow_simulations", simdate)
-if (!dir.exists(file.path(sim_dir, "data_comparison"))) dir.create(file.path(sim_dir, "data_comparison"))
+if (!dir.exists(file.path(sim_dir, "ICU_data_comparison_plots"))) dir.create(file.path(sim_dir, "ICU_data_comparison_plots"))
+
+exp_name_gradualReoepen <- "20201120_IL_mr_gradual_reopening2_Sep"
+exp_name_baseline <- "20201212_IL_fit_to_Sep_baseline"
 
 trajectoriesDat_reopen <- fread(file.path(sim_dir, exp_name_gradualReoepen, "trajectories_aggregated.csv"))
-simdat_reopen <- f_simdat(dat=trajectoriesDat %>% dplyr::select(-startdate, -time),
+simdat_reopen <- f_simdat(dat=trajectoriesDat_reopen,
                           grpVars = c("date", "ems", "scenario_name", "geography_modeled","reopening_multiplier_4"))
 
 trajectoriesDat_baseline <- fread(file.path(sim_dir, exp_name_baseline, "trajectories_aggregated.csv"))
-simdat_baseline <- f_simdat(dat=trajectoriesDat %>% dplyr::select(-startdate, -time))
-
+simdat_baseline <- f_simdat(dat=trajectoriesDat_baseline)
 
 capacityDat <- load_new_capacity(filedate = "20200915")
 capacityDat <- capacityDat %>%
@@ -42,15 +42,15 @@ capacityDat <- capacityDat %>%
   mutate(name = ifelse(var == "medsurg_available", "covid_non_icu", "confirmed_covid_icu"))
 capacityDat$region <- factor(capacityDat$geography_name, levels = subregions, labels = paste0("Region ",subregions))
 
+
+ref_dat <- f_load_ref_data(subregions=c(1, 4, 11),startdate=as.Date("2020-09-01"), stopdate=as.Date("2020-12-31"))
 pplot7dAvrSub <- f_load_ref_data(stopdate=stopdate)
 
 ###------------------------------
 ### Plot 
 ###------------------------------
-simcolor <- "#F6921E" 
-capacitycolor <- "dodgerblue2"
-  
-pplot <- ggplot(data = subset(simdatSub_baseline, Date <= stopdate)) +
+
+pplot <- ggplot(data = subset(simdat_baseline, Date <= stopdate)) +
   geom_hline(
     data = subset(capacityDat, name == "confirmed_covid_icu"),
     aes(yintercept = value+20),
@@ -99,7 +99,7 @@ pplot <- ggplot(data = subset(simdatSub_baseline, Date <= stopdate)) +
 pplot
 
 
-pplot1 <- ggplot(data = subset(simdatSub_baseline, region == "Region 1" &
+pplot1 <- ggplot(data = subset(simdat_baseline, region == "Region 1" &
   name == "confirmed_covid_icu" &
   Date <= stopdate)) +
   geom_rect(
@@ -121,7 +121,7 @@ pplot1 <- ggplot(data = subset(simdatSub_baseline, region == "Region 1" &
     col = "#F6921E", size = 1.3
   ) +
   geom_line(
-    data = subset(simdatSub, region == "Region 1" &
+    data = subset(simdat_baseline, region == "Region 1" &
       name == "confirmed_covid_icu" &
       Date <= as.Date("2020-12-31")),
     aes(x = Date, y = median.val),
@@ -168,11 +168,12 @@ pplot1
 ### Add reopening
 pplot2 <- pplot1 +
   geom_line(
-    data = subset(simdatSub_reopen, name == "confirmed_covid_icu" & Date >= as.Date("2020-09-01")),
+    data = subset(simdat_reopen,  ems=="EMS-1" & name == "confirmed_covid_icu" & Date >= as.Date("2020-09-01")),
     aes(x = Date, y = median.val, col = as.factor(reopening_multiplier_4)), size = 1.3
   )+
   scale_color_brewer(palette="Dark2")
 pplot2
+
 if(stopdate==as.Date("2020-12-31")){
   pplot2<- pplot2+
     geom_point(
@@ -191,13 +192,6 @@ pplot_combined <- plot_grid(pplot2, pplot, ncol = 2, rel_widths = c(1, 1), rel_h
 pplot_combined
 
 
-#ggsave(paste0("data_comparison_plot_",enddate,".pdf"),
-#  plot = pplot, path = file.path(plot_path, "pdf"), width = 14, height = 8, device = "pdf"
-#) 
-
-#ggsave(paste0("data_comparison_plot_1_",enddate,".pdf"),
-#  plot = pplot1, path = file.path(plot_path, "pdf"), width = 14, height = 8, device = "pdf"
-#)
 
 ggsave(paste0("data_comparison_combined_",enddate,".pdf"),
        plot = pplot_combined, path = file.path(plot_path, "pdf"), width = 18, height = 8, device = "pdf"
