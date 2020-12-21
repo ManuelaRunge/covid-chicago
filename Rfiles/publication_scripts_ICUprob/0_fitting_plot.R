@@ -12,27 +12,30 @@ source("publication_scripts_ICUprob/functions.R")
 theme_set(theme_minimal())
 simcolor <- "#F6921E" 
 capacitycolor <- "dodgerblue2"
-
+customTheme <- f_getCustomTheme()
 
 ###------------------------------
 ### Run script 
 ###------------------------------
 subregions = c(1,4,11)
-stopdate=  as.Date("2020-09-01") #as.Date("2020-12-31")
+stopdate=  as.Date("2020-12-31") #as.Date("2020-09-01") #
+stopdate_data=  as.Date("2020-09-01") #as.Date("2020-09-01") #
 enddate = as.character(stopdate)
 
 simdate <- "20201212"
 sim_dir <- file.path(simulation_output, "_overflow_simulations", simdate)
 if (!dir.exists(file.path(sim_dir, "ICU_data_comparison_plots"))) dir.create(file.path(sim_dir, "ICU_data_comparison_plots"))
+if (!dir.exists(file.path(sim_dir, "ICU_data_comparison_plots","pdf"))) dir.create(file.path(sim_dir, "ICU_data_comparison_plots","pdf"))
 
 exp_name_gradualReoepen <- "20201120_IL_mr_gradual_reopening2_Sep"
 exp_name_baseline <- "20201212_IL_fit_to_Sep_baseline"
+fname <- "trajectories_aggregated.csv"
 
-trajectoriesDat_reopen <- fread(file.path(sim_dir, exp_name_gradualReoepen, "trajectories_aggregated.csv"))
+trajectoriesDat_reopen <- fread(file.path(sim_dir, exp_name_gradualReoepen, fname))
 simdat_reopen <- f_simdat(dat=trajectoriesDat_reopen,
                           grpVars = c("date", "ems", "scenario_name", "geography_modeled","reopening_multiplier_4"))
 
-trajectoriesDat_baseline <- fread(file.path(sim_dir, exp_name_baseline, "trajectories_aggregated.csv"))
+trajectoriesDat_baseline <- fread(file.path(sim_dir, exp_name_baseline, fname))
 simdat_baseline <- f_simdat(dat=trajectoriesDat_baseline)
 
 capacityDat <- load_new_capacity(filedate = "20200915")
@@ -43,8 +46,8 @@ capacityDat <- capacityDat %>%
 capacityDat$region <- factor(capacityDat$geography_name, levels = subregions, labels = paste0("Region ",subregions))
 
 
-ref_dat <- f_load_ref_data(subregions=c(1, 4, 11),startdate=as.Date("2020-09-01"), stopdate=as.Date("2020-12-31"))
-pplot7dAvrSub <- f_load_ref_data(stopdate=stopdate)
+#ref_dat <- f_load_ref_data(subregions=c(1, 4, 11),startdate=as.Date("2020-09-01"), stopdate=as.Date("2020-12-31"))
+pplot7dAvrSub <- f_load_ref_data(stopdate=stopdate_data)
 
 ###------------------------------
 ### Plot 
@@ -83,14 +86,16 @@ pplot <- ggplot(data = subset(simdat_baseline, Date <= stopdate)) +
     date_breaks = "30 days", date_labels = "%b"
   ) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust = 1)) +
-  facet_wrap(name ~ region, ncol = 3, scales = "free", strip.position = "top") +
+  facet_wrap(name ~ region, ncol = 3, scales = "free_y", strip.position = "top") +
   customTheme +
   labs(
     x = "",
     color = "",
     y = "ICU census\n(EMR)"
   ) +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.ticks = element_line()) +
   geom_hline(yintercept = c(-Inf, Inf)) +
   geom_vline(xintercept = c(-Inf, Inf)) +
   theme(legend.position = "none") +
@@ -101,7 +106,7 @@ pplot
 
 pplot1 <- ggplot(data = subset(simdat_baseline, region == "Region 1" &
   name == "confirmed_covid_icu" &
-  Date <= stopdate)) +
+  Date <= stopdate_data)) +
   geom_rect(
     xmin = as.Date("2020-09-01"), xmax = as.Date("2020-10-01"),
     ymin = -Inf, ymax = Inf, fill = "#c2390d", alpha = 0.002
@@ -158,7 +163,8 @@ pplot1 <- ggplot(data = subset(simdat_baseline, region == "Region 1" &
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
   geom_hline(yintercept = c(-Inf, Inf)) +
   geom_vline(xintercept = c(-Inf, Inf)) +
-  theme(legend.position = "none") +
+  theme(legend.position = "none",
+    axis.ticks = element_line()) +
   scale_y_continuous(expand = c(0, 0))
 
 pplot1
@@ -174,6 +180,16 @@ pplot2 <- pplot1 +
   scale_color_brewer(palette="Dark2")
 pplot2
 
+
+### Add reopening
+pplot_b <- pplot +
+  geom_line(
+    data = subset(simdat_reopen, Date >= as.Date("2020-09-01") & reopening_multiplier_4 <=0.1),
+    aes(x = Date, y = median.val, col = as.factor(reopening_multiplier_4)), size = 1.3
+  )+
+  scale_color_brewer(palette="Dark2")
+pplot_b
+
 if(stopdate==as.Date("2020-12-31")){
   pplot2<- pplot2+
     geom_point(
@@ -188,16 +204,16 @@ if(stopdate==as.Date("2020-12-31")){
     ) 
 }
 
-pplot_combined <- plot_grid(pplot2, pplot, ncol = 2, rel_widths = c(1, 1), rel_heights = c(0.4, 1))
+pplot_combined <- plot_grid(pplot2, pplot, ncol = 1, rel_widths = c(0.7, 1), rel_heights = c(0.7, 1))
 pplot_combined
 
 
 
-ggsave(paste0("data_comparison_combined_",enddate,".pdf"),
-       plot = pplot_combined, path = file.path(plot_path, "pdf"), width = 18, height = 8, device = "pdf"
+ggsave(paste0("data_comparison_combined_",enddate,"_v2.pdf"),
+       plot = pplot_combined, path = file.path(sim_dir, "ICU_data_comparison_plots","pdf"), width = 12, height = 14, device = "pdf"
 )
-ggsave(paste0("data_comparison_combined_",enddate,".png"),
-       plot = pplot_combined, path = file.path(plot_path), width = 18, height = 8, device = "png"
+ggsave(paste0("data_comparison_combined_",enddate,"_v2.png"),
+       plot = pplot_combined, path = file.path(sim_dir, "ICU_data_comparison_plots"), width = 12, height = 14, device = "png"
 )
 
 
