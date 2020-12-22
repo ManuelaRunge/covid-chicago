@@ -35,9 +35,10 @@ f_getCustomTheme <- function(fontscl = 0) {
     axis.text.y = element_text(size = 11 + fontscl),
     axis.title.x = element_text(size = 12 + fontscl),
     axis.title.y = element_text(size = 12 + fontscl),
-    axis.line.x = element_blank(),
-    axis.line.y = element_blank()
-    #panel.border = element_rect(colour = "black", fill = NA, size = 0.75)
+    axis.ticks = element_line() ,
+    #axis.line.x = element_line(),
+   # axis.line.y = element_line(),
+    panel.border = element_rect(colour = "black", fill = NA, size = 0.5)
   )
   return(customTheme)
 }
@@ -447,7 +448,6 @@ f_load_trajectories <- function(sim_dir, exp_name, region_nr){
           rename_with( ~ gsub(gsubname, "", .x)) %>%
           mutate(startdate=as.Date(startdate),
                  date=as.Date(startdate+time)) %>%
-          filter(date >=as.Date("2020-09-01")) %>%
           dplyr::select(-time, -startdate) %>%
           dplyr::group_by(capacity_multiplier, date) %>%
           add_tally() %>%
@@ -470,6 +470,13 @@ f_load_trajectories <- function(sim_dir, exp_name, region_nr){
 
   dat$geography_modeled <- region_nr
   dat$region <- factor(dat$geography_modeled, levels=c(1,4,11), labels=paste0("Region ",c(1,4,11)))
+  return(dat)
+}
+
+f_get_scenVars <- function(dat){
+  dat$scen_name <- gsub(paste0(simdate, "_IL_regreopen"), "", dat$exp_name)
+  dat <- dat %>% separate(scen_name, into = c("reopen", "delay", "rollback"), sep = "_")
+  dat$rollback[is.na(dat$rollback)] <- "counterfactual"
   return(dat)
 }
 
