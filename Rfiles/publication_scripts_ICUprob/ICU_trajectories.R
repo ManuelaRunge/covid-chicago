@@ -34,20 +34,22 @@ exp_names <- exp_names[!(grepl("_reopen",exp_names))]
 exp_name1 <- "20201212_IL_regreopen100perc_1daysdelay_pr6"
 exp_name2 <- "20201212_IL_regreopen50perc_1daysdelay_pr6"
 
-dat1 <- f_load_trajectories(sim_dir, exp_name1, region_nr = 1) %>% mutate(exp_name=exp_name1)
-dat2 <- f_load_trajectories(sim_dir, exp_name2, region_nr = 1) %>% mutate(exp_name=exp_name2)
+for(reg_nr in c(1,4,11)){
+selected_region <- paste0("covidregion_", reg_nr)
+dat1 <- f_load_trajectories(sim_dir, exp_name1, region_nr =reg_nr) %>% mutate(exp_name=exp_name1)
+dat2 <- f_load_trajectories(sim_dir, exp_name2, region_nr = reg_nr) %>% mutate(exp_name=exp_name2)
 
 
 dat <-  rbind(dat1,dat2) %>%
-        left_join(capacityDat, by="region") %>%
-        filter(date >=as.Date("2020-07-01")) %>% 
-        group_by(exp_name,capacity_multiplier, sample_num, scen_num) %>% 
-        mutate(peak=max(crit_det)) %>% 
-        mutate(above_yn = ifelse(peak > avg_resource_available & date <= as.Date("2020-12-31"), 1,0))
+  left_join(capacityDat, by="region") %>%
+  filter(date >=as.Date("2020-07-01")) %>% 
+  group_by(exp_name,capacity_multiplier, sample_num, scen_num) %>% 
+  mutate(peak=max(crit_det)) %>% 
+  mutate(above_yn = ifelse(peak > avg_resource_available & date <= as.Date("2020-12-31"), 1,0))%>%
+  f_get_scenVars()
 
-dat$scen_name <- gsub(paste0(simdate, "_IL_regreopen"), "", dat$exp_name)
-dat <- dat %>% separate(scen_name, into = c("reopen", "delay", "rollback"), sep = "_")
-dat$rollback[is.na(dat$rollback)] <- "counterfactual"
+rm(dat1, dat2)
+
 
 rollback_val <- unique(dat$rollback)
 delay_val <- unique(dat$delay)
@@ -84,6 +86,7 @@ table(dat$after_peak_yn)
 #### Trajectory plot
 plotdat <- subset(dat,date >=as.Date("2020-09-01") &
                     date <=as.Date("2020-12-31") & 
+                    peak_date >=as.Date("2020-09-01") & 
                     peak_date <=as.Date("2020-12-31") & 
                     capacity_multiplier_fct2 %in% c(40, 60, 80,100))
 
@@ -109,13 +112,13 @@ table(plotdat$after_trigger_capacity_yn)
 
 plotdat$reopen_fct <- factor(plotdat$reopen, 
                              levels=c("100perc","50perc"), 
-                             labels=c("High\ntransmission\nincrease","Low\ntransmission\nincrease"))
+                             labels=c("High\ntransmission\nincrease",
+                                      "Low\ntransmission\nincrease"))
 
 ##---------------------------------
-## Prepare A
+## Full plot
 ##---------------------------------
-
-pplot1 <- ggplot(data=plotdat) +
+pplot <- ggplot(data=plotdat) +
   geom_rect(xmin=-Inf, xmax=Inf, ymin=100, ymax=Inf, fill="white", alpha=1) + 
   geom_rect(xmin=-Inf, xmax=Inf, ymin=100, ymax=Inf, fill="#e5e5e5", alpha=0.07) + 
   geom_line(data=subset(plotdat), 
@@ -148,41 +151,65 @@ pplot1 <- ggplot(data=plotdat) +
   facet_grid(reopen_fct~capacity_multiplier_fct,scales="free") + 
   customTheme
 
-pplot1
-f_save_plot(plot_name=paste0("timeline_region1_full"), pplot = pplot1, 
+pplot
+
+f_save_plot(plot_name=paste0("timeline_region1_full_",selected_region), pplot = pplot, 
             plot_dir = file.path(sim_dir, "ICU_trajectories_plots"), width = 14, height = 7)
+rm(pplot)
 
-
+##---------------------------------
+## Prepare A
+##---------------------------------
 
 ##### Simplified
 plotdat <- plotdat %>% filter(reopen=="100perc" & capacity_multiplier>0.2)
+table(plotdat$nmultiplier_per_sample)
 
-pplot1 <- ggplot(data=plotdat) +
+s1 <- plotdat %>% filter(capacity_multiplier==0.4) %>% ungroup() %>% select(sample_num) %>% unique() 
+s2 <-plotdat %>% filter(capacity_multiplier==0.6) %>% ungroup() %>% select(sample_num) %>% unique() 
+s3 <-plotdat %>% filter(capacity_multiplier==0.8) %>% ungroup() %>% select(sample_num) %>% unique()
+s4 <-plotdat %>% filter(capacity_multiplier==1) %>% ungroup() %>% select(sample_num) %>% unique()
+sall <- s1$sample_num[s1$sample_num %in% s2$sample_num]
+sall <- sall[sall %in% s3$sample_num]
+sall <- sall[sall %in% s4$sample_num]
+
+plotdat <- plotdat %>% filter(sample_num %in% sall)
+
+pplot_top <- ggplot(data=plotdat) +
   geom_rect(xmin=-Inf, xmax=Inf, ymin=100, ymax=Inf, fill="white", alpha=1) + 
   geom_rect(xmin=-Inf, xmax=Inf, ymin=100, ymax=Inf, fill="#e5e5e5", alpha=0.07) + 
-  geom_line(data=subset(plotdat), 
-            aes(x=date, y=(crit_det/avg_resource_available)*100, 
+  geom_line(aes(x=date, y=(crit_det/avg_resource_available)*100, 
                 group=interaction(scen_num)),col="#b2b2b2",size=0.5) +
   geom_line(data=subset(plotdat, after_peak_yn!=1), 
             aes(x=date, y=(crit_det/avg_resource_available)*100, 
-                group=interaction(scen_num),col=capacity_multiplier_fct2),size=0.5) +
-  geom_hline(yintercept = 100,col=capacity_col, linetype="dashed")+
-  geom_hline(aes(yintercept = 100 * capacity_multiplier, 
-                 col=capacity_multiplier_fct2), linetype="longdash", size=1)+
+                group=interaction(scen_num),
+                col=capacity_multiplier_fct2), 
+            size=0.5) +
+  geom_hline(yintercept = 100, 
+             col=capacity_col, 
+             linetype="dashed")+
+  geom_hline(aes(yintercept = 100 * capacity_multiplier),
+             col="black", 
+             linetype="longdash", 
+             size=1)+
   geom_point(aes(x=peak_date, y=(peak/avg_resource_available)*100, 
                  group=interaction(scen_num),
                  fill=capacity_multiplier_fct2),col="black",shape=21) +
   scale_color_brewer(palette="Dark2")+
   scale_fill_brewer(palette="Dark2")+
-  labs(subtitle="ICU threshold to trigger mitigation (%)",
+  labs(title="",
+       subtitle="ICU threshold to trigger mitigation (%)",
        x="",
        y="Predicted ICU census\nrelative to capacity (%)", 
        color="Trigger threshold")+
-  scale_y_continuous(expand=c(0,0), breaks=seq(0,180,20), labels=seq(0,180,20), lim=c(0,200))+
+  scale_y_continuous(expand=c(0,0), 
+                     breaks=seq(0,180,20), 
+                     labels=seq(0,180,20), 
+                     lim=c(0,220))+
   geom_hline(yintercept = c(0, Inf)) + 
   geom_vline(xintercept = c(-Inf, Inf)) +
-  #geom_text(x=as.Date("2020-10-01"), y=110, label="ICU capacity", col=capacity_col)+
-  #geom_text(x=as.Date("2020-10-01"), y=40, label="Trigger threshold", col="black")+
+  geom_text(x=as.Date("2020-10-01"), y=110, label="ICU capacity", col=capacity_col)+
+  geom_text(x=as.Date("2020-10-01"), y=40, label="Trigger threshold", col="black")+
   theme(plot.subtitle = element_text(hjust=0.5),
         legend.position="none",
         panel.grid.minor = element_blank(),
@@ -191,23 +218,18 @@ pplot1 <- ggplot(data=plotdat) +
   facet_wrap(~capacity_multiplier_fct,nrow=1) + 
   customTheme
 
-pplot1
-
-
-f_save_plot(plot_name=paste0("timeline_region1_100perc"), pplot = pplot1, 
-            plot_dir = file.path(sim_dir, "ICU_trajectories_plots"), width = 14, height = 7)
-
+pplot_top
 
 ##---------------------------------
 ## Prepare B with dates
 ##---------------------------------
 datesDat <- plotdat %>% 
-            ungroup() %>%
-            select(exp_name, scen_num, sample_num, capacity_multiplier_fct2,
-                   capacity_multiplier_fct, peak_date ,trigger_capacity_date) %>% 
-            unique() %>% 
-            filter(!is.na(trigger_capacity_date)) %>%
-            mutate(diff_trigger_peak= peak_date - trigger_capacity_date)
+  ungroup() %>%
+  select(exp_name, scen_num, sample_num, capacity_multiplier_fct2,
+         capacity_multiplier_fct, peak_date ,trigger_capacity_date) %>% 
+  unique() %>% 
+  filter(!is.na(trigger_capacity_date)) %>%
+  mutate(diff_trigger_peak= peak_date - trigger_capacity_date)
 
 datesDatAggr <- datesDat %>% 
   group_by(exp_name, capacity_multiplier_fct2,capacity_multiplier_fct) %>% 
@@ -220,7 +242,7 @@ datesDatAggr <- datesDat %>%
             diff_trigger_peak_min=min(diff_trigger_peak),
             diff_trigger_peak_max=max(diff_trigger_peak),
             diff_trigger_peak_mean=mean(diff_trigger_peak))
-  
+
 datesDat_long <- datesDat%>% 
   dplyr::select(-c(diff_trigger_peak)) %>% 
   pivot_longer(col=-c(exp_name, capacity_multiplier_fct2,
@@ -239,10 +261,10 @@ datesDatAggr_long$date_type <- factor(datesDatAggr_long$date_type,
                                       labels=c("trigger\ndate",'peak\ndate'))
 
 datesDat_long$date_type <- factor(datesDat_long$date_type,
-                                      levels=c("trigger_capacity_date","peak_date"), 
-                                      labels=c("trigger\ndate",'peak\ndate'))
+                                  levels=c("trigger_capacity_date","peak_date"), 
+                                  labels=c("trigger\ndate",'peak\ndate'))
 
-pplot <- ggplot(data=datesDatAggr_long)+
+pplot_bottom <- ggplot(data=datesDatAggr_long)+
   geom_jitter(data=datesDat_long,aes(x=date_type, y=value, 
                                      group=date_type, fill=capacity_multiplier_fct2), 
               width=0.08, height=0.01, alpha=0.5,shape=21) +
@@ -254,24 +276,31 @@ pplot <- ggplot(data=datesDatAggr_long)+
   scale_fill_brewer(palette="Dark2")+
   scale_y_date(date_breaks = "30 days",date_minor_breaks = "5 days",
                lim=c(as.Date("2020-09-01"), 
-                     as.Date("2020-12-31")), date_labels = "%d\n%b")+
+                     as.Date("2020-12-31")), date_labels = "%b %d")+
+  labs(x="", y="")+
   customTheme+
   theme(legend.position = "none",
         panel.grid.major.y = element_blank(),
-        axis.ticks = element_line())+
+        panel.grid.major.x = element_line(color="grey",size=0.75),
+        panel.grid.minor.x = element_line(color="lightgrey",size=0.5),
+        axis.ticks.x = element_line(),
+        axis.text.x = element_text(angle=90, vjust=0.5))+
   geom_hline(yintercept = c(-Inf, Inf)) + 
   geom_vline(xintercept = c(-Inf, Inf)) 
 
-pplot
+pplot_bottom
 
-f_save_plot(plot_name=paste0("trajectories_dates_100perc_full"), pplot = pplot, 
-            plot_dir = file.path(sim_dir, "ICU_trajectories_plots"), width = 10, height = 4)
+pplot <- plot_grid(pplot_top, pplot_bottom, ncol=1, rel_heights = c(1, 0.6), labels=c("A","B"))
+
+f_save_plot(plot_name=paste0("trajectories_plot_combined_", selected_region), pplot = pplot, 
+            plot_dir = file.path(sim_dir, "ICU_trajectories_plots"), width = 12, height = 7)
+rm(pplot,pplot_top, pplot_bottom)
 
 
 ##---------------------------------------
 #### For text
 ##---------------------------------------
-sink( file.path(sim_dir, "ICU_trajectories_plots","for_text.txt"))
+sink( file.path(sim_dir, "ICU_trajectories_plots",paste0(selected_region,"_for_text.txt")))
 
 datesDat %>% 
   group_by(capacity_multiplier_fct2) %>% 
@@ -305,4 +334,4 @@ datesDatAggr %>%
   summarize(range = peak_date_mean - trigger_capacity_date_mean)
 
 sink()
-
+}
