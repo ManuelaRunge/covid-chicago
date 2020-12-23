@@ -27,13 +27,11 @@ exp_names <- exp_names[c(grep("daysdelay", exp_names), grep("counterfactual", ex
 exp_names <- exp_names[!(grepl("_reopen", exp_names))]
 
 dat <- f_combineDat(sim_dir, exp_names, "peak_exceed_df.csv") %>%
-  filter(ems %in% c("EMS-1", "EMS-4", "EMS-11"))
+  filter(ems %in% c("EMS-1", "EMS-4", "EMS-11")) %>%
+  f_get_scenVars()
 
 dat$region <- factor(dat$ems, levels = c(paste0("EMS-", c(1:11))), labels = paste0("Region ", c(1:11)))
-dat$scen_name <- gsub(paste0(simdate, "_IL_regreopen"), "", dat$exp_name)
-dat <- dat %>% separate(scen_name, into = c("reopen", "delay", "rollback"), sep = "_")
-table(dat$rollback, dat$exp_name)
-dat$rollback[is.na(dat$rollback)] <- "counterfactual"
+
 
 rollback_values <- unique(dat$rollback)
 delay_values <- unique(dat$delay)
@@ -41,17 +39,6 @@ delay_values <- unique(dat$delay)
 rollback_val <- rollback_values[2]
 delay_val <- delay_values[1]
 
-dat$capacity_multiplier_fct <- round(dat$capacity_multiplier * 100, 0)
-fct_labels <- sort(unique(dat$capacity_multiplier_fct))
-dat$capacity_multiplier_fct[dat$rollback == "counterfactual"] <- "counterfactual"
-dat$capacity_multiplier_fct <- factor(dat$capacity_multiplier_fct,
-  levels = c(fct_labels, "counterfactual"),
-  labels = c(fct_labels, "counterfactual")
-)
-dat$capacity_multiplier_fct2 <- factor(dat$capacity_multiplier_fct,
-  levels = c(fct_labels, "counterfactual"),
-  labels = c(fct_labels, "counter\nfactual")
-)
 table(dat$capacity_multiplier_fct, exclude = NULL)
 dat$capacity_multiplier_fct
 
@@ -62,32 +49,43 @@ dat$perc_ICU_occup_95CI_upper <- (dat$critical_95CI_upper / dat$avg_resource_ava
 dat$perc_ICU_occup_median <- (dat$critical_median / dat$avg_resource_available) * 100
 
 
-plotdat <- dat %>% filter((delay == "counterfactual" | delay == delay_val & rollback == rollback_val))
+plotdat <- dat %>% filter((delay == "counterfactual" | delay == delay_val)) %>%
+            filter((delay == "counterfactual" | capacity_multiplier %in% c(0, 0.2, 0.4, 0.6, 0.8, 1)))
 annotationDat <- unique(plotdat[, c("region", "avg_resource_available")])
 
 pplot <- ggplot(data = plotdat) +
-  geom_bar(aes(
+  geom_bar(data=subset(plotdat, rollback == rollback_values[1]), aes(
     x = capacity_multiplier_fct2,
     y = critical_median, group = reopen, fill = reopen
   ),
-  stat = "identity", position = position_dodge(width = 0.91), width = 0.7, alpha = 0.4
+  stat = "identity", position = position_dodge(width = 0.7), width = 0.8, alpha = 0.2
   ) +
   geom_bar(
-    data = subset(dat, (delay == "counterfactual" |
-      delay == delay_val & rollback == rollback_values[4])),
+    data = subset(plotdat, (delay == "counterfactual" |
+      delay == delay_val & rollback == rollback_values[2])),
     aes(
       x = capacity_multiplier_fct2,
       y = critical_median,
       group = reopen, fill = reopen
     ),
-    stat = "identity", position = position_dodge(width = 0.91), width = 0.7
+    stat = "identity", position = position_dodge(width = 0.7), width = 0.8, alpha=0.4
+  ) +
+  geom_bar(
+    data = subset(plotdat, (delay == "counterfactual" |
+                              delay == delay_val & rollback == rollback_values[3])),
+    aes(
+      x = capacity_multiplier_fct2,
+      y = critical_median,
+      group = reopen, fill = reopen
+    ),
+    stat = "identity", position = position_dodge(width = 0.7), width = 0.8, alpha=0.8
   ) +
   geom_errorbar(aes(
     x = capacity_multiplier_fct2,
     ymin = critical_95CI_lower,
     ymax = critical_95CI_upper, group = reopen
   ),
-  position = position_dodge(width = 0.91), width = 0
+  position = position_dodge(width = 0.7), width = 0
   ) +
   labs(
     y = "Predictd peak in ICU census\nuntil end of December",
@@ -115,7 +113,7 @@ pplot <- ggplot(data = plotdat) +
 pplot
 
 f_save_plot(
-  plot_name = paste0("barplot_pall"), pplot = pplot,
+  plot_name = paste0("barplot_pall_edited"), pplot = pplot,
   plot_dir = file.path(sim_dir, "ICU_bar_plots"), width = 6, height = 8
 )
 
