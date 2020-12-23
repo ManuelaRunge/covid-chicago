@@ -16,10 +16,10 @@ source("estimate_Rt/getRt_function.R")
 
 outdir <- file.path(project_path,"Plots + Graphs/Rt_plots")
 today <- gsub("-", "", Sys.Date())
-data_date = "200928"
+data_date = "201220"
 
 ### Load simulation outputs
-dat <- read.csv(file.path(data_path, "covid_IDPH/Cleaned Data/",paste0(data_date,"_jg_aggregated_covidregion.csv")))
+dat <- read.csv(file.path(data_path, "covid_IDPH/Cleaned Data",paste0(data_date,"_jg_aggregated_covidregion.csv")))
 summary(as.Date(dat$date))
 
 dat <- dat %>%
@@ -76,7 +76,7 @@ Rt_dat <- Rt_dat %>%
   select(date, covid_region, rt_median, rt_lower, rt_upper)
 
 Rt_dat$date <- as.Date(Rt_dat$date)
-write.csv(Rt_dat, "nu_il_fromdata_estimated_Rt.csv", row.names = FALSE)
+write.csv(Rt_dat, file=file.path(outdir,"nu_il_fromdata_estimated_Rt.csv"), row.names = FALSE)
 
 
 ### Generate plots
