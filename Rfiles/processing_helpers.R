@@ -6,6 +6,31 @@
 ###
 ###-----------------------------------------------------------------
 
+
+f_getCustomTheme <- function(fontscl = 0) {
+  customTheme <- theme(
+    strip.text.x = element_text(size = 12 + fontscl, face = "bold"),
+    strip.text.y = element_text(size = 12 + fontscl, face = "bold"),
+    strip.background = element_blank(),
+    plot.title = element_text(size = 16 + fontscl, vjust = -1, hjust = 0),
+    plot.subtitle = element_text(size = 14 + fontscl),
+    plot.caption = element_text(size = 10 + fontscl),
+    legend.title = element_text(size = 12 + fontscl),
+    legend.text = element_text(size = 12 + fontscl),
+    axis.text.x = element_text(size = 11 + fontscl),
+    axis.text.y = element_text(size = 11 + fontscl),
+    axis.title.x = element_text(size = 12 + fontscl),
+    axis.title.y = element_text(size = 12 + fontscl),
+    axis.ticks = element_line() ,
+    #axis.line.x = element_line(),
+    # axis.line.y = element_line(),
+    panel.border = element_rect(colour = "black", fill = NA, size = 0.5)
+  )
+  return(customTheme)
+}
+
+customTheme <- f_getCustomTheme()
+
 customThemeNoFacet <- theme(
   strip.text.x = element_text(size = 16, face = "bold"),
   strip.text.y= element_text(size = 16, face = "bold"),
