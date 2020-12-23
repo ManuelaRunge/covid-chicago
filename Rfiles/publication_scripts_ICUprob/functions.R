@@ -477,6 +477,32 @@ f_get_scenVars <- function(dat){
   dat$scen_name <- gsub(paste0(simdate, "_IL_regreopen"), "", dat$exp_name)
   dat <- dat %>% separate(scen_name, into = c("reopen", "delay", "rollback"), sep = "_")
   dat$rollback[is.na(dat$rollback)] <- "counterfactual"
+  
+  dat$reopen_fct <- factor(dat$reopen, 
+                           levels=c("100perc","50perc"),
+                           labels=c("High\ntransmission\nncrease",
+                                    "Low\ntransmission\nincrese"))
+  
+  dat$reopen_fct2 <- factor(dat$reopen, 
+                            levels=c("100perc","50perc"),
+                            labels=c("High","Low"))
+  
+  dat$rollback_fct <- factor(dat$rollback, 
+                             levels=c("pr8","pr6", "pr4","pr2"),
+                             labels=rev(seq(20,80,20)))
+  
+  dat$capacity_multiplier_fct <- round(dat$capacity_multiplier * 100, 0)
+  fct_labels <- sort(unique(dat$capacity_multiplier_fct))
+  dat$capacity_multiplier_fct[dat$rollback == "counterfactual"] <- "counterfactual"
+  dat$capacity_multiplier_fct <- factor(dat$capacity_multiplier_fct,
+                                        levels = c(fct_labels, "counterfactual"),
+                                        labels = c(fct_labels, "counterfactual")
+  )
+  dat$capacity_multiplier_fct2 <- factor(dat$capacity_multiplier_fct,
+                                         levels = c(fct_labels, "counterfactual"),
+                                         labels = c(fct_labels, "counter\nfactual")
+  )
+  
   return(dat)
 }
 
