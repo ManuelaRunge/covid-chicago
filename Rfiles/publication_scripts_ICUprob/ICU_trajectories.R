@@ -161,26 +161,38 @@ rm(pplot)
 ## Prepare A
 ##---------------------------------
 
+for(reopen_val in c("100perc","50perc")){
 ##### Simplified
-plotdat <- plotdat %>% filter(reopen=="100perc" & capacity_multiplier>0.2)
-table(plotdat$nmultiplier_per_sample)
+plotdat_sub <- plotdat %>% filter(reopen==reopen_val & capacity_multiplier>0.2)
+table(plotdat_sub$nmultiplier_per_sample)
 
-s1 <- plotdat %>% filter(capacity_multiplier==0.4) %>% ungroup() %>% select(sample_num) %>% unique() 
-s2 <-plotdat %>% filter(capacity_multiplier==0.6) %>% ungroup() %>% select(sample_num) %>% unique() 
-s3 <-plotdat %>% filter(capacity_multiplier==0.8) %>% ungroup() %>% select(sample_num) %>% unique()
-s4 <-plotdat %>% filter(capacity_multiplier==1) %>% ungroup() %>% select(sample_num) %>% unique()
-sall <- s1$sample_num[s1$sample_num %in% s2$sample_num]
-sall <- sall[sall %in% s3$sample_num]
-sall <- sall[sall %in% s4$sample_num]
+s1 <- plotdat_sub %>% filter(capacity_multiplier==0.4) %>% ungroup() %>% select(sample_num) %>% unique() 
+s2 <-plotdat_sub %>% filter(capacity_multiplier==0.6) %>% ungroup() %>% select(sample_num) %>% unique() 
+s3 <-plotdat_sub %>% filter(capacity_multiplier==0.8) %>% ungroup() %>% select(sample_num) %>% unique()
+s4 <-plotdat_sub %>% filter(capacity_multiplier==1) %>% ungroup() %>% select(sample_num) %>% unique()
+#sall <- s1$sample_num[s1$sample_num %in% s2$sample_num]
+#sall <- sall[sall %in% s3$sample_num]
+#sall <- sall[sall %in% s4$sample_num]
+#plotdat_sub <- plotdat_sub %>% filter(sample_num %in% sall)
 
-plotdat <- plotdat %>% filter(sample_num %in% sall)
+s1 <- sample(s1$sample_num, 100,replace = FALSE)
+s2 <- sample(s2$sample_num, 100,replace = FALSE)
+s3 <- sample(s3$sample_num, 100,replace = FALSE)
+s4 <- sample(s4$sample_num, 100,replace = FALSE)
 
-pplot_top <- ggplot(data=plotdat) +
+
+plotdat_sub <- plotdat_sub %>% 
+                filter((capacity_multiplier==0.4 & sample_num %in% s1) |
+                        (capacity_multiplier==0.6 & sample_num %in% s2)  |
+                       (capacity_multiplier==0.8 & sample_num %in% s3) |
+                       (capacity_multiplier==1 & sample_num %in% s4) )
+
+pplot_top <- ggplot(data=plotdat_sub) +
   geom_rect(xmin=-Inf, xmax=Inf, ymin=100, ymax=Inf, fill="white", alpha=1) + 
   geom_rect(xmin=-Inf, xmax=Inf, ymin=100, ymax=Inf, fill="#e5e5e5", alpha=0.07) + 
   geom_line(aes(x=date, y=(crit_det/avg_resource_available)*100, 
                 group=interaction(scen_num)),col="#b2b2b2",size=0.5) +
-  geom_line(data=subset(plotdat, after_peak_yn!=1), 
+  geom_line(data=subset(plotdat_sub, after_peak_yn!=1), 
             aes(x=date, y=(crit_det/avg_resource_available)*100, 
                 group=interaction(scen_num),
                 col=capacity_multiplier_fct2), 
@@ -209,7 +221,9 @@ pplot_top <- ggplot(data=plotdat) +
   geom_hline(yintercept = c(0, Inf)) + 
   geom_vline(xintercept = c(-Inf, Inf)) +
   geom_text(x=as.Date("2020-10-01"), y=110, label="ICU capacity", col=capacity_col)+
-  geom_text(x=as.Date("2020-10-01"), y=40, label="Trigger threshold", col="black")+
+  geom_text(data=unique(plotdat_sub[,c("run_num","capacity_multiplier","capacity_multiplier_fct")]), 
+            aes(x=as.Date("2020-10-01"), y=(80*capacity_multiplier)),
+            label="Trigger threshold", col="black")+
   theme(plot.subtitle = element_text(hjust=0.5),
         legend.position="none",
         panel.grid.minor = element_blank(),
@@ -223,9 +237,9 @@ pplot_top
 ##---------------------------------
 ## Prepare B with dates
 ##---------------------------------
-datesDat <- plotdat %>% 
+datesDat <- plotdat_sub %>% 
   ungroup() %>%
-  select(exp_name, scen_num, sample_num, capacity_multiplier_fct2,
+  dplyr::select(exp_name, scen_num, sample_num, capacity_multiplier_fct2,
          capacity_multiplier_fct, peak_date ,trigger_capacity_date) %>% 
   unique() %>% 
   filter(!is.na(trigger_capacity_date)) %>%
@@ -277,7 +291,8 @@ pplot_bottom <- ggplot(data=datesDatAggr_long)+
   scale_y_date(date_breaks = "30 days",date_minor_breaks = "5 days",
                lim=c(as.Date("2020-09-01"), 
                      as.Date("2020-12-31")), date_labels = "%b %d")+
-  labs(x="", y="")+
+  labs(x="", y="",
+       caption=reopen_val)+
   customTheme+
   theme(legend.position = "none",
         panel.grid.major.y = element_blank(),
@@ -292,7 +307,7 @@ pplot_bottom
 
 pplot <- plot_grid(pplot_top, pplot_bottom, ncol=1, rel_heights = c(1, 0.6), labels=c("A","B"))
 
-f_save_plot(plot_name=paste0("trajectories_plot_combined_", selected_region), pplot = pplot, 
+f_save_plot(plot_name=paste0("trajectories_plot_combined_", reopen_val,"_", selected_region), pplot = pplot, 
             plot_dir = file.path(sim_dir, "ICU_trajectories_plots"), width = 12, height = 7)
 rm(pplot,pplot_top, pplot_bottom)
 
@@ -300,38 +315,40 @@ rm(pplot,pplot_top, pplot_bottom)
 ##---------------------------------------
 #### For text
 ##---------------------------------------
-sink( file.path(sim_dir, "ICU_trajectories_plots",paste0(selected_region,"_for_text.txt")))
+  sink( file.path(sim_dir, "ICU_trajectories_plots",paste0(reopen_val,"_", selected_region,"_for_text.txt")))
+  
+    datesDat %>% 
+      group_by(capacity_multiplier_fct2) %>% 
+      summarize(mean(diff_trigger_peak))
+    
+    datesDatAggr %>% 
+      ungroup() %>% 
+      select(-exp_name) %>% 
+      as.data.frame()
+    
+    datesDatAggr %>% 
+      ungroup() %>% 
+      select(-exp_name) %>% 
+      as.data.frame() %>% 
+      group_by(capacity_multiplier_fct) %>% 
+      summarize(range = trigger_capacity_date_max - trigger_capacity_date_min)
+    
+    datesDatAggr %>% 
+      ungroup() %>% 
+      select(-exp_name) %>% 
+      as.data.frame() %>% 
+      group_by(capacity_multiplier_fct) %>% 
+      select(capacity_multiplier_fct, trigger_capacity_date_mean) %>%
+      mutate(diff= lag(trigger_capacity_date_mean) -trigger_capacity_date_mean)
+    
+    datesDatAggr %>% 
+      ungroup() %>% 
+      select(-exp_name) %>%
+      as.data.frame() %>% 
+      group_by(capacity_multiplier_fct) %>% 
+      summarize(range = peak_date_mean - trigger_capacity_date_mean)
+    
+    sink()
+  }
 
-datesDat %>% 
-  group_by(capacity_multiplier_fct2) %>% 
-  summarize(mean(diff_trigger_peak))
-
-datesDatAggr %>% 
-  ungroup() %>% 
-  select(-exp_name) %>% 
-  as.data.frame()
-
-datesDatAggr %>% 
-  ungroup() %>% 
-  select(-exp_name) %>% 
-  as.data.frame() %>% 
-  group_by(capacity_multiplier_fct) %>% 
-  summarize(range = trigger_capacity_date_max - trigger_capacity_date_min)
-
-datesDatAggr %>% 
-  ungroup() %>% 
-  select(-exp_name) %>% 
-  as.data.frame() %>% 
-  group_by(capacity_multiplier_fct) %>% 
-  select(capacity_multiplier_fct, trigger_capacity_date_mean) %>%
-  mutate(diff= lag(trigger_capacity_date_mean) -trigger_capacity_date_mean)
-
-datesDatAggr %>% 
-  ungroup() %>% 
-  select(-exp_name) %>%
-  as.data.frame() %>% 
-  group_by(capacity_multiplier_fct) %>% 
-  summarize(range = peak_date_mean - trigger_capacity_date_mean)
-
-sink()
 }
