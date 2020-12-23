@@ -99,7 +99,8 @@ pplot_top <- ggplot(data = subset(dat, region == "IL")) +
   theme(
     legend.position = "none",
     panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank()
+    panel.grid.minor.x = element_blank(),
+    axis.ticks = element_line()
   ) +
   customTheme
 
