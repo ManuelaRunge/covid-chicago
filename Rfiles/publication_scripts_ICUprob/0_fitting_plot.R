@@ -276,3 +276,74 @@ f_save_plot(
   plot_name = paste0("data_comparison_combined_", enddate, "_v3"), pplot = pplot_combined,
   plot_dir = file.path(sim_dir, "ICU_data_comparison_plots"), width = 12, height = 14
 )
+
+
+
+###----------------------------------------------
+### Assess fitting performance
+###----------------------------------------------
+
+pplot7dAvrSub$date <- as.Date(pplot7dAvrSub$Date)
+simdat_baseline$date <- as.Date(simdat_baseline$Date)
+
+table(pplot7dAvrSub$name)
+table(pplot7dAvrSub$name, pplot7dAvrSub$source)
+table(simdat_baseline$name)
+
+fitdat <- f_addVar(pplot7dAvrSub, simdat_baseline %>% 
+          dplyr::select(-source,-Date)) %>% 
+          filter(source=="EMResource" | name=='deaths') %>%
+          mutate(firstWave = ifelse(date <= as.Date("2020-07-01"),"1",'0'),
+                 month = month(date)) %>% 
+          group_by(region, name) %>%
+          arrange(date) %>%
+          mutate(mae = MAE(value7, median.val),
+                 mse = MSE(value7, median.val)) %>%
+          group_by(region, name, month) %>%
+          mutate(mae_mth = round(MAE(value7, median.val),2),
+                 mse_mth = round(MSE(value7, median.val),2)) %>%
+          filter(month<=8) 
+        
+# ggplot(data=fitdat)+
+#   geom_point(aes(x=value7, y=median.val,col=firstWave))+
+#   geom_smooth(aes(x=value7, y=median.val,col=firstWave), method = "lm")+
+#   facet_wrap(region~name, scales="free")
+
+###Describe MAE
+fitdat  %>% group_by(region, name) %>% summarize(mae=mean(mae)) %>% pivot_wider(names_from="name", values_from="mae")
+fitdat  %>% group_by(region, name, month) %>% summarize(mae_mth=mean(mae_mth)) %>% pivot_wider(names_from="name", values_from="mae_mth")
+##MSE
+fitdat  %>% group_by(region, name) %>% summarize(mse=mean(mse)) %>% pivot_wider(names_from="name", values_from="mse")
+fitdat  %>% group_by(region, name, month) %>% summarize(mse_mth=mean(mse_mth)) %>% pivot_wider(names_from="name", values_from="mse_mth")
+
+
+for( reg_label in c("Region 1","Region 4","Region 11")){
+  
+  pplot1 <- list()
+  for(var in c("confirmed_covid_icu", "covid_non_icu", "deaths")){
+  pplot1[[length(pplot1)+1]]  <- ggplot(data=subset(fitdat, region==reg_label & name ==var))+
+    geom_point(aes(x=value7, y=median.val))+
+    geom_smooth(aes(x=value7, y=median.val), method = "lm")+
+    facet_wrap(~month+mae_mth, scales="free", nrow=1)+
+    geom_abline(intercept=0, slope=1)+
+    labs(title=var, subtitle="",
+         x="reported 7day rolling average (data)",
+         y="median prediction (simulation)")+
+    customTheme
+  
+  }
+  
+  pplot <- plot_grid(pplot1[[1]], pplot1[[2]], pplot1[[3]], ncol=1, labels=reg_label)
+  
+  f_save_plot(
+    plot_name = paste0("fitting_assessment_byMonth_", reg_label), pplot = pplot,
+    plot_dir = file.path(sim_dir, "ICU_data_comparison_plots"), width = 12, height = 10
+  )
+  
+  rm(pplot)
+
+}
+
+
+
+
