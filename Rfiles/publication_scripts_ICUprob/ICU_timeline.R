@@ -63,23 +63,12 @@ dat <- dat %>%
   filter(date >= as.Date("2020-07-01") & date <= as.Date("2021-02-01")) %>%
   mutate(geography_modeled = gsub("EMS-", "covidregion_", ems)) %>%
   filter(ems != "All") %>%
-  dplyr::select(-ems)
+  dplyr::select(-ems)%>%
+  filter(geography_modeled %in% regions)  %>%
+  f_get_scenVars()
 
-
-dat <- dat %>% filter(geography_modeled %in% regions)
-dat$scen_name <- gsub(paste0(simdate, "_IL_regreopen"), "", dat$exp_name)
-
-dat <- dat %>% separate(scen_name, into = c("reopen", "delay", "rollback"), sep = "_")
-dat$rollback[is.na(dat$rollback)] <- "counterfactual"
 dat$region <- factor(dat$geography_modeled, levels = regions, labels = gsub("covidregion_", "Region ", regions))
 
-dat$capacity_multiplier_fct <- round(dat$capacity_multiplier * 100, 0)
-fct_labels <- sort(unique(dat$capacity_multiplier_fct))
-dat$capacity_multiplier_fct[dat$rollback == "counterfactual"] <- "counterfactual"
-dat$capacity_multiplier_fct <- factor(dat$capacity_multiplier_fct,
-  levels = c(fct_labels, "counterfactual"),
-  labels = c(fct_labels, "counterfactual")
-)
 
 rollback_values <- unique(dat$rollback)
 delay_values <- unique(dat$delay)
@@ -87,18 +76,6 @@ delay_values <- unique(dat$delay)
 rollback_val <- rollback_values[2]
 delay_val <- delay_values[1]
 
-dat$reopen_fct <- factor(dat$reopen, 
-                         levels=c("100perc","50perc"),
-                         labels=c("High\ntransmission\nncrease",
-                                  "Low\ntransmission\nincrese"))
-
-dat$reopen_fct2 <- factor(dat$reopen, 
-                          levels=c("100perc","50perc"),
-                          labels=c("High","Low"))
-
-dat$rollback_fct <- factor(dat$rollback, 
-                           levels=c("pr8","pr6", "pr4","pr2"),
-                           labels=rev(seq(20,80,20)))
 
 
 ### check
@@ -131,13 +108,7 @@ dat_counterfactual$reopen_fct <- gsub(
 
 dat_scen <- dat %>% filter(rollback != "counterfactual" & delay == unique(dat$delay)[1])
 
-dat_scen$reopen_fct <- gsub(
-  "100perc", "High\ntransmission increase",
-  gsub(
-    "50perc", "Low\ntransmission increase",
-    dat_scen$reopen
-  )
-)
+
 
 #### ====================================
 ### PLOTS - basic descriptive
