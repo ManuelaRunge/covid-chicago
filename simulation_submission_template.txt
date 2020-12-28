@@ -25,6 +25,8 @@ python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extende
 python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS.emodl -n "baseline" --post_process
 python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS_gradual_reopening.emodl -n "gradual_reopening"
 
+python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS_vaccine.emodl -n "vaccine"
+
 python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS_rollback.emodl -n "rollback"	
 python runScenarios.py -rl Local -r IL -c spatial_EMS_experiment.yaml -e extendedmodel_EMS_reopen_rollback.emodl -n "reopenRollback"	
 
