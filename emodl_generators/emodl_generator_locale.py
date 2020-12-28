@@ -1,6 +1,8 @@
 import os
 import sys
 import re
+from datetime import date, timedelta, datetime
+import datetime as dt
 
 sys.path.append('../')
 from load_paths import load_box_paths
@@ -34,6 +36,7 @@ def write_species(grp, expandModel=None):
 (species C3_det3::{grp} 0)
 (species D3::{grp} 0)
 (species D3_det3::{grp} 0)
+(species RV::{grp} 0)
 (species RAs::{grp} 0)
 (species RAs_det1::{grp} 0)
 (species RSym::{grp} 0)
@@ -904,6 +907,47 @@ def define_change_detection_and_isolation(grpList=None,
     return (contactTracing_str)
 
 
+def write_vaccine_str(grp, target_coverage, interval_days, start_date, stop_date, sim_startdate=date(2020, 2, 13)):
+    """ Example input values
+    grp = "EMS-1"
+    target_coverage =0.6
+    start_date = date(2021,1,1)
+    stop_date = date(2021,3,1)
+    interval_days = 1
+    """
+
+    n_vacc_rounds = (stop_date - start_date).days / interval_days
+    daily_vacc_cov = target_coverage / n_vacc_rounds
+    daily_vacc_N_param = f'(param daily_vaccinated_{grp} (* @speciesS_{grp}@ {daily_vacc_cov}))'
+    #daily_vacc_N_observe = f'(observe daily_vaccinated_t_{grp} daily_vaccinated_{grp})'
+    vaccine_timeevent_str = daily_vacc_N_param + "\n"
+    for nround in range(int(n_vacc_rounds)):
+        new_event_time = ((start_date + timedelta(nround)) - sim_startdate).days
+        new_event = f'(time-event vacc_round_{nround} {new_event_time}  (' \
+                    f'(S::{grp} (- S::{grp} daily_vaccinated_{grp})) ' \
+                    f'(RV::{grp} (+ RV::{grp} daily_vaccinated_{grp}))' \
+                    '))\n'
+        vaccine_timeevent_str = vaccine_timeevent_str + new_event
+
+    return vaccine_timeevent_str
+
+
+def add_vaccine_events(grpList, total_string,target_coverage,interval_days,start_date,stop_date,sim_startdate):
+
+    vaccine_str = ""
+    for grp in grpList:
+        temp_str = write_vaccine_str(grp=grp,
+                                     target_coverage=target_coverage,
+                                     interval_days=interval_days,
+                                     start_date=start_date,
+                                     stop_date=stop_date,
+                                     sim_startdate=sim_startdate)
+        vaccine_str = vaccine_str + "\n" + temp_str
+
+    total_string = total_string.replace(';[VACCINE_EVENTS]', vaccine_str)
+    return total_string
+
+
 def write_interventions(grpList, total_string, scenarioName, change_testDelay=None, trigger_channel=None):
     param_change_str = """
 (observe d_Sys_t d_Sys)
@@ -1201,8 +1245,8 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
 
 ###stringing all of my functions together to make the file:
 
-def generate_emodl(grpList, file_output, expandModel, add_interventions, observeLevel='secondary', add_migration=True,
-                   change_testDelay=None, trigger_channel=None, observe_customGroups=False, grpDic=None):
+def generate_emodl(grpList, file_output, expandModel, add_interventions, add_vaccine=False, observeLevel='secondary',
+                   add_migration=True, change_testDelay=None, trigger_channel=None, observe_customGroups=False, grpDic=None):
     if (os.path.exists(file_output)):
         os.remove(file_output)
 
@@ -1246,7 +1290,7 @@ def generate_emodl(grpList, file_output, expandModel, add_interventions, observe
 
         functions_string = functions_string + write_Custom_Groups(grpDic, observeLevel)
 
-    intervention_string = ";[INTERVENTIONS]\n;[ADDITIONAL_TIMEEVENTS]"
+    intervention_string = ";[INTERVENTIONS]\n;[ADDITIONAL_TIMEEVENTS]\n;[VACCINE_EVENTS]"
 
     total_string = total_string + '\n\n' + species_string + '\n\n' + functions_string + '\n\n' + observe_string + '\n\n' + param_string + '\n\n' + intervention_string + '\n\n' + reaction_string + '\n\n' + footer_str
 
@@ -1255,6 +1299,14 @@ def generate_emodl(grpList, file_output, expandModel, add_interventions, observe
     ### Add interventions (optional)
     if add_interventions != None:
         total_string = write_interventions(grpList, total_string, add_interventions, change_testDelay, trigger_channel)
+    if add_vaccine :
+        total_string = add_vaccine_events(grpList=grpList,
+                                          total_string=total_string,
+                                          target_coverage=0.2,
+                                          interval_days=1,
+                                          start_date=date(2021, 1, 4),
+                                          stop_date=date(2021, 4, 1),
+                                          sim_startdate=date(2020, 2, 13))
 
     print(total_string)
     emodl = open(file_output, "w")  ## again, can make this more dynamic
@@ -1269,7 +1321,7 @@ def generate_emodl(grpList, file_output, expandModel, add_interventions, observe
 if __name__ == '__main__':
     ems_grp = ['EMS_1', 'EMS_2', 'EMS_3', 'EMS_4', 'EMS_5', 'EMS_6', 'EMS_7', 'EMS_8', 'EMS_9', 'EMS_10', 'EMS_11']
 
-    ### Emodls without migration between EMS areas
+    """ Emodls without migration between EMS areas"""
     generateBaselineReopeningEmodls = True
     if generateBaselineReopeningEmodls:
         generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='continuedSIP',
@@ -1361,7 +1413,14 @@ if __name__ == '__main__':
                        change_testDelay="AsSym", observe_customGroups=False,
                        file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_reopen_dAsPSym_TD.emodl'))
 
-    ### Emodls with migration between EMS areas
+    generateBaselineReopeningEmodls_withVaccine = True
+    if generateBaselineReopeningEmodls_withVaccine:
+        generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='continuedSIP',
+                       add_migration=False, add_vaccine=True, observe_customGroups=False,
+                       file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_vaccine.emodl'))
+
+
+    """ Emodls with migration between EMS areas """
     generateMigrationEmodls = False
     if generateMigrationEmodls:
         generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='continuedSIP',
