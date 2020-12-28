@@ -259,7 +259,11 @@ f_combineDat <- function(sim_dir,exp_names,csvname){
   for (exp_name in exp_names) {
     exp_dir <- file.path(sim_dir, exp_name)
     if (!file.exists(file.path(exp_dir, csvname))) next
-    datList[[length(datList) + 1]] <- fread(file.path(exp_dir, csvname)) %>% mutate(exp_name = exp_name,geography_modeled=as.character(geography_modeled)) 
+    dat <- fread(file.path(exp_dir, csvname)) %>% mutate(exp_name = exp_name)
+    if("geography_modeled" %in% colnames(dat)){
+      dat <- dat %>%mutate(geography_modeled=as.character(geography_modeled)) } 
+    datList[[length(datList) + 1]] <- dat
+      
   }
   
   if(length(datList)==0)warning("List is empty")
