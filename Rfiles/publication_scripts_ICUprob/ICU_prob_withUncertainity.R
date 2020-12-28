@@ -184,7 +184,7 @@ resultsAggr <- results %>%
   f_get_scenVars()
 
 
-p_rollback <- ggplot(data = subset(resultsAggr, delay == "7daysdelay" )) +
+p_rollback <- ggplot(data = subset(resultsAggr, delay == "1daysdelay" )) +
   theme_minimal() +  
   geom_vline(xintercept = c(50),size=0.5, alpha=0.5, col="#b2b2b2") +
   geom_rect(xmin=-Inf, xmax=Inf, ymin=50, ymax=Inf, fill="#b2b2b2", alpha=0.008)+
@@ -213,7 +213,7 @@ p_rollback <- ggplot(data = subset(resultsAggr, delay == "7daysdelay" )) +
   scale_x_continuous(lim = c(0, 100), expand = c(0, 0), breaks = seq(0, 100, 20), minor_breaks = seq(0, 100, 10)) +
   scale_color_manual(values = c(TwoCols_seq)) +
   scale_fill_manual(values = c(TwoCols_seq)) +
-  scale_alpha_manual(values=c(1,0.8,0.6, 0.4))+
+  scale_alpha_manual(values=c(1,0.75,0.5, 0.25))+
   facet_wrap( ~region, scales = "free") +
   customTheme +
   theme(
@@ -229,7 +229,7 @@ p_rollback <- ggplot(data = subset(resultsAggr, delay == "7daysdelay" )) +
 
 p_rollback
 
-p_delay <- ggplot(data = subset(resultsAggr, rollback == "pr6" )) +
+p_delay <- ggplot(data = subset(resultsAggr, rollback == "pr8" )) +
   theme_minimal() +
   geom_vline(xintercept = c(50),size=0.5, alpha=0.5, col="#b2b2b2") +
   geom_rect(xmin=-Inf, xmax=Inf, ymin=50, ymax=Inf, fill="#b2b2b2", alpha=0.008)+
