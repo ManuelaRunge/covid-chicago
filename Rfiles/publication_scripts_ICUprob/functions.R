@@ -484,7 +484,7 @@ f_get_scenVars <- function(dat){
   
   dat$reopen_fct <- factor(dat$reopen, 
                            levels=c("100perc","50perc"),
-                           labels=c("High\ntransmission\nncrease",
+                           labels=c("High\ntransmission\nincrease",
                                     "Low\ntransmission\nincrese"))
   
   dat$reopen_fct2 <- factor(dat$reopen, 
