@@ -19,6 +19,13 @@ custom_date_breaks <- c(
   as.Date("2020-12-01"), as.Date("2021-01-01")
 )
 
+custom_date_breaks_JanOct <- c(
+  as.Date("2020-01-01"), as.Date("2020-02-01"), as.Date("2020-03-01"),
+  as.Date("2020-04-01"), as.Date("2020-05-01"), as.Date("2020-06-01"),
+  as.Date("2020-07-01"), as.Date("2020-08-01"), as.Date("2020-09-01"),
+  as.Date("2020-10-01")
+)
+
 simdate <- "20201212"
 sim_dir <- file.path(simulation_output, "_overflow_simulations", simdate)
 if (!dir.exists(file.path(sim_dir, "ICU_Rt_plots"))) dir.create(file.path(sim_dir, "ICU_Rt_plots"))
@@ -70,7 +77,7 @@ ggplot(data = subset(dat_counterfactual, date <= as.Date("2020-07-01"))) +
   geom_hline(yintercept = 1) +
   geom_vline(xintercept = as.Date("2020-09-01")) +
   # scale_y_continuous(lim=c(0.5,50)) +
-  scale_x_date(date_breaks = "30 days", date_labels = "%b") +
+  scale_x_date(breaks =custom_date_breaks_JanOct, date_labels = "%b", expand = c(0, 0)) +
   labs(x = "", color = "Transmission increase", fill = "Transmission increase") +
   scale_color_manual(values = c(TwoCols_seq)) +
   scale_fill_manual(values = c(TwoCols_seq)) +
@@ -84,10 +91,7 @@ pplot <- ggplot(data = subset(dat_counterfactual, date >= as.Date("2020-08-01") 
   geom_ribbon(aes(x = date, ymin = rt_lower, ymax = rt_upper, fill = reopen_fct2), alpha = 0.3) +
   geom_line(aes(x = date, y = rt_median, col = reopen_fct2)) +
   facet_wrap(~region, ncol = 1) +
-  scale_x_date(breaks = c(
-    as.Date("2020-08-01"), as.Date("2020-09-01"), as.Date("2020-10-01"),
-    as.Date("2020-11-01"), as.Date("2020-12-01"), as.Date("2021-01-01")
-  ), date_labels = "%b", expand = c(0, 0)) +
+  scale_x_date(breaks =custom_date_breaks, date_labels = "%b", expand = c(0, 0)) +
   labs(x = "", color = "Transmission increase", fill = "Transmission increase") +
   scale_color_manual(values = c(TwoCols_seq)) +
   scale_fill_manual(values = c(TwoCols_seq)) +
