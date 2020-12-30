@@ -37,8 +37,8 @@ trajectoriesDat_baseline <- fread(file.path(sim_dir, exp_name_baseline, fname))
 simdat_baseline <- f_simdat(dat = trajectoriesDat_baseline)
 
 ### Trajectories - counterfactual
-trajectoriesDat_counterfactual_1 <- fread(file.path(sim_dir, exp_name_counterfactual_1, fname))
-trajectoriesDat_counterfactual_2 <- fread(file.path(sim_dir, exp_name_counterfactual_2, fname))
+trajectoriesDat_counterfactual_1 <- fread(file.path(sim_dir, exp_name_counterfactual_1, fname)) %>% select(-startdate, time)
+trajectoriesDat_counterfactual_2 <- fread(file.path(sim_dir, exp_name_counterfactual_2, fname)) %>% select(-startdate, time)
 
 vars <- f_mergevars(trajectoriesDat_counterfactual_1,trajectoriesDat_counterfactual_2)
 
@@ -73,8 +73,122 @@ capacityDat$region <- factor(capacityDat$geography_name,
 # ref_dat <- f_load_ref_data(subregions=c(1, 4, 11),startdate=as.Date("2020-09-01"), stopdate=as.Date("2020-12-31"))
 pplot7dAvrSub <- f_load_ref_data(stopdate = stopdate_data)
 
+
+
 ### ------------------------------
-### Plot
+### Plot --new
+### ------------------------------
+simdat_baseline$name_fct <- factor(simdat_baseline$name, 
+                             levels = c("covid_non_icu","deaths","confirmed_covid_icu"), 
+                             labels = c("Med/surg census","Deaths","ICU census"))
+capacityDat$name_fct <- factor(capacityDat$name, 
+                                   levels = c("covid_non_icu","deaths","confirmed_covid_icu"), 
+                                   labels = c("Med/surg census","Deaths","ICU census"))
+pplot7dAvrSub$name_fct <- factor(pplot7dAvrSub$name, 
+                               levels = c("covid_non_icu","deaths","confirmed_covid_icu"), 
+                               labels = c("Med/surg census","Deaths","ICU census"))
+simdat_counterfactual$name_fct <- factor(simdat_counterfactual$name, 
+                                 levels = c("covid_non_icu","deaths","confirmed_covid_icu"), 
+                                 labels = c("Med/surg census","Deaths","ICU census"))
+
+
+
+pplot_left <- ggplot(data = subset(simdat_baseline, Date <= stopdate)) +
+  geom_hline(
+    data = subset(capacityDat, name == "confirmed_covid_icu"),
+    aes(yintercept = value + 20),
+    col = "white", linetype = "dashed", size = 1
+  ) +
+  geom_ribbon(aes(x = Date, ymin = q2.5.val, ymax = q97.5.val),
+              fill = simcolor, alpha = 0.3
+  ) +
+  geom_ribbon(aes(x = Date, ymin = q25.val, ymax = q75.val),
+              fill = simcolor, alpha = 0.5
+  ) +
+  geom_line(aes(x = Date, y = median.val),
+            col = simcolor, size = 1.3
+  ) +
+  geom_point(
+    data = pplot7dAvrSub, aes(x = Date, y = value),
+    size = 0.7
+  ) +
+  geom_line(
+    data = pplot7dAvrSub, aes(x = Date, y = value7),
+    size = 1
+  ) +
+  geom_hline(
+    data = subset(capacityDat, name == "confirmed_covid_icu"),
+    aes(yintercept = value),
+    col = capacitycolor, linetype = "dashed", size = 1
+  ) +
+  scale_x_date(
+    lim = c(as.Date("2020-03-01"), as.Date("2020-09-01")),
+    breaks = custom_date_breaks_JanOct, date_labels = "%b"
+  ) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust = 1)) +
+  facet_wrap(region ~ name_fct, ncol = 3, scales = "free_y", strip.position = "top") +
+  customTheme +
+  labs(
+    x = "",
+    color = "",
+    y = ""
+  ) +
+  theme(
+    panel.spacing = unit(0.8, "lines"),
+  #  panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.ticks = element_line()
+  ) +
+  theme(legend.position = "none") +
+  scale_y_continuous(expand = c(0, 0))
+
+pplot_left
+
+simdat_counterfactual$reopen_fct2 <- factor(simdat_counterfactual$reopen, 
+                          levels=c("100perc","50perc"),
+                          labels=c("High","Low"))
+
+reg = unique(simdat_counterfactual$region)
+#simdat_counterfactual$region2 <- factor(simdat_counterfactual$region, levels=reg, labels=paste0(reg,"\n"))
+reg = unique(capacityDat$region)
+capacityDat$region2 <- factor(capacityDat$region, levels=reg, labels=paste0(reg,"\n"))
+
+pplot_right <- ggplot(data = subset(simdat_counterfactual, name =="confirmed_covid_icu" & Date >= as.Date("2020-09-01"))) +
+  geom_ribbon(aes(x = Date, ymin = q2.5.val, ymax = q97.5.val,  fill = reopen_fct2),alpha = 0.3) +
+  geom_ribbon(aes(x = Date, ymin = q25.val, ymax = q75.val,  fill = reopen_fct2),alpha = 0.4) +
+  geom_line(aes(x = Date, y = median.val, col = reopen_fct2), size = 1.3) +
+  geom_hline(
+    data = subset(capacityDat, name == "confirmed_covid_icu"),
+    aes(yintercept = value),
+    col = capacitycolor, linetype = "dashed", size = 1
+  ) +
+  facet_wrap(~ region2, ncol = 1, scales = "free", strip.position = "top") +
+  scale_fill_manual(values = rev(TwoCols_seq)) +
+  scale_color_manual(values = rev(TwoCols_seq)) +  
+  scale_x_date(breaks = custom_date_breaks, date_labels = "%b") +
+  customTheme+
+  theme(
+    #  panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.ticks = element_line()
+  ) +
+  labs(x="", y="",color="Transmission\nincrease", fill="Transmission\nincrease")+
+  scale_y_continuous(expand = c(0, 0))
+
+pplot_right
+
+pplot <- plot_grid(pplot_left, pplot_right, ncol=2, rel_widths = c(1, 0.5), rel_heights = c(1,0.4))
+pplot
+
+
+f_save_plot(
+  plot_name = "fitting_plot_new", pplot = pplot,
+  plot_dir = file.path(sim_dir, "ICU_data_comparison_plots"), width = 12, height = 8
+)
+
+
+### ------------------------------
+### Plot ---- old
 ### ------------------------------
 
 pplot <- ggplot(data = subset(simdat_baseline, Date <= stopdate)) +
