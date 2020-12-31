@@ -224,7 +224,9 @@ p_rollback <- ggplot(data = subset(resultsAggr, delay == "1daysdelay" )) +
   ) +
   labs(
     y = "Probability of ICU overflow (%)",
-    x = "Trigger threshold (% of available ICU beds)"
+    x = "Trigger threshold (% of available ICU beds)",
+    color="Transmission\nincrease", fill="Transmission\nincrease",
+    alpha="Mitigation strengths\n(% reduction in transmission)"
   )
 
 p_rollback
@@ -269,8 +271,11 @@ p_delay <- ggplot(data = subset(resultsAggr, rollback == "pr8" )) +
   ) +
   labs(
     y = "Probability of ICU overflow (%)",
-    x = "Trigger threshold (% of available ICU beds)"
+    x = "Trigger threshold (% of available ICU beds)",
+    color="Transmission\nincrease", fill="Transmission\nincrease",
+    alpha="delay"
   )
+
 p_delay
 
 pplotall <- plot_grid(p_rollback, p_delay, ncol = 1, labels = c("A", "B"))

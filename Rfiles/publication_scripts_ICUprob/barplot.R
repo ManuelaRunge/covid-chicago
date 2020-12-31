@@ -30,7 +30,7 @@ dat <- f_combineDat(sim_dir, exp_names, "peak_exceed_df.csv") %>%
   filter(ems %in% c("EMS-1", "EMS-4", "EMS-11")) %>%
   f_get_scenVars()
 
-dat$region <- factor(dat$ems, levels = c(paste0("EMS-", c(1:11))), labels = paste0("Region ", c(1:11)))
+dat$region <- factor(dat$ems, levels = c(paste0("EMS-", c(1, 4, 11))), labels = paste0("Region ", c(1, 4, 11)))
 
 
 rollback_values <- unique(dat$rollback)
@@ -49,16 +49,18 @@ dat$perc_ICU_occup_95CI_upper <- (dat$critical_95CI_upper / dat$avg_resource_ava
 dat$perc_ICU_occup_median <- (dat$critical_median / dat$avg_resource_available) * 100
 
 
-plotdat <- dat %>% filter((delay == "counterfactual" | delay == delay_val)) %>%
-            filter((delay == "counterfactual" | capacity_multiplier %in% c(0, 0.2, 0.4, 0.6, 0.8, 1)))
+plotdat <- dat %>%
+  filter((delay == "counterfactual" | delay == delay_val)) %>%
+  filter((delay == "counterfactual" | capacity_multiplier %in% c(0, 0.2, 0.4, 0.6, 0.8, 1)))
 annotationDat <- unique(plotdat[, c("region", "avg_resource_available")])
 
 pplot <- ggplot(data = plotdat) +
-  geom_bar(data=subset(plotdat, rollback == rollback_values[1]), aes(
-    x = capacity_multiplier_fct2,
-    y = critical_median, group = reopen, fill = reopen
-  ),
-  stat = "identity", position = position_dodge(width = 0.7), width = 0.8, alpha = 0.2
+  geom_bar(
+    data = subset(plotdat, rollback == rollback_values[1]), aes(
+      x = capacity_multiplier_fct2,
+      y = critical_median, group = reopen, fill = reopen
+    ),
+    stat = "identity", position = position_dodge(width = 0.7), width = 0.8, alpha = 0.2
   ) +
   geom_bar(
     data = subset(plotdat, (delay == "counterfactual" |
@@ -68,17 +70,17 @@ pplot <- ggplot(data = plotdat) +
       y = critical_median,
       group = reopen, fill = reopen
     ),
-    stat = "identity", position = position_dodge(width = 0.7), width = 0.8, alpha=0.4
+    stat = "identity", position = position_dodge(width = 0.7), width = 0.8, alpha = 0.4
   ) +
   geom_bar(
     data = subset(plotdat, (delay == "counterfactual" |
-                              delay == delay_val & rollback == rollback_values[3])),
+      delay == delay_val & rollback == rollback_values[3])),
     aes(
       x = capacity_multiplier_fct2,
       y = critical_median,
       group = reopen, fill = reopen
     ),
-    stat = "identity", position = position_dodge(width = 0.7), width = 0.8, alpha=0.8
+    stat = "identity", position = position_dodge(width = 0.7), width = 0.8, alpha = 0.8
   ) +
   geom_errorbar(aes(
     x = capacity_multiplier_fct2,
@@ -155,10 +157,83 @@ counterfactualDat <- dat_peak %>%
   )
 counterfactualDat
 
+
+
+######
+
+plotdat2 <- dat %>% filter(delay == delay_val)
+
+plotdat1 <- dat %>% filter(delay == "counterfactual") %>% dplyr::select(-c(rollback,delay, exp_name, rollback_fct, reopen_fct,reopen_fct2))
+plotdat0 <- dat %>% filter(delay != "counterfactual") %>%  dplyr::select(rollback,delay, exp_name, rollback_fct, reopen_fct,reopen_fct2) %>% unique()
+plotdat10 <- plotdat1 %>%  f_addVar(plotdat0) %>%  dplyr::select(colnames(plotdat2))
+
+plotdat <- rbind(plotdat10, plotdat2)
+annotationDat <- unique(plotdat[, c("region", "avg_resource_available")])
+
+
+pplot <- ggplot(data = plotdat) +
+  geom_vline(xintercept = "50",size=0.5, alpha=0.5, col="#b2b2b2") +
+  geom_rect(data = annotationDat,
+            aes(ymin=avg_resource_available, ymax=Inf, xmin=-Inf, xmax=Inf ),fill="#b2b2b2", alpha=0.3)+
+  geom_ribbon(aes(
+    x = capacity_multiplier_fct2,
+    ymin = critical_50CI_lower,
+    ymax = critical_50CI_upper,
+    fill = reopen,
+    group = interaction(reopen, rollback)),alpha=0.1) +
+  geom_ribbon(aes(
+    x = capacity_multiplier_fct2,
+    ymin = critical_95CI_lower,
+    ymax = critical_95CI_upper,
+    fill = reopen,
+    group = interaction(reopen, rollback)),alpha=0.03) +
+  geom_line(aes(
+    x = capacity_multiplier_fct2,
+    y = critical_median,
+    col = reopen,
+    alpha = rollback,
+    group = interaction(reopen, rollback)
+  ),size=1) +
+  geom_point(data=subset(plotdat,capacity_multiplier_fct2!="counter\nfactual"),aes(
+    x = capacity_multiplier_fct2,
+    y = critical_median,
+    fill = reopen,alpha = rollback),shape=21,size=2) +
+  geom_pointrange(data=subset(plotdat,capacity_multiplier_fct2=="counter\nfactual"),aes(
+    x = capacity_multiplier_fct2,
+    ymin = critical_50CI_lower,
+    ymax = critical_50CI_upper,
+    y = critical_median,
+    fill = reopen),
+    shape=21, size=0.5) +
+  geom_hline(
+    data = annotationDat,
+    aes(yintercept = avg_resource_available),
+    linetype = "dashed", col = capacity_col, size = 1
+  ) +
+  labs(
+    y = "Predictd peak in ICU census\nuntil end of December",
+    x = "Trigger threshold\n (% of ICU capacity)",
+    color="Transmission\nincrease", fill="Transmission\nincrease",
+    alpha="Mitigation\nstrengths"
+  ) +
+  facet_wrap(reopen ~ region, scales = "free") +
+  scale_alpha_manual(values=rev(c(1,0.75,0.5, 0.25)))+
+  scale_fill_manual(values = c(TwoCols_seq)) +
+  scale_color_manual(values = c(TwoCols_seq)) +
+  customTheme
+
+pplot
+
+f_save_plot(
+  plot_name = paste0("mitigation_reduction_lines"), pplot = pplot,
+  plot_dir = file.path(sim_dir, "ICU_reduction_plots"), width = 12, height = 8
+)
+
+
 ## -----------------------------------------------
 ### reduction required per region
 ## -----------------------------------------------
-mitigationDat <- dat_peak %>%
+mitigationDat <- dat %>%
   filter(delay == delay_val) %>%
   group_by(region, reopen, exp_name, rollback, capacity_multiplier) %>%
   mutate(
@@ -247,20 +322,3 @@ f_save_plot(
   plot_name = paste0("mitigation_effectiveness"), pplot = pplot,
   plot_dir = file.path(sim_dir, "ICU_reduction_plots"), width = 12, height = 8
 )
-
-
-
-### Relative reduction
-# p1dat
-colnames(p2dat)[c(4:8)] <- paste0("counter_", colnames(p2dat)[c(4:8)])
-
-p1dat %>%
-  left_join(p2dat[, c(1, 4:8, 14)], by = c("ems", "reopen")) %>%
-  group_by(ems, exp_name, capacity_multiplier) %>%
-  mutate(perc_red_median = (1 - (critical_median / counter_critical_median)) * 100) %>%
-  dplyr::select(ems, exp_name, delay, reopen, capacity_multiplier, critical_median, counter_critical_median, perc_red_median) %>%
-  as.data.frame() %>%
-  arrange(capacity_multiplier, ems, reopen)
-
-# palldat <- data.table(palldat, key =c( "geography_name","capacity_multiplier", "date",'reopen' ))
-# palldat[,ICU_diff_median := crit_det_median[rollback=="sm4"] - crit_det_median[rollback=="counterfactual"], by = c( "geography_name","capacity_multiplier", "date",'reopen' ) ]

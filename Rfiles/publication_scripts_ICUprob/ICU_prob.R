@@ -69,8 +69,10 @@ pplot <- ggplot(data = subset(dat, delay == "7daysdelay")) +
   ) +
   labs(
     y = "Probability of ICU overflow (%)",
-    x = "Trigger threshold (% of available ICU beds)"
+    x = "Trigger threshold (% of available ICU beds)",
+    color="Transmission\nincrease", fill="Transmission\nincrease"
   )
+
 
 pplot
 
@@ -125,7 +127,8 @@ pplot_f <- ggplot(data = dat_wide) +
   ) +
   labs(
     y = "Probability of ICU overflow (%)",
-    x = "Trigger threshold (% of available ICU beds)"
+    x = "Trigger threshold (% of available ICU beds)",
+    color="Transmission\nincrease", fill="Transmission\nincrease"
   )
 
 
@@ -163,8 +166,10 @@ pplot2 <- ggplot(data = subset(dat, rollback == "pr8")) +
   ) +
   labs(
     y = "Probability of ICU overflow (%)",
-    x = "Trigger threshold (% of available ICU beds)"
+    x = "Trigger threshold (% of available ICU beds)",
+    color="Transmission\nincrease", fill="Transmission\nincrease"
   )
+
 
 pplot2_f <- pplot2 + geom_ribbon(
   data = dat_wide,

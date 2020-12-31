@@ -251,14 +251,73 @@ dat_scenarios %>%
   )
 
 
-dat_scenarios %>%
-  filter(capacity_multiplier_fct == "80" &
-    delay == "1daysdelay" &
+tempdat <- dat_scenarios %>%
+  filter(delay == "1daysdelay" &
     date == as.Date("2020-12-31")) %>%
   arrange(date, reopen, geography_modeled, rollback) %>%
-  group_by(reopen, rollback) %>%
+  group_by(region, reopen,capacity_multiplier_fct, rollback) %>%
   summarize(
-    rt_median = round(mean(rt_median), 3),
-    rt_lower = round(mean(rt_lower), 3),
-    rt_upper = round(mean(rt_upper), 3)
+    rt_median = round(mean(rt_median), 3)
   )
+
+tempdat %>% pivot_wider(names_from = "capacity_multiplier_fct", values_from="rt_median" )
+
+ggplot(data=tempdat)+
+  geom_point(aes(x=capacity_multiplier_fct, y=rt_median, col=rollback, group=rollback))+
+  facet_wrap(reopen~region)+
+  scale_y_continuous(lim=c(0.5, 1.1))
+
+tempdat <- dat_scenarios %>%
+  filter(capacity_multiplier_fct == "80" & 
+           delay == "1daysdelay" &
+           date == as.Date("2020-12-31")) %>%
+  arrange(date, reopen, geography_modeled, rollback, rollback_fct) %>%
+  group_by(region, reopen, rollback, rollback_fct) %>%
+  summarize(
+    rt_median = round(mean(rt_median), 3)
+  )
+
+tempdat$rollback_fct <- factor(tempdat$rollback, 
+                                levels=(unique(tempdat$rollback)),
+                                labels=c("20","40","60","80"))
+
+tempdat$rollback_fct2 <- factor(tempdat$rollback, 
+                               levels=rev(unique(tempdat$rollback)),
+                               labels=rev(unique(tempdat$rollback_fct)))
+
+unique(tempdat$rollback_fct)
+unique(tempdat$rollback_fct2)
+
+pplot <- ggplot(data=tempdat)+
+  geom_bar(aes(x=rollback_fct, y=rt_median, 
+                group=interaction(rollback_fct, reopen)),
+           position = position_dodge(width=1),
+           stat="identity", width=0.7, fill="white")+
+  geom_bar(aes(x=rollback_fct, y=rt_median, 
+               fill=reopen, 
+               alpha=rollback_fct,
+               group=interaction(rollback_fct, reopen)),
+           position = position_dodge(width=1),
+           stat="identity", width=0.7)+
+  geom_text(aes(x=rollback_fct, y=rt_median, label=round(rt_median,2),
+               group=interaction(rollback_fct, reopen)),
+           position = position_dodge(width=1),
+           stat="identity",size=5, vjust=-0.2)+
+  facet_wrap(reopen~region, scales="free")+
+  scale_y_continuous(expand=c(0,0), lim=c(0,1.1), breaks=seq(0,1,0.25), labels=seq(0,1,0.25))+
+  scale_alpha_manual(values=rev(c(1,0.75,0.5, 0.25)))+
+  scale_fill_manual(values = rev(TwoCols_seq)) +
+  scale_color_manual(values = rev(TwoCols_seq)) +
+  theme(panel.grid.major.x = element_blank(),
+        panel.spacing = unit(1, "lines") )+
+  customTheme
+
+pplot
+
+
+f_save_plot(
+  plot_name = paste0("Rt_rollback_region_barchart_trigger80"),
+  pplot = pplot,
+  plot_dir = file.path(sim_dir, "ICU_Rt_plots"), width = 12, height = 6
+)
+
