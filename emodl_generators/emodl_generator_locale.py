@@ -907,9 +907,10 @@ def define_change_detection_and_isolation(grpList=None,
     return (contactTracing_str)
 
 
-def write_vaccine_str(grp, target_coverage, interval_days, start_date, stop_date, sim_startdate=date(2020, 2, 13)):
+def write_vaccine_str(grp, vaccine_type, target_coverage, interval_days, start_date, stop_date, sim_startdate=date(2020, 2, 13)):
     """ Example input values
     grp = "EMS-1"
+    vaccine_type = 'TB' # transmission blocking, disease blocking
     target_coverage =0.6
     start_date = date(2021,1,1)
     stop_date = date(2021,3,1)
@@ -919,24 +920,47 @@ def write_vaccine_str(grp, target_coverage, interval_days, start_date, stop_date
     n_vacc_rounds = (stop_date - start_date).days / interval_days
     daily_vacc_cov = target_coverage / n_vacc_rounds
     daily_vacc_N_param = f'(param daily_vaccinated_{grp} (* @speciesS_{grp}@ {daily_vacc_cov}))'
-    #daily_vacc_N_observe = f'(observe daily_vaccinated_t_{grp} daily_vaccinated_{grp})'
+    # daily_vacc_N_observe = f'(observe daily_vaccinated_t_{grp} daily_vaccinated_{grp})'
     vaccine_timeevent_str = daily_vacc_N_param + "\n"
-    for nround in range(int(n_vacc_rounds)):
-        new_event_time = ((start_date + timedelta(nround)) - sim_startdate).days
-        new_event = f'(time-event vacc_round_{nround} {new_event_time}  (' \
-                    f'(S::{grp} (- S::{grp} daily_vaccinated_{grp})) ' \
-                    f'(RV::{grp} (+ RV::{grp} daily_vaccinated_{grp}))' \
-                    '))\n'
-        vaccine_timeevent_str = vaccine_timeevent_str + new_event
+
+    if vaccine_type == "TB" :
+        for nround in range(int(n_vacc_rounds)):
+            new_event_time = ((start_date + timedelta(nround)) - sim_startdate).days
+            new_event = f'(time-event vacc_round_{nround} {new_event_time}  (' \
+                        f'(S::{grp} (- S::{grp} daily_vaccinated_{grp})) ' \
+                        f'(RV::{grp} (+ RV::{grp} daily_vaccinated_{grp}))' \
+                        '))\n'
+            vaccine_timeevent_str = vaccine_timeevent_str + new_event
+
+    """ Vaccine would require separate reactions to account for time spent in E"""
+    if vaccine_type == "DB_A":
+        for nround in range(int(n_vacc_rounds)):
+            new_event_time = ((start_date + timedelta(nround)) - sim_startdate).days
+            new_event = f'(time-event vacc_round_{nround} {new_event_time}  (' \
+                        f'(E::{grp} (- E::{grp} daily_vaccinated_{grp})) ' \
+                        f'(As::{grp} (+ As::{grp} daily_vaccinated_{grp}))' \
+                        '))\n'
+            vaccine_timeevent_str = vaccine_timeevent_str + new_event
+
+    """ Vaccine would require separate reactions to account for time spent in P"""
+    if vaccine_type == "DB_Sm":
+        for nround in range(int(n_vacc_rounds)):
+            new_event_time = ((start_date + timedelta(nround)) - sim_startdate).days
+            new_event = f'(time-event vacc_round_{nround} {new_event_time}  (' \
+                        f'(P::{grp} (- P::{grp} daily_vaccinated_{grp})) ' \
+                        f'(Sm::{grp} (+ Sm::{grp} daily_vaccinated_{grp}))' \
+                        '))\n'
+            vaccine_timeevent_str = vaccine_timeevent_str + new_event
 
     return vaccine_timeevent_str
 
 
-def add_vaccine_events(grpList, total_string,target_coverage,interval_days,start_date,stop_date,sim_startdate):
+def add_vaccine_events(grpList, vaccine_type, total_string,target_coverage,interval_days,start_date,stop_date,sim_startdate):
 
     vaccine_str = ""
     for grp in grpList:
         temp_str = write_vaccine_str(grp=grp,
+                                     vaccine_type=vaccine_type,
                                      target_coverage=target_coverage,
                                      interval_days=interval_days,
                                      start_date=start_date,
@@ -1245,7 +1269,7 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
 
 ###stringing all of my functions together to make the file:
 
-def generate_emodl(grpList, file_output, expandModel, add_interventions, add_vaccine=False, observeLevel='secondary',
+def generate_emodl(grpList, file_output, expandModel, add_interventions, add_vaccine=False, vaccine_type=None, observeLevel='secondary',
                    add_migration=True, change_testDelay=None, trigger_channel=None, observe_customGroups=False, grpDic=None):
     if (os.path.exists(file_output)):
         os.remove(file_output)
@@ -1299,13 +1323,14 @@ def generate_emodl(grpList, file_output, expandModel, add_interventions, add_vac
     ### Add interventions (optional)
     if add_interventions != None:
         total_string = write_interventions(grpList, total_string, add_interventions, change_testDelay, trigger_channel)
-    if add_vaccine :
+    if add_vaccine:
         total_string = add_vaccine_events(grpList=grpList,
+                                          vaccine_type =vaccine_type,
                                           total_string=total_string,
-                                          target_coverage=0.2,
+                                          target_coverage=0.5,
                                           interval_days=1,
-                                          start_date=date(2021, 1, 4),
-                                          stop_date=date(2021, 4, 1),
+                                          start_date=date(2021, 1, 1),
+                                          stop_date=date(2021, 6, 1),
                                           sim_startdate=date(2020, 2, 13))
 
     print(total_string)
@@ -1416,9 +1441,14 @@ if __name__ == '__main__':
     generateBaselineReopeningEmodls_withVaccine = True
     if generateBaselineReopeningEmodls_withVaccine:
         generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='continuedSIP',
-                       add_migration=False, add_vaccine=True, observe_customGroups=False,
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_vaccine.emodl'))
-
+                       add_migration=False, add_vaccine=True, vaccine_type="TB", observe_customGroups=False,
+                       file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_vaccineTB.emodl'))
+        generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='continuedSIP',
+                       add_migration=False, add_vaccine=True, vaccine_type="DB_A", observe_customGroups=False,
+                       file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_vaccineDB_A.emodl'))
+        generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='continuedSIP',
+                       add_migration=False, add_vaccine=True, vaccine_type="DB_Sm", observe_customGroups=False,
+                       file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_vaccineDB_Sm.emodl'))
 
     """ Emodls with migration between EMS areas """
     generateMigrationEmodls = False
