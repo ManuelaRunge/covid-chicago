@@ -229,6 +229,9 @@ intervention_parameters:
   'multiplier_elderly':
     np.random: uniform
     function_kwargs: {'low': 0.6, 'high':0.6}
+  'vacc_daily_cov':
+    np.random: uniform
+    function_kwargs: {'low': 0.2, 'high':0.2}    
 time_parameters:
   ### TIME-VARYING PARAMETER  - DATES
   ### Reduce Ki due to stay-at-home policy 
@@ -369,6 +372,9 @@ time_parameters:
   'start_time_2ndWave':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2020-07-01}   
+  'vaccine_start_time':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2021-01-01}       
 fitted_parameters:
   Kis:
     'NMH_catchment':

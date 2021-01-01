@@ -666,7 +666,7 @@ def write_Custom_Groups(grpDic, observeLevel):
     return (obs_All_str)
 
 
-def write_reactions(grp, expandModel=None):
+def write_reactions(grp, expandModel=None, add_vaccine=None):
     grp = str(grp)
 
     reaction_str_I = """
@@ -680,20 +680,24 @@ def write_reactions(grp, expandModel=None):
 (reaction recovery_C2_det3_{grp}   (C2_det3::{grp})   (RC2_det3::{grp})   (* Kr_c C2_det3::{grp}))
     """.format(grp=grp)
 
-    expand_base_str = """
+    expand_base_str_1 = """
 (reaction infection_asymp_undet_{grp}  (E::{grp})   (As::{grp})   (* Kl E::{grp} (- 1 d_As)))
 (reaction infection_asymp_det_{grp}  (E::{grp})   (As_det1::{grp})   (* Kl E::{grp} d_As))
 (reaction presymptomatic_{grp} (E::{grp})   (P::{grp})   (* Ks E::{grp} (- 1 d_P)))
 (reaction presymptomatic_{grp} (E::{grp})   (P_det::{grp})   (* Ks E::{grp} d_P))
+""".format(grp=grp)
 
+    expand_base_str_2 = """
 (reaction mild_symptomatic_undet_{grp} (P::{grp})  (Sym::{grp}) (* Ksym P::{grp} (- 1 d_Sym_{grp})))
 (reaction mild_symptomatic_det_{grp} (P::{grp})  (Sym_det2::{grp}) (* Ksym P::{grp} d_Sym_{grp}))
 (reaction severe_symptomatic_undet_{grp} (P::{grp})  (Sys::{grp})  (* Ksys P::{grp} (- 1 d_Sys)))
 (reaction severe_symptomatic_det_{grp} (P::{grp})  (Sys_det3::{grp})  (* Ksys P::{grp} d_Sys))
-
+; for P_det
 (reaction mild_symptomatic_det_{grp} (P_det::{grp})  (Sym_det2::{grp}) (* Ksym P_det::{grp}))
 (reaction severe_symptomatic_det_{grp} (P_det::{grp})  (Sys_det3::{grp})  (* Ksys P_det::{grp} ))
+""".format(grp=grp)
 
+    expand_base_str_3 = """
 (reaction hospitalization_1_{grp}   (Sys::{grp})   (H1::{grp})   (* Kh1 Sys::{grp}))
 (reaction hospitalization_2_{grp}   (Sys::{grp})   (H2::{grp})   (* Kh2 Sys::{grp}))
 (reaction hospitalization_3_{grp}   (Sys::{grp})   (H3::{grp})   (* Kh3 Sys::{grp}))
@@ -714,6 +718,43 @@ def write_reactions(grp, expandModel=None):
 (reaction recovery_Sym_{grp}   (Sym::{grp})   (RSym::{grp})   (* Kr_m  Sym::{grp}))
 (reaction recovery_Sym_det2_{grp}   (Sym_det2::{grp})   (RSym_det2::{grp})   (* Kr_m  Sym_det2::{grp}))
 """.format(grp=grp)
+
+    expand_base_str = expand_base_str_1 + expand_base_str_2 + expand_base_str_3
+
+    expand_vaccine_DB_Sm_str_temp = """
+; progression to mild symptomatic
+(reaction mild_symptomatic_undet_{grp} (P::{grp})  (Sym::{grp}) (* Ksym P::{grp} (- 1 d_Sym_{grp})))
+(reaction mild_symptomatic_det_{grp} (P::{grp})  (Sym_det2::{grp}) (* Ksym P::{grp} d_Sym_{grp}))
+; progression to severe symptomatic
+(reaction severe_symptomatic_undet_{grp} (P::{grp})  (Sys::{grp})  (* Ksys P::{grp} (- 1 d_Sys) (- 1 d_vacc)))
+(reaction severe_symptomatic_det_{grp} (P::{grp})  (Sys_det3::{grp})  (* Ksys P::{grp} d_Sys (- 1 d_vacc)))
+(reaction severe_symptomatic_undet_vacc_{grp} (P::{grp})  (Sym::{grp})  (* Ksys P::{grp} (- 1 d_Sys) d_vacc))
+(reaction severe_symptomatic_det_vacc_{grp} (P::{grp})  (Sym_det2::{grp})  (* Ksys P::{grp} d_Sys d_vacc))
+; for P_det
+(reaction mild_symptomatic_det_2_{grp} (P_det::{grp})  (Sym_det2::{grp}) (* Ksym P_det::{grp}))
+(reaction severe_symptomatic_det_2_{grp} (P_det::{grp})  (Sys_det3::{grp})  (* Ksys P_det::{grp} (- 1 d_vacc)))
+(reaction severe_symptomatic_vacc_2_{grp} (P_det::{grp})  (Sym_det2::{grp})  (* Ksys P_det::{grp} d_vacc))
+""".format(grp=grp)
+
+    expand_vaccine_DB_Sm_str = expand_base_str_1 + expand_vaccine_DB_Sm_str_temp + expand_base_str_3
+
+    expand_vaccine_DB_A_str_temp = """
+; progression to mild symptomatic
+(reaction mild_symptomatic_undet_{grp} (P::{grp})  (Sym::{grp}) (* Ksym P::{grp} (- 1 d_Sym_{grp})  (- 1 d_vacc)))
+(reaction mild_symptomatic_det_{grp} (P::{grp})  (Sym_det2::{grp}) (* Ksym P::{grp} d_Sym_{grp} (- 1 d_vacc)))
+(reaction mild_symptomatic_vacc_{grp} (P::{grp})  (As::{grp}) (* Ksym P::{grp} d_vacc))
+; progression to severe symptomatic
+(reaction severe_symptomatic_undet_{grp} (P::{grp})  (Sys::{grp})  (* Ksys P::{grp} (- 1 d_Sys) (- 1 d_vacc)))
+(reaction severe_symptomatic_det_{grp} (P::{grp})  (Sys_det3::{grp})  (* Ksys P::{grp} d_Sys (- 1 d_vacc)))
+(reaction severe_symptomatic_vacc_{grp} (P::{grp})  (As::{grp})  (* Ksys P::{grp} d_vacc))
+; for P_det
+(reaction mild_symptomatic_det_2_{grp} (P_det::{grp})  (Sym_det2::{grp}) (* Ksym P_det::{grp} (- 1 d_vacc)))
+(reaction severe_symptomatic_det_2_{grp} (P_det::{grp})  (Sys_det3::{grp})  (* Ksys P_det::{grp} (- 1 d_vacc)))
+(reaction mild_symptomatic_vacc_2_{grp} (P_det::{grp})  (As::{grp}) (* Ksym P_det::{grp} d_vacc))
+(reaction severe_symptomatic_vacc_2_{grp} (P_det::{grp})  (As::{grp})  (* Ksys P_det::{grp} d_vacc))
+""".format(grp=grp)
+
+    expand_vaccine_DB_A_str = expand_base_str_1 + expand_vaccine_DB_A_str_temp + expand_base_str_3
 
     expand_testDelay_SymSys_str = """
 (reaction infection_asymp_undet_{grp}  (E::{grp})   (As::{grp})   (* Kl E::{grp} (- 1 d_As)))
@@ -750,21 +791,55 @@ def write_reactions(grp, expandModel=None):
 (reaction recovery_As_det_{grp} (As_det1::{grp})   (RAs_det1::{grp})   (* Kr_a As_det1::{grp}))
 (reaction recovery_Sym_{grp}   (Sym::{grp})   (RSym::{grp})   (* Kr_m_D  Sym::{grp}))
 (reaction recovery_Sym_det2_{grp}   (Sym_det2::{grp})   (RSym_det2::{grp})   (* Kr_m_D  Sym_det2::{grp}))
-
 """.format(grp=grp)
 
-    expand_testDelay_AsSymSys_str = """
+    expand_testDelay_AsSymSys_str_1 = """
 (reaction infection_asymp_det_{grp}  (E::{grp})   (As_preD::{grp})   (* Kl E::{grp}))
 (reaction infection_asymp_undet_{grp}  (As_preD::{grp})   (As::{grp})   (* Kl_D As_preD::{grp} (- 1 d_As)))
 (reaction infection_asymp_det_{grp}  (As_preD::{grp})   (As_det1::{grp})   (* Kl_D As_preD::{grp} d_As))
 
 (reaction presymptomatic_{grp} (E::{grp})   (P::{grp})   (* Ks  E::{grp} (- 1 d_P)))
 (reaction presymptomatic_{grp} (E::{grp})   (P_det::{grp})   (* Ks  E::{grp} d_P))
+""".format(grp=grp)
 
+    expand_testDelay_AsSymSys_str_2 = """
 ; developing symptoms - same time to symptoms as in master emodl
 (reaction mild_symptomatic_{grp} (P::{grp})  (Sym_preD::{grp}) (* Ksym P::{grp}))
 (reaction severe_symptomatic_{grp} (P::{grp})  (Sys_preD::{grp})  (* Ksys P::{grp}))
-																   
+
+; developing symptoms - already detected, same time to symptoms as in master emodl
+(reaction mild_symptomatic_det_{grp} (P_det::{grp})  (Sym_det2b::{grp}) (* Ksym  P_det::{grp}))
+(reaction severe_symptomatic_det_{grp} (P_det::{grp})  (Sys_det3b::{grp})  (* Ksys  P_det::{grp} ))
+""".format(grp=grp)
+
+    expand_testDelay_AsSymSys_vaccineDBA_str = """
+; developing symptoms - same time to symptoms as in master emodl
+(reaction mild_symptomatic_{grp} (P::{grp})  (Sym_preD::{grp}) (* Ksym P::{grp} (- 1 d_vacc)))
+(reaction severe_symptomatic_{grp} (P::{grp})  (Sys_preD::{grp})  (* Ksys P::{grp} (- 1 d_vacc)))
+(reaction mild_symptomatic_vacc_{grp} (P::{grp})  (As::{grp}) (* Ksym P::{grp} d_vacc))
+(reaction severe_symptomatic_vacc_{grp} (P::{grp})  (As::{grp})  (* Ksys P::{grp} d_vacc))
+
+; developing symptoms - already detected, same time to symptoms as in master emodl
+(reaction mild_symptomatic_det_{grp} (P_det::{grp})  (Sym_det2b::{grp}) (* Ksym  P_det::{grp} (- 1 d_vacc)))
+(reaction severe_symptomatic_det_{grp} (P_det::{grp})  (Sys_det3b::{grp})  (* Ksys  P_det::{grp} (- 1 d_vacc) ))
+(reaction mild_symptomatic_det_{grp} (P_det::{grp})  (As_det1::{grp}) (* Ksym  P_det::{grp} d_vacc))
+(reaction severe_symptomatic_det_{grp} (P_det::{grp})  (As_det1::{grp})  (* Ksys  P_det::{grp} d_vacc ))
+""".format(grp=grp)
+
+    expand_testDelay_AsSymSys_vaccineDBSm_str = """
+; developing symptoms - same time to symptoms as in master emodl
+(reaction mild_symptomatic_{grp} (P::{grp})  (Sym_preD::{grp}) (* Ksym P::{grp}))
+(reaction severe_symptomatic_{grp} (P::{grp})  (Sys_preD::{grp})  (* Ksys P::{grp} (- 1 d_vacc)))
+(reaction severe_symptomatic_vacc_{grp} (P::{grp})  (Sym_preD::{grp})  (* Ksys P::{grp} d_vacc))
+
+; developing symptoms - already detected, same time to symptoms as in master emodl
+(reaction mild_symptomatic_det_{grp} (P_det::{grp})  (Sym_det2b::{grp}) (* Ksym  P_det::{grp}))
+(reaction severe_symptomatic_det_{grp} (P_det::{grp})  (Sys_det3b::{grp})  (* Ksys  P_det::{grp} (- 1 d_vacc) ))
+(reaction severe_symptomatic_det_{grp} (P_det::{grp})  (Sym_det2b::{grp})  (* Ksys  P_det::{grp} d_vacc ))
+""".format(grp=grp)
+
+
+    expand_testDelay_AsSymSys_str_3 = """
 ; never detected 
 (reaction mild_symptomatic_undet_{grp} (Sym_preD::{grp})  (Sym::{grp}) (* Ksym_D Sym_preD::{grp} (- 1 d_Sym_{grp})))
 (reaction severe_symptomatic_undet_{grp} (Sys_preD::{grp})  (Sys::{grp})  (* Ksys_D Sys_preD::{grp} (- 1 d_Sys)))
@@ -772,10 +847,6 @@ def write_reactions(grp, expandModel=None):
 ; new detections  - time to detection is subtracted from hospital time
 (reaction mild_symptomatic_det_{grp} (Sym_preD::{grp})  (Sym_det2a::{grp}) (* Ksym_D Sym_preD::{grp} d_Sym_{grp}))
 (reaction severe_symptomatic_det_{grp} (Sys_preD::{grp})  (Sys_det3a::{grp})  (* Ksys_D Sys_preD::{grp} d_Sys))
-
-; developing symptoms - already detected, same time to symptoms as in master emodl
-(reaction mild_symptomatic_det_{grp} (P_det::{grp})  (Sym_det2b::{grp}) (* Ksym  P_det::{grp}))
-(reaction severe_symptomatic_det_{grp} (P_det::{grp})  (Sys_det3b::{grp})  (* Ksys  P_det::{grp} ))
 
 (reaction hospitalization_1_{grp}  (Sys::{grp})   (H1::{grp})   (* Kh1_D Sys::{grp}))
 (reaction hospitalization_2_{grp}   (Sys::{grp})   (H2::{grp})   (* Kh2_D Sys::{grp}))
@@ -804,8 +875,24 @@ def write_reactions(grp, expandModel=None):
 (reaction recovery_Sym_det2b_{grp}   (Sym_det2b::{grp})   (RSym_det2::{grp})   (* Kr_m  Sym_det2b::{grp}))
  """.format(grp=grp)
 
+
+    if add_vaccine != None:
+        expand_testDelay_AsSymSys_str = expand_testDelay_AsSymSys_str_1 + \
+                                        expand_testDelay_AsSymSys_vaccineDBA_str + \
+                                        expand_testDelay_AsSymSys_str_3
+    else:
+        expand_testDelay_AsSymSys_str = expand_testDelay_AsSymSys_str_1 + \
+                                        expand_testDelay_AsSymSys_str_2 + \
+                                        expand_testDelay_AsSymSys_str_3
+
     if expandModel == None:
         reaction_str = reaction_str_I + expand_base_str + reaction_str_III
+    if expandModel == "vaccine_TB":
+        reaction_str = reaction_str_I + expand_vaccine_TB_str + reaction_str_III
+    if expandModel == "vaccine_DB_A":
+        reaction_str = reaction_str_I + expand_vaccine_DB_A_str + reaction_str_III
+    if expandModel == "vaccine_DB_Sm":
+        reaction_str = reaction_str_I + expand_vaccine_DB_Sm_str + reaction_str_III
     if expandModel == "testDelay_SymSys" or expandModel == "uniformtestDelay":
         reaction_str = reaction_str_I + expand_testDelay_SymSys_str + reaction_str_III
     if expandModel == 'testDelay_AsSymSys':
@@ -948,7 +1035,7 @@ def write_vaccine_str(grp, vaccine_type, target_coverage, interval_days, start_d
             new_event_time = ((start_date + timedelta(nround)) - sim_startdate).days
             new_event = f'(time-event vacc_round_{nround} {new_event_time}  (' \
                         f'(P::{grp} (- P::{grp} daily_vaccinated_{grp})) ' \
-                        f'(Sm::{grp} (+ Sm::{grp} daily_vaccinated_{grp}))' \
+                        f'(Sym::{grp} (+ Sym::{grp} daily_vaccinated_{grp}))' \
                         '))\n'
             vaccine_timeevent_str = vaccine_timeevent_str + new_event
 
@@ -971,6 +1058,13 @@ def add_vaccine_events(grpList, vaccine_type, total_string,target_coverage,inter
     total_string = total_string.replace(';[VACCINE_EVENTS]', vaccine_str)
     return total_string
 
+def add_vaccine_events2(total_string):
+    vaccine_str = """
+(param d_vacc 0)
+(time-event start_daily_vaccinations @vaccine_start_time@ ((d_vacc @vacc_daily_cov@)))
+"""
+    total_string = total_string.replace(';[VACCINE_EVENTS]', vaccine_str)
+    return total_string
 
 def write_interventions(grpList, total_string, scenarioName, change_testDelay=None, trigger_channel=None):
     param_change_str = """
@@ -1269,7 +1363,7 @@ def write_interventions(grpList, total_string, scenarioName, change_testDelay=No
 
 ###stringing all of my functions together to make the file:
 
-def generate_emodl(grpList, file_output, expandModel, add_interventions, add_vaccine=False, vaccine_type=None, observeLevel='secondary',
+def generate_emodl(grpList, file_output, expandModel, add_interventions, add_vaccine=None, observeLevel='secondary',
                    add_migration=True, change_testDelay=None, trigger_channel=None, observe_customGroups=False, grpDic=None):
     if (os.path.exists(file_output)):
         os.remove(file_output)
@@ -1296,7 +1390,7 @@ def generate_emodl(grpList, file_output, expandModel, add_interventions, add_vac
         observe_string = observe_string + write_observe(grp, observeLevel=observeLevel)
         if (add_migration):
             reaction_string = reaction_string + write_travel_reaction(grp)
-        reaction_string = reaction_string + write_reactions(grp, expandModel)
+        reaction_string = reaction_string + write_reactions(grp, expandModel, add_vaccine)
         functions_string = functions_string + functions
         param_string = param_string + write_Ki_timevents(grp)
 
@@ -1314,24 +1408,26 @@ def generate_emodl(grpList, file_output, expandModel, add_interventions, add_vac
 
         functions_string = functions_string + write_Custom_Groups(grpDic, observeLevel)
 
-    intervention_string = ";[INTERVENTIONS]\n;[ADDITIONAL_TIMEEVENTS]\n;[VACCINE_EVENTS]"
+    intervention_string = ";[INTERVENTIONS]\n;[ADDITIONAL_TIMEEVENTS]]\n;[VACCINE_EVENTS]"
 
-    total_string = total_string + '\n\n' + species_string + '\n\n' + functions_string + '\n\n' + observe_string + '\n\n' + param_string + '\n\n' + intervention_string + '\n\n' + reaction_string + '\n\n' + footer_str
+    total_string = total_string + '\n\n' + species_string + '\n\n' + functions_string + '\n\n' + observe_string + \
+                   '\n\n' + param_string + '\n\n' + intervention_string + '\n\n' + reaction_string + '\n\n' + footer_str
 
     ### Custom adjustments for EMS 6 (earliest start date)
     total_string = total_string.replace('(species As::EMS_6 0)', '(species As::EMS_6 1)')
     ### Add interventions (optional)
     if add_interventions != None:
         total_string = write_interventions(grpList, total_string, add_interventions, change_testDelay, trigger_channel)
-    if add_vaccine:
-        total_string = add_vaccine_events(grpList=grpList,
-                                          vaccine_type =vaccine_type,
-                                          total_string=total_string,
-                                          target_coverage=0.5,
-                                          interval_days=1,
-                                          start_date=date(2021, 1, 1),
-                                          stop_date=date(2021, 6, 1),
-                                          sim_startdate=date(2020, 2, 13))
+    if add_vaccine != None:
+        # total_string = add_vaccine_events(grpList=grpList,
+        #                                   vaccine_type =add_vaccine,
+        #                                   total_string=total_string,
+        #                                   target_coverage=0.5,
+        #                                   interval_days=1,
+        #                                   start_date=date(2021, 1, 1),
+        #                                   stop_date=date(2021, 6, 1),
+        #                                   sim_startdate=date(2020, 2, 13))
+        total_string = add_vaccine_events2(total_string=total_string)
 
     print(total_string)
     emodl = open(file_output, "w")  ## again, can make this more dynamic
@@ -1347,7 +1443,7 @@ if __name__ == '__main__':
     ems_grp = ['EMS_1', 'EMS_2', 'EMS_3', 'EMS_4', 'EMS_5', 'EMS_6', 'EMS_7', 'EMS_8', 'EMS_9', 'EMS_10', 'EMS_11']
 
     """ Emodls without migration between EMS areas"""
-    generateBaselineReopeningEmodls = True
+    generateBaselineReopeningEmodls = False
     if generateBaselineReopeningEmodls:
         generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='continuedSIP',
                        add_migration=False, observe_customGroups=False,
@@ -1388,7 +1484,7 @@ if __name__ == '__main__':
                        add_migration=False, observe_customGroups=False, trigger_channel="hosp_det",
                        file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_hospdet_triggeredrollbackdelay.emodl'))
 
-    generateImprovedDetectionEmodls = True
+    generateImprovedDetectionEmodls = False
     if generateImprovedDetectionEmodls:
         generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='continuedSIP',
                        add_migration=False, observe_customGroups=False, change_testDelay="Sym",
@@ -1412,7 +1508,7 @@ if __name__ == '__main__':
                        add_migration=False, change_testDelay="AsSym", observe_customGroups=False,
                        file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_dAsPSym_TD.emodl'))
 
-    generateImprovedDetectionEmodls_withReopening = True
+    generateImprovedDetectionEmodls_withReopening = False
     if generateImprovedDetectionEmodls_withReopening:
         generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='gradual_reopening2',
                        add_migration=False, observe_customGroups=False, change_testDelay="Sym",
@@ -1440,15 +1536,20 @@ if __name__ == '__main__':
 
     generateBaselineReopeningEmodls_withVaccine = True
     if generateBaselineReopeningEmodls_withVaccine:
+        # generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='continuedSIP',
+        #                add_migration=False, add_vaccine="TB", observe_customGroups=False,
+        #                file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_vaccineTB.emodl'))
+        # generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='continuedSIP',
+        #                add_migration=False, add_vaccine="DB_A", observe_customGroups=False,
+        #                file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_vaccineDB_A.emodl'))
+        # generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='continuedSIP',
+        #                add_migration=False, add_vaccine="DB_Sm", observe_customGroups=False,
+        #                file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_vaccineDB_Sm.emodl'))
+
         generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='continuedSIP',
-                       add_migration=False, add_vaccine=True, vaccine_type="TB", observe_customGroups=False,
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_vaccineTB.emodl'))
-        generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='continuedSIP',
-                       add_migration=False, add_vaccine=True, vaccine_type="DB_A", observe_customGroups=False,
+                       add_migration=False, add_vaccine="DBA", observe_customGroups=False,
                        file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_vaccineDB_A.emodl'))
-        generate_emodl(grpList=ems_grp, expandModel="testDelay_AsSymSys", add_interventions='continuedSIP',
-                       add_migration=False, add_vaccine=True, vaccine_type="DB_Sm", observe_customGroups=False,
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_EMS_vaccineDB_Sm.emodl'))
+
 
     """ Emodls with migration between EMS areas """
     generateMigrationEmodls = False
