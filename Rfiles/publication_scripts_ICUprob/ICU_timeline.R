@@ -17,19 +17,31 @@ if (runInBatchMode) {
   Location <- cmd_agrs[length(cmd_agrs) - 1]
   workingDir <- cmd_agrs[length(cmd_agrs)]
   simdate <- strsplit(exp_name, split = "_IL_")[[1]][1]
+  setwd(workingDir)
 } else {
   Location <- "Local"
   simdate <- "20201212"
   exp_stem <- paste0(simdate, "_IL_regreopen")
 }
 
-
-setwd(workingDir)
 source("load_paths.R")
 source("setup.R")
 source("processing_helpers.R")
 source("publication_scripts_ICUprob/functions.R")
 customTheme <- f_getCustomTheme()
+
+custom_date_breaks <- c(
+  as.Date("2020-08-01"), as.Date("2020-09-01"),
+  as.Date("2020-10-01"), as.Date("2020-11-01"),
+  as.Date("2020-12-01"), as.Date("2021-01-01")
+)
+
+custom_date_breaks_JanOct <- c(
+  as.Date("2020-01-01"), as.Date("2020-02-01"), as.Date("2020-03-01"),
+  as.Date("2020-04-01"), as.Date("2020-05-01"), as.Date("2020-06-01"),
+  as.Date("2020-07-01"), as.Date("2020-08-01"), as.Date("2020-09-01"),
+  as.Date("2020-10-01")
+)
 
 if (Location == "Local") sim_dir <- file.path(simulation_output, "_overflow_simulations", simdate)
 if (Location == "NUCLUSTER") sim_dir <- "/projects/p30781/covidproject/covid-chicago/_temp"
@@ -76,8 +88,6 @@ delay_values <- unique(dat$delay)
 rollback_val <- rollback_values[2]
 delay_val <- delay_values[1]
 
-
-
 ### check
 str(dat)
 table(dat$region)
@@ -109,12 +119,9 @@ dat_counterfactual$reopen_fct <- gsub(
 dat_scen <- dat %>% filter(rollback != "counterfactual" & delay == unique(dat$delay)[1])
 
 
-
 #### ====================================
 ### PLOTS - basic descriptive
 #### ====================================
-
-
 if (length(unique(dat$rollback)) > 1) {
   for (reg in subregions) {
     icu_available <- dat_scen %>%
@@ -230,8 +237,8 @@ unique(dat_scen$capacity_multiplier_fct)
 dat_scen <- dat_scen %>%
   mutate(
     trigger_recommended = ifelse(geography_modeled == "covidregion_1", "60", "80"),
-    trigger_recommended = ifelse(geography_modeled == "covidregion_4", "70", trigger_recommended),
-    trigger_recommended = ifelse(geography_modeled == "covidregion_11", "60", trigger_recommended)
+    trigger_recommended = ifelse(geography_modeled == "covidregion_4", "50", trigger_recommended),
+    trigger_recommended = ifelse(geography_modeled == "covidregion_11", "70", trigger_recommended)
   )
 
 dat_counterfactual_sub <- dat_counterfactual %>%
@@ -273,7 +280,7 @@ pplot_no_counterfactual <-
   geom_hline(aes(yintercept = icu_available),
              linetype = "dashed", col = "dodgerblue3"
   ) +
-  facet_wrap(reopen_fct ~ region, scales = "free") +
+  facet_wrap(reopen ~ region, scales = "free") +
   scale_x_date(date_breaks = "30 days", date_labels = "%b") +
   labs(
     x = "",
@@ -286,7 +293,8 @@ pplot_no_counterfactual <-
   scale_fill_viridis_d(option = "C") +
   geom_hline(yintercept = c(-Inf, Inf)) +
   geom_vline(xintercept = c(-Inf, Inf)) +
-  customTheme
+  customTheme+
+  theme(legend.position = "bottom")
 pplot_no_counterfactual 
 
 
@@ -328,7 +336,7 @@ pplot <-
     linetype = "dashed", col = "dodgerblue3"
   ) +
   # geom_vline(xintercept=as.Date("2020-10-01"))+
-  facet_wrap(reopen_fct ~ region, scales = "free") +
+  facet_wrap(reopen ~ region, scales = "free") +
   scale_x_date(date_breaks = "30 days", date_labels = "%b") +
   # scale_y_continuous(lim = c(0, 2), expand = c(0, 0)) +
   labs(
@@ -342,7 +350,8 @@ pplot <-
   scale_fill_viridis_d(option = "C") +
   geom_hline(yintercept = c(-Inf, Inf)) +
   geom_vline(xintercept = c(-Inf, Inf)) +
-  customTheme
+  customTheme+
+  theme(legend.position = "bottom")
 
 pplot
 

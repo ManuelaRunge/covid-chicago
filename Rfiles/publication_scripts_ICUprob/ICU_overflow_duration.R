@@ -3,10 +3,9 @@ library(cowplot)
 library(data.table)
 
 source("load_paths.R")
-source("setup.R")
 source("processing_helpers.R")
 source("publication_scripts_ICUprob/functions.R")
-
+theme_set(theme_minimal())
 ## -------------------------------
 ## Run script
 ## -------------------------------
@@ -68,24 +67,25 @@ pplot <- ggplot(data = subset(dat, delay == delay_val & reopen == "100perc")) +
     x = capacity_multiplier * 100,
     y = exceed_diff_1_median,
     group = rollback,
-    col = reopen, linetype = rollback_fct
+    col = reopen, alpha = rollback_fct
   ), size = 1.2) +
-  geom_hline(yintercept = 30, col = "red") +
+  geom_hline(data=subset(dat, delay == "counterfactual" & reopen=="100perc"), aes(yintercept = exceed_diff_1_median)) +
   facet_wrap(~region) +
   scale_color_manual(values = TwoCols_seq[2]) +
   scale_fill_manual(values = TwoCols_seq[2]) +
-  scale_linetype_manual(values = c("solid", "longdash", "dotdash", "dashed")) +
-  scale_x_continuous(lim = c(0, 100), breaks = seq(0, 100, 20), labels = seq(0, 100, 20)) +
-  scale_y_continuous(lim = c(0, 120), breaks = seq(0, 120, 20), labels = seq(0, 120, 20)) +
+  scale_alpha_manual(values = c(1,0.75,0.5,0.25)) +
+  scale_x_continuous(lim = c(0, 100), breaks = seq(0, 100, 20), labels = seq(0, 100, 20), expand=c(0,0)) +
+  scale_y_continuous(lim = c(0, 140), breaks = seq(0, 130, 30), labels = seq(0, 130, 30), expand=c(0,0)) +
   labs(
     y = "Days above ICU capacity (median)",
     x = "Trigger threshold\n(% of ICU capacity)",
-    linetype = "Mitigation\neffectiveness (%)"
+    alpha = "Mitigation\neffectiveness (%)"
   ) +
   customTheme +
   theme(
-    panel.grid.minor.y = element_blank(),
+    #panel.grid.minor.y = element_blank(),
     # panel.grid.minor.x = element_blank(),
+    panel.spacing = unit(1, "lines"),
     axis.ticks = element_line()
   ) +
   geom_hline(yintercept = c(-Inf, Inf)) +
@@ -96,9 +96,28 @@ pplot
 
 f_save_plot(
   plot_name = paste0("lineplot_duration_exceed"), pplot = pplot,
-  plot_dir = file.path(sim_dir, "ICU_duration_plots"), width = 12, height = 6
+  plot_dir = file.path(sim_dir, "ICU_duration_plots"), width = 12, height = 4
 )
 
+
+testdat <- subset(dat, delay == delay_val & reopen == "100perc")
+testplot <- ggplot(data = testdat) +
+  geom_raster(aes(x=capacity_multiplier, y=rollback, fill=exceed_diff_1_median)) +
+  facet_wrap(~region)+
+  customTheme+
+  scale_fill_viridis_c()+
+  labs(x="Trigger threshold\n(% of ICU capacity)",
+       y="Days",
+       color="Duration",
+       fill="Duration") +
+  scale_x_continuous(lim = c(0, 1), breaks = seq(0, 1, 0.10), labels = seq(0, 100, 10), expand=c(0,0)) +
+  scale_y_discrete( expand=c(0,0)) 
+testplot
+
+f_save_plot(
+  plot_name = paste0("testplot_duration_exceed"), pplot = testplot,
+  plot_dir = file.path(sim_dir, "ICU_duration_plots"), width = 12, height = 4
+)
 
 ### for text
 subset(dat, delay == delay_val) %>%
@@ -138,25 +157,38 @@ table(dat$capacity_multiplier_fct, exclude = NULL)
 
 dat <- dat %>%
   mutate(trigger_to_exceed_0.7_median = ifelse(is.na(trigger_to_exceed_0.7_median), 
-                                               0, trigger_to_exceed_0.7_median))
+                                               0, trigger_to_exceed_0.7_median)) 
+
 
 pplot <- ggplot(data = unique(subset(dat, delay == delay_val))) +
   geom_line(aes(
-    x = as.factor(capacity_multiplier),
+    x = capacity_multiplier_fct,
     y = trigger_to_exceed_0.7_median, group = interaction(rollback, reopen),
-    col = reopen
-  ), stat = "identity", position = position_dodge(width = 1)) +
-  facet_wrap(reopen ~ region) +
-  scale_fill_manual(values = TwoCols_seq) +
-  scale_color_manual(values = TwoCols_seq) +
-  scale_y_continuous(lim = c(0, 130), breaks = seq(0, 130, 30)) +
+    col = reopen, alpha=rollback
+  ),size=1) +
+  facet_wrap(reopen ~ region, scales="free") +
+  scale_fill_manual(values = rev(TwoCols_seq)) +
+  scale_color_manual(values = rev(TwoCols_seq)) +
+  scale_alpha_manual(values =rev( c(1,0.75,0.5,0.25))) +
+ # scale_x_continuous( breaks = seq(0, 1, 0.2), labels = seq(0, 100, 20), expand=c(0,0)) +
+  scale_y_continuous(lim = c(0, 130), breaks = seq(0, 130, 30), labels = seq(0, 130, 30), expand=c(0,0)) +
   labs(
     title = "Time between triggered mitigation and reduced ICU census to 70% of capacity",
     subtitle = "",
     y = "Days between triggered mitigation and\nreduced ICU census to 70% of capacity",
     x = "Trigger threshold",
     caption = "Shading=mitigation strengths\nTimeframe beyond 2020, until Feb 2021"
-  )
+  )+
+  customTheme +
+  theme(
+    #panel.grid.minor.y = element_blank(),
+    # panel.grid.minor.x = element_blank(),
+    panel.spacing = unit(1, "lines"),
+    axis.ticks = element_line()
+  ) +
+  geom_hline(yintercept = c(-Inf, Inf)) +
+  geom_vline(xintercept = c(-Inf, Inf)) +
+  guides(color = FALSE)
 
 pplot
 
@@ -165,6 +197,11 @@ f_save_plot(
   plot_name = paste0("lineplot_duration_trigger_to_70perc"), pplot = pplot,
   plot_dir = file.path(sim_dir, "ICU_duration_plots"), width = 12, height = 6
 )
+
+
+
+## =====================================
+## When exceed
 
 
 
@@ -181,7 +218,16 @@ pplot <- ggplot(data = plotdat) +
   scale_fill_manual(values = TwoCols_seq) +
   scale_color_manual(values = TwoCols_seq) +
   scale_y_continuous(lim = c(0, 100), breaks = seq(0, 100, 30)) +
-  customTheme
+  customTheme +
+  theme(
+    #panel.grid.minor.y = element_blank(),
+    # panel.grid.minor.x = element_blank(),
+    panel.spacing = unit(1, "lines"),
+    axis.ticks = element_line()
+  ) +
+  geom_hline(yintercept = c(-Inf, Inf)) +
+  geom_vline(xintercept = c(-Inf, Inf)) +
+  guides(color = FALSE)
 
 pplot
 
