@@ -37,6 +37,7 @@ run_Rt_estimation <- function(exp_dir, method = "uncertain_si", weekwindow = 13)
   Rt_list <- list()
   si_list <- list()
   dat <- fread(file.path(exp_dir, paste0("trajectories_aggregated.csv")))
+  dat <- na.omit(dat)
   for (region in unique(dat$ems)) {
   print(paste0("start processing for ", region))
     disease_incidence_data <- dat %>%

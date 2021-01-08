@@ -105,13 +105,13 @@ def trim_trajectories_Dat(df, fname, VarsToKeep, time_start, time_stop,channels=
             param_list.append(grpspecific_param + "_" + str(grp))
             column_list.append(grpspecific_param + "_" + str(grp))
 
-    df = df[df['time'] > time_start]
-    df = df[df['time'] < time_stop]
-    
+   
     pdf = df[param_list]
     pdf.to_csv(os.path.join(temp_exp_dir, fname.replace('trajectoriesDat','observedParamDat')+".csv"), index=False, date_format='%Y-%m-%d')
     
-    
+    df = df[df['time'] > time_start]
+    df = df[df['time'] < time_stop]
+        
     df = df[column_list ]
     df.to_csv(os.path.join(temp_exp_dir, fname + '_trim.csv'), index=False, date_format='%Y-%m-%d')
 

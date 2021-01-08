@@ -121,7 +121,7 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
     df['ems'] = ems_region
     first_day = datetime.strptime(df['startdate'].unique()[0], '%Y-%m-%d')
     df['date'] = df['time'].apply(lambda x: first_day + timedelta(days=int(x)))
-    df = df[(df['date'] >= plot_first_day) & (df['date'] <= plot_last_day)]
+    #df = df[(df['date'] >= plot_first_day) & (df['date'] <= plot_last_day)]
 
     df['ventilators'] = get_vents(df['crit_det'].values)
     channels = [ 'new_infected', 'infected_cumul', 'new_deaths', 'new_detected_deaths', 'hospitalized','critical', 'hosp_det', 'crit_det']

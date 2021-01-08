@@ -7,7 +7,7 @@ sys.path.append('../')
 from load_paths import load_box_paths
 datapath, projectpath, wdir,exe_dir, git_dir = load_box_paths()
 sim_output_path = os.path.join(wdir, "simulation_output")
-
+sim_output_path = "/projects/p30781/covidproject/covid-chicago/_temp"
 
 def trim_trajectories_Dat(exp_dir, VarsToKeep, keepTimes='today',lagtime_days=15, grpnames=None, channels=None, grpspecific_params=None):
     """Generate a subset of the trajectoriesDat dataframe
@@ -47,7 +47,7 @@ def trim_trajectories_Dat(exp_dir, VarsToKeep, keepTimes='today',lagtime_days=15
     if keepTimes is not None:
         if keepTimes !='today':
             df = df[df['time'] >= int(keepTimes)]
-
+            
         if keepTimes =='today':
             today = datetime.today()
             datetoday = date(today.year, today.month, today.day)
@@ -67,9 +67,6 @@ if __name__ == '__main__':
     keepTimes = sys.argv[2]
     lagtime_days = sys.argv[3]  
     
-    #stem ="20200907_IL_baseline_cfr_test"
-    #keepTimes ="today"
-    #lagtime_days ="15"
     
     VarsToKeep = ['startdate', 'time', 'scen_num','sample_num', 'run_num']
     moreVarsToKeep = ['time_to_infectious'] #['capacity_multiplier', 'reopening_multiplier_4','reduced_inf_of_det_cases_ct1', 'change_testDelay_Sym_1', 'change_testDelay_As_1', 'd_Sym_ct1', 'd_AsP_ct1']
