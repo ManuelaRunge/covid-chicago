@@ -1370,3 +1370,115 @@ f_generate_generic_recommended_dat <- function() {
 
   return(simdat_compare)
 }
+
+
+
+#-------------------------------
+## Functions for Fig 7
+#-------------------------------
+
+f_calculate_prob <- function( dfDat, date_max = NULL) {
+  
+  date_max = as.Date(date_max)
+  if (is.null(date_max)) {
+    date_max <- as.Date("2050-01-01")
+  }
+  
+  dat_prob <- dfDat %>%
+    filter(date <= as.Date(date_max)) %>%
+    group_by(exp_name, region, capacity_multiplier, scen_num) %>%
+    filter(crit_det == max(crit_det)) %>%
+    filter(date == min(date)) %>%
+    mutate(n_above = ifelse(crit_det >= avg_resource_available, 1, 0)) %>%
+    add_tally(name = "n_all") %>%
+    group_by(exp_name, region, capacity_multiplier) %>%
+    summarize(
+      n_all = sum(n_all),
+      n_above = sum(above_yn)
+    ) %>%
+    mutate(prob = n_above / n_all) %>%
+    f_get_scenVars() %>%
+    ungroup()
+  
+  return(dat_prob)
+}
+
+
+f_add_counterfactual_to_xaxis <- function() {
+  df1 <- dat_prob %>%
+    filter(delay == "counterfactual") %>%
+    dplyr::select(-c(rollback, delay, exp_name, rollback_fct, reopen_fct, reopen_fct2))
+  df0 <- dat_prob %>%
+    filter(delay != "counterfactual") %>%
+    dplyr::select(rollback, delay, exp_name, rollback_fct, reopen_fct, reopen_fct2) %>%
+    unique()
+  df10 <- df1 %>%
+    f_addVar(df0) %>%
+    dplyr::select(colnames(dat_prob))
+  df_out <- rbind(df10, dat_prob)
+  
+  return(df_out)
+}
+
+f_plot_prob <- function(add_counterfactual_to_xaxis=FALSE, add_ribbon=FALSE) {
+  
+  pplot <- ggplot(data = dat_prob) +
+    facet_wrap(reopen ~ region, scales = "free") +
+    scale_y_continuous(
+      lim = c(0, 102), expand = c(0, 0),
+      breaks = seq(0, 100, 20),
+      minor_breaks = seq(0, 100, 10)
+    ) +
+    scale_color_manual(values = c(TwoCols_seq)) +
+    scale_fill_manual(values = c(TwoCols_seq)) +
+    scale_alpha_manual(values = c(1, 0.75, 0.5, 0.2, 0.1)) +
+    customTheme +
+    theme(
+      panel.spacing = unit(2, "lines"),
+      # legend.position = "None",
+      panel.grid.major = element_line(),
+      panel.grid.minor = element_line(size = 0.75)
+    ) +
+    labs(
+      y = "Probability of ICU overflow (%)",
+      x = "Trigger threshold (% of available ICU beds)",
+      color = "Transmission\nincrease", fill = "Transmission\nincrease",
+      alpha = "Mitigation strengths"
+    )
+  
+  
+  if(add_ribbon){
+    pplot <- pplot +     
+      geom_ribbon(aes(
+        x = capacity_multiplier *100, 
+        y = prob * 100,
+        ymin = prob_lower * 100,
+        ymax = prob_upper * 100,
+        fill = reopen,
+        group = interaction(reopen, rollback_fct)
+      ), alpha=0.3) 
+  }
+  
+  if(add_counterfactual_to_xaxis==TRUE){
+    pplot <- pplot +     
+      geom_line(aes(
+        x = capacity_multiplier_fct, y = prob * 100,
+        col = reopen,
+        alpha = rollback_fct,
+        group = interaction(reopen, rollback_fct)
+      ), size = 1) 
+  }else{
+    pplot <- pplot +     
+      geom_line(aes(
+        x = capacity_multiplier*100, y = prob * 100,
+        col = reopen,
+        alpha = rollback_fct,
+        group = interaction(reopen, rollback_fct)
+      ), size = 1) +
+      scale_x_continuous(lim = c(0, 100), expand = c(0, 0), breaks = seq(0, 100, 20), minor_breaks = seq(0, 100, 10))
+  }
+  return(pplot)
+}
+
+
+

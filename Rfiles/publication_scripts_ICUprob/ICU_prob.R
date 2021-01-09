@@ -49,6 +49,16 @@ table(dat$reopen)
 table(dat$delay)
 
 
+dat %>% ungroup() %>%
+  filter(region =="Region 11" & rollback !="counterfactual" &  rollback=="pr8") %>% 
+  dplyr::select(delay, rollback, reopen , capacity_multiplier ,prob) %>%
+  pivot_wider(names_from=c("delay"), values_from= c("prob")) %>%
+  mutate(delay_incr =`7daysdelay`- `1daysdelay` ) %>%
+  group_by(reopen) %>%
+  summarize(delay_incr=mean(delay_incr))
+
+
+
 pplot <- ggplot(data = subset(dat, delay == "7daysdelay")) +
   theme_minimal() +
   geom_vline(xintercept = c(-Inf, Inf)) +
