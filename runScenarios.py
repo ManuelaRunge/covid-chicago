@@ -529,9 +529,9 @@ if __name__ == '__main__':
     # Only needed on non-Windows, non-Quest platforms
     docker_image = os.getenv("DOCKER_IMAGE")
 
-    emodl_dir = os.path.join(git_dir, 'emodl')
-    cfg_dir = os.path.join(git_dir, 'cfg')
-    yaml_dir = os.path.join(git_dir, 'experiment_configs')
+    emodl_dir = os.path.join('/home/mrm9534/gitrepos/covid-chicago/', 'emodl')
+    cfg_dir = os.path.join('/home/mrm9534/gitrepos/covid-chicago/', 'cfg')
+    yaml_dir = os.path.join('/home/mrm9534/gitrepos/covid-chicago/', 'experiment_configs')
 
     log.debug(f"Running in Location = {Location}")
     if sys.platform not in ['win32', 'cygwin']:

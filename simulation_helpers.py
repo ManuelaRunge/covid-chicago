@@ -281,8 +281,7 @@ def generateSubmissionFile_quest(scen_num, exp_name, experiment_config, trajecto
     pycommand1 = f'\npython /home/mrm9534/gitrepos/covid-chicago/nucluster/combine_and_trim.py  --stem "{exp_name}" --Location "NUCLUSTER"'
     pycommand2 = f'\npython {plotters_dir}aggregate_by_param.py  --stem "{exp_name}" --Location "NUCLUSTER"'
     file = open(os.path.join(temp_exp_dir, 'combineSimulations.sh'), 'w')
-    file.write(header + jobname + err + out + pymodule + pycommand1)
-    file.write(header + jobname + err + out + pymodule + pycommand2)
+    file.write(header + jobname + err + out + pymodule + pycommand1 + pycommand2)
     file.close()
 
     pycommand = f'\npython /projects/p30781/covidproject/covid-chicago/nucluster/cleanup.py --stem "{exp_name}"' \
