@@ -2,7 +2,7 @@
 ### Note, the simulations and trajectories folder are not zipped and should be deleted from the _temp folder.
 
 ## Common pattern across experiments to transfer
-stem = "20210109_IL_regreopen"
+stem = "reopen2"
 sim_output_dir = "/projects/p30781/covidproject/covid-chicago/_temp/"
 exp_names <- list.files(sim_output_dir)[ grep(stem, list.files(sim_output_dir))]
 #exp_names <- exp_names[!grepl(paste0(stem,"$"),exp_names)]

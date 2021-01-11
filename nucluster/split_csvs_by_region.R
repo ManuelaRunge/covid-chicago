@@ -27,9 +27,9 @@ for (exp_name in exp_names) {
   print(exp_name)
   exp_dir <- file.path("/projects/p30781/covidproject/covid-chicago/_temp/", exp_name)
 
-  f_save_per_grp <- function(filepattern, i, paramVars, outcomeVars_stem, SAVE = "csv") {
+  f_save_per_grp <- function(filepattern, i,  outcomeVars_stem, SAVE = "csv") {
     outcomeVars <- paste0(outcomeVars_stem, i)
-    KeepCols <- c("time", "startdate", "scen_num", "scen_num2", "sample_num", "run_num", paramVars, outcomeVars)
+    KeepCols <- c("time", "startdate", "scen_num", "scen_num2", "sample_num", "run_num", outcomeVars)
     if (i != "All") KeepCols <- c(KeepCols, paste0("Ki_t", i), paste0("triggertime", i))
     trajectoriesFiles <- list.files(exp_dir, pattern = filepattern)
     print(KeepCols)
@@ -50,7 +50,6 @@ for (exp_name in exp_names) {
     for (i in c(paste0("_EMS-", c(1:11)))) {
       print(paste0("\nStart combining files for region ", i))
 
-      paramVars <- c("capacity_multiplier", "trigger_delay_days",'time_of_trigger') # c('reopening_multiplier_4') #
       outcomeVars_stem <- c(
         "hosp_det_cumul", "hosp_cumul", "crit_cumul",
         "crit_det_cumul", "death_det_cumul", "deaths", "crit_det",
@@ -58,8 +57,8 @@ for (exp_name in exp_names) {
       )
 
 
-      f_save_per_grp(filepattern = "trim.csv", i, paramVars = paramVars, outcomeVars_stem = outcomeVars_stem, SAVE = "csv")
-      # f_save_per_grp( filepattern="trim.csv" ,i, paramVars=paramVars, outcomeVars_stem=outcomeVars_stem, SAVE="RData")
+      f_save_per_grp(filepattern = "trim.csv", i, outcomeVars_stem = outcomeVars_stem, SAVE = "csv")
+      # f_save_per_grp( filepattern="trim.csv" ,i,  outcomeVars_stem=outcomeVars_stem, SAVE="RData")
     }
   }
 
@@ -72,7 +71,7 @@ for (exp_name in exp_names) {
       # load(file.path(exp_dir,paste0("trajectoriesDat_region_",i,".RData")))
       subdat <- fread(file.path(exp_dir, paste0("trajectoriesDat_region_", i, ".csv")))
       if (count == 1) trajectoriesDat <- subdat
-      if (count > 1) trajectoriesDat <- left_join(trajectoriesDat, subdat, by = c("time", "startdate", "scen_num", "sample_num", "capacity_multiplier", "trigger_delay_days"))
+      if (count > 1) trajectoriesDat <- left_join(trajectoriesDat, subdat, by = c("time", "startdate", "scen_num", "sample_num","run_num"))
       rm(subdat)
       #fwrite(trajectoriesDat, file = file.path(exp_dir, "trajectoriesDat.csv"), quote = FALSE)
        save(trajectoriesDat, file=file.path(exp_dir, "trajectoriesDat.Rdata"))

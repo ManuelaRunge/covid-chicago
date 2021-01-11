@@ -33,15 +33,23 @@ def parse_args():
         help="Local or NUCLUSTER",
         default = "NUCLUSTER"
     )
+    
+    parser.add_argument(
+        "-p",
+        "--param",
+        type=str,
+        nargs='+',
+        help="-p  param1 param2",
+        default = ['capacity_multiplier']
+    )
 
     return parser.parse_args()
 
 def load_sim_data(exp_name,  region_suffix ='_All', input_wdir=None, fname='trajectoriesDat.csv', input_sim_output_path=None,
                   column_list=None):
     input_wdir = input_wdir or wdir
-
+    
     df = pd.read_csv(os.path.join(input_sim_output_path, fname), usecols=column_list)
-    df['run_num']=-9
     # df.columns = df.columns.str.replace('_All', '')
     df.columns = df.columns.str.replace(region_suffix, '')
 
@@ -97,11 +105,9 @@ def plot_sim(dat, suffix, channels):
     # plt.show()
 
 
-def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
-    column_list = ['startdate', 'time', 'scen_num', 'sample_num', 'time_of_trigger']
-    #column_list = ['startdate', 'time', 'scen_num', 'sample_num', 'run_num','reopening_multiplier_4']
+def load_and_plot_data(ems_region, fname, input_sim_output_path,param, savePlot=True):
+    column_list = ['startdate', 'time', 'scen_num', 'sample_num','run_num'] 
 
-    #'infected', 'recovered', 'infected_cumul',
     outcome_channels = ['infected','infected_cumul','hosp_det_cumul', 'hosp_cumul',  'crit_cumul',
                         'crit_det_cumul', 'death_det_cumul',
                         'deaths', 'crit_det', 'critical', 'hosp_det', 'hospitalized']
@@ -117,6 +123,9 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
 
     df = load_sim_data(exp_name, region_suffix='_' + ems_region, fname=fname, column_list=column_list,
                        input_sim_output_path= input_sim_output_path)
+                       
+    sampled_df = pd.read_csv(os.path.join(input_sim_output_path, "sampled_parameters.csv"), usecols=['scen_num'] + param)
+    df = pd.merge(how='left', left=df, left_on='scen_num', right=sampled_df, right_on='scen_num')
 
     df['ems'] = ems_region
     first_day = datetime.strptime(df['startdate'].unique()[0], '%Y-%m-%d')
@@ -128,10 +137,7 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
 
     adf = pd.DataFrame()
     for c, channel in enumerate(channels):
-        mdf = df.groupby(['date','startdate', 'time', 'ems','time_of_trigger'])[channel].agg([np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
-        #mdf = df.groupby(['date','startdate', 'time', 'ems', 'reopening_multiplier_4'])[channel].agg([np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
-
-
+        mdf = df.groupby(['date','startdate', 'time', 'ems']+param)[channel].agg([np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
         mdf = mdf.rename(columns={'amin': '%s_min' % channel,
                                   'CI_50': '%s_median' % channel,
                                   'CI_2pt5': '%s_95CI_lower' % channel,
@@ -142,8 +148,7 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
         if adf.empty:
             adf = mdf
         else:
-            adf = pd.merge(left=adf, right=mdf, on=['date','startdate', 'time', 'ems','time_of_trigger'])
-            #adf = pd.merge(left=adf, right=mdf, on=['date','startdate', 'time', 'ems', 'reopening_multiplier_4'])
+            adf = pd.merge(left=adf, right=mdf, on=['date','startdate', 'time', 'ems'] + param)
 
 
     #if savePlot :
@@ -188,6 +193,8 @@ if __name__ == '__main__':
     args = parse_args()  
     stem = args.stem
     Location = args.Location
+    param = args.param
+    print(param)
     
     datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location=Location)
     analysis_dir = os.path.join( '/projects/p30781/covidproject/covid-chicago/_temp')
@@ -216,7 +223,7 @@ if __name__ == '__main__':
             dfAll = pd.DataFrame()
             for reg in regions:
                 print(f'Start processing {reg}')
-                tdf = load_and_plot_data(reg, fname=trajectoriesName, savePlot=True,input_sim_output_path=sim_output_path)
+                tdf = load_and_plot_data(reg, fname=trajectoriesName, savePlot=True,input_sim_output_path=sim_output_path, param=param)
                 adf = process_and_save(tdf, reg, SAVE=True)
                 dfAll = pd.concat([dfAll, adf])
                 del tdf

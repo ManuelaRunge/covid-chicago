@@ -79,9 +79,10 @@ def trim_trajectories_Dat(df, fname, VarsToKeep, time_start, time_stop,channels=
     if grpnames == None:
         grpnames = ['All', 'EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10', 'EMS-11']
         grpnames_ki = ['EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10','EMS-11']
+        grpnames_N = ['All','EMS_1', 'EMS_2', 'EMS_3', 'EMS_4', 'EMS_5', 'EMS_6', 'EMS_7', 'EMS_8', 'EMS_9', 'EMS_10','EMS_11']
 
     if channels == None:
-        channels = ['susceptible', 'infected', 'recovered', 'infected_cumul', 'detected_cumul',
+        channels = [ 'susceptible', 'infected', 'recovered', 'infected_cumul', 'detected_cumul',
                     'asymp_cumul', 'asymp_det_cumul',
                     'symp_mild_cumul', 'symptomatic_mild', 'symp_mild_det_cumul',
                     'symp_severe_cumul','symptomatic_severe', 'symp_severe_det_cumul',
@@ -104,7 +105,8 @@ def trim_trajectories_Dat(df, fname, VarsToKeep, time_start, time_stop,channels=
         for grp in grpnames_ki:
             param_list.append(grpspecific_param + "_" + str(grp))
             column_list.append(grpspecific_param + "_" + str(grp))
-
+    for grp in grpnames_ki:
+        column_list.append('N' + "_" + str(grpnames_N))
    
     pdf = df[param_list]
     pdf.to_csv(os.path.join(temp_exp_dir, fname.replace('trajectoriesDat','observedParamDat')+".csv"), index=False, date_format='%Y-%m-%d')
@@ -158,8 +160,7 @@ if __name__ == '__main__':
 
     time_start = 1
     time_stop = 1000
-    additionalVars = ['capacity_multiplier','trigger_delay_days','time_of_trigger','time_of_reopen']
-    VarsToKeepI = ['startdate',  'scen_num', 'sample_num'] + additionalVars
+    VarsToKeepI = ['startdate',  'scen_num', 'sample_num'] 
     VarsToKeep = ['time', 'run_num'] + VarsToKeepI
 
 
