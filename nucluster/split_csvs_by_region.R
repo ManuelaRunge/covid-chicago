@@ -50,7 +50,7 @@ for (exp_name in exp_names) {
     for (i in c(paste0("_EMS-", c(1:11)))) {
       print(paste0("\nStart combining files for region ", i))
 
-      paramVars <- c("capacity_multiplier", "trigger_delay_days") # c('reopening_multiplier_4') #
+      paramVars <- c("capacity_multiplier", "trigger_delay_days",'time_of_trigger') # c('reopening_multiplier_4') #
       outcomeVars_stem <- c(
         "hosp_det_cumul", "hosp_cumul", "crit_cumul",
         "crit_det_cumul", "death_det_cumul", "deaths", "crit_det",

@@ -116,7 +116,7 @@ def trim_trajectories_Dat(df, fname, VarsToKeep, time_start, time_stop,channels=
     df.to_csv(os.path.join(temp_exp_dir, fname + '_trim.csv'), index=False, date_format='%Y-%m-%d')
 
 
-def combineTrajectories(VarsToKeep,Nscenarios_start=0, Nscenarios_stop=1000, time_start=1, time_stop=400, fname='trajectoriesDat.csv',SAVE=True):
+def combineTrajectories(VarsToKeep,Nscenarios_start=0, Nscenarios_stop=1000, time_start=1, time_stop=1000, fname='trajectoriesDat.csv',SAVE=True):
 
     df_list = []
     n_errors = 0
@@ -157,8 +157,8 @@ if __name__ == '__main__':
     exp_names = [x for x in os.listdir(sim_out_dir) if stem in x]
 
     time_start = 1
-    time_end = 1000
-    additionalVars = ['capacity_multiplier','trigger_delay_days']
+    time_stop = 1000
+    additionalVars = ['capacity_multiplier','trigger_delay_days','time_of_trigger','time_of_reopen']
     VarsToKeepI = ['startdate',  'scen_num', 'sample_num'] + additionalVars
     VarsToKeep = ['time', 'run_num'] + VarsToKeepI
 
@@ -174,7 +174,7 @@ if __name__ == '__main__':
         Nscenario = max(sampledf['scen_num'])
 
         if Nscenario <= Scenario_save_limit:
-            combineTrajectories(VarsToKeep=VarsToKeep,Nscenarios_start=0, Nscenarios_stop=Nscenario+1,time_start=time_start, time_stop=time_end, fname='trajectoriesDat.csv')
+            combineTrajectories(VarsToKeep=VarsToKeep,Nscenarios_start=0, Nscenarios_stop=Nscenario+1,time_start=time_start, time_stop=time_stop, fname='trajectoriesDat.csv')
         if Nscenario > Scenario_save_limit:
             n_subsets = int(Nscenario/Scenario_save_limit)
 
@@ -186,4 +186,5 @@ if __name__ == '__main__':
                 combineTrajectories(VarsToKeep=VarsToKeep,
                                     Nscenarios_start=Nscenarios_start,
                                     Nscenarios_stop=Nscenario_stop,
+                                    time_start=time_start, time_stop=time_stop,
                                     fname='trajectoriesDat_'+str(Nscenario_stop)+'.csv')

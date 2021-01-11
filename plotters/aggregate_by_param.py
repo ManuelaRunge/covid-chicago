@@ -98,7 +98,7 @@ def plot_sim(dat, suffix, channels):
 
 
 def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
-    column_list = ['startdate', 'time', 'scen_num', 'sample_num', 'capacity_multiplier']
+    column_list = ['startdate', 'time', 'scen_num', 'sample_num', 'time_of_trigger']
     #column_list = ['startdate', 'time', 'scen_num', 'sample_num', 'run_num','reopening_multiplier_4']
 
     #'infected', 'recovered', 'infected_cumul',
@@ -128,7 +128,7 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
 
     adf = pd.DataFrame()
     for c, channel in enumerate(channels):
-        mdf = df.groupby(['date','startdate', 'time', 'ems','capacity_multiplier'])[channel].agg([np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
+        mdf = df.groupby(['date','startdate', 'time', 'ems','time_of_trigger'])[channel].agg([np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
         #mdf = df.groupby(['date','startdate', 'time', 'ems', 'reopening_multiplier_4'])[channel].agg([np.min, CI_50, CI_2pt5, CI_97pt5, CI_25, CI_75, np.max]).reset_index()
 
 
@@ -142,7 +142,7 @@ def load_and_plot_data(ems_region, fname, input_sim_output_path,savePlot=True):
         if adf.empty:
             adf = mdf
         else:
-            adf = pd.merge(left=adf, right=mdf, on=['date','startdate', 'time', 'ems','capacity_multiplier'])
+            adf = pd.merge(left=adf, right=mdf, on=['date','startdate', 'time', 'ems','time_of_trigger'])
             #adf = pd.merge(left=adf, right=mdf, on=['date','startdate', 'time', 'ems', 'reopening_multiplier_4'])
 
 
