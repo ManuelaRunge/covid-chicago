@@ -2,6 +2,7 @@ import os
 import sys
 import re
 
+
 sys.path.append('../')
 from load_paths import load_box_paths
 
@@ -59,22 +60,21 @@ def write_species(expandModel=None):
 (species Sys_det3b 0)
 """
 
-    if expandModel == "testDelay_SymSys" or expandModel == "uniformtestDelay":
+    if expandModel == "testDelay_SymSys" or  expandModel == "uniformtestDelay" :
         species_str = species_str + expand_testDelay_SymSys_str
     if expandModel == "testDelay_AsSymSys":
         species_str = species_str + expand_testDelay_AsSymSys_str
 
     return (species_str)
 
-
 ## For postprocessing that splits by '_', it is easier if EMS are names EMS-1 not EMS_1
 ## This might change depending on the postprocessing
 def sub(x):
-    xout = re.sub('_', '-', str(x), count=1)
-    return (xout)
-
-
+    xout = re.sub('_','-', str(x), count=1)
+    return(xout)
+    
 def write_observe(observeLevel='primary'):
+
     observe_primary_channels_str = """
 (observe susceptible S)
 (observe infected infected)
@@ -107,6 +107,7 @@ def write_observe(observeLevel='primary'):
 (observe hospitalized hospitalized)
 """
 
+
     observe_secondary_channels_str = """
 (observe exposed E)
 (observe asymptomatic asymptomatic)
@@ -124,26 +125,23 @@ def write_observe(observeLevel='primary'):
 (observe infectious_det infectious_det)
 (observe infectious_det_symp infectious_det_symp)
 (observe infectious_det_AsP infectious_det_AsP)
-(observe prevalence prevalence)    
-(observe seroprevalence seroprevalence )
-(observe prevalence_det prevalence_det)    
-(observe seroprevalence_det seroprevalence_det )
 """
 
-    if observeLevel == 'primary':
+    if observeLevel == 'primary' :
         observe_str = observe_primary_channels_str
-    if observeLevel == 'secondary':
+    if observeLevel == 'secondary' :
         observe_str = observe_primary_channels_str + observe_secondary_channels_str
-    if observeLevel == 'tertiary':
-        observe_str = observe_primary_channels_str + observe_tertiary_channels_str
-    if observeLevel == 'all':
+    if observeLevel == 'tertiary' :
+        observe_str = observe_primary_channels_str +  observe_tertiary_channels_str
+    if observeLevel == 'all' :
         observe_str = observe_primary_channels_str + observe_secondary_channels_str + observe_tertiary_channels_str
-
+        
     observe_str = observe_str.replace("  ", " ")
     return (observe_str)
 
 
 def write_functions(expandModel=None):
+
     functions_str = """
 (func presymptomatic  (+ P P_det))
 
@@ -173,15 +171,9 @@ def write_functions(expandModel=None):
 
 (func infected (+ infectious_det infectious_undet H1_det3 H2_det3 H3_det3 C2_det3 C3_det3))
 (func infected_det (+ infectious_det H1_det3 H2_det3 H3_det3 C2_det3 C3_det3))
-(func infected_cumul (+ infected recovered deaths))    
-
-(func prevalence (/ infected N))    
-(func seroprevalence (/ (+ infected recovered) N))    
-
-(func prevalence_det (/ infected_det N))    
-(func seroprevalence_det (/ (+ infected_det recovered_det) N))    
-
+(func infected_cumul (+ infected recovered deaths))      
 """
+
 
     expand_base_str = """
 (func asymptomatic  (+ As As_det1))
@@ -201,6 +193,7 @@ def write_functions(expandModel=None):
 (func infectious_det_AsP (+ As_det1 P_det))
 """
 
+
     expand_testDelay_SymSys_str = """
 (func asymptomatic  (+ As As_det1))
 
@@ -218,6 +211,7 @@ def write_functions(expandModel=None):
 (func infectious_det_symp (+ Sym_det2 Sys_det3 ))
 (func infectious_det_AsP (+ As_det1 P_det))
 """
+
 
     expand_testDelay_AsSymSys_str = """
 (func asymptomatic  (+ As_preD As As_det1))
@@ -239,14 +233,13 @@ def write_functions(expandModel=None):
 
     if expandModel == None:
         functions_str = expand_base_str + functions_str
-    if expandModel == "testDelay_SymSys" or expandModel == "uniformtestDelay":
-        functions_str = expand_testDelay_SymSys_str + functions_str
+    if expandModel == "testDelay_SymSys" or  expandModel == "uniformtestDelay" :
+        functions_str =  expand_testDelay_SymSys_str + functions_str
     if expandModel == "testDelay_AsSymSys":
         functions_str = expand_testDelay_AsSymSys_str + functions_str
 
     functions_str = functions_str.replace("  ", " ")
     return (functions_str)
-
 
 ###
 def write_params(expandModel=None):
@@ -308,6 +301,7 @@ def write_params(expandModel=None):
 (param Kr_m_D (/ 1 (- recovery_time_mild time_D )))
 """
 
+
     expand_testDelay_SymSys_str = """
 (param time_D_Sym @time_to_detection_Sym@)
 (param time_D_Sys @time_to_detection_Sys@)
@@ -321,6 +315,7 @@ def write_params(expandModel=None):
 (param Kh3_D (/ fraction_dead  (- time_to_hospitalization time_D_Sys)))
 (param Kr_m_D (/ 1 (- recovery_time_mild time_D_Sym )))
 """
+
 
     expand_testDelay_AsSymSys_str = """
 (param Kh1 (/ fraction_hospitalized time_to_hospitalization))
@@ -349,15 +344,14 @@ def write_params(expandModel=None):
         params_str = params_str + expand_testDelay_SymSys_str
     if expandModel == "uniformtestDelay":
         params_str = params_str + expand_uniformtestDelay_str
-    if expandModel == "contactTracing":
+    if expandModel == "contactTracing" :
         params_str = params_str + expand_base_str + expand_contactTracing_str
-    if expandModel == "testDelay_AsSymSys":
+    if expandModel == "testDelay_AsSymSys" :
         params_str = params_str + expand_testDelay_AsSymSys_str
 
     params_str = params_str.replace("  ", " ")
 
     return (params_str)
-
 
 ### Monitor time varying parameters
 def write_observed_param():
@@ -372,9 +366,8 @@ def write_observed_param():
 (observe cfr_t cfr)
 (observe d_Sys_t d_Sys)
 """
-
+   
     return observed_param_str
-
 
 def write_N_population():
     string1 = """\n(param N (+ @speciesS@ @initialAs@) )"""
@@ -382,6 +375,8 @@ def write_N_population():
 
 
 def write_reactions(expandModel=None):
+    
+
     reaction_str_I = """
 (reaction exposure   (S) (E) (* Ki S (/  (+ infectious_undet (* infectious_det reduced_inf_of_det_cases)) N )))
 """
@@ -428,6 +423,7 @@ def write_reactions(expandModel=None):
 (reaction recovery_Sym_det2   (Sym_det2)   (RSym_det2)   (* Kr_m  Sym_det2))
 """
 
+
     expand_testDelay_SymSys_str = """
 (reaction infection_asymp_undet  (E)   (As)   (* Kl E (- 1 d_As)))
 (reaction infection_asymp_det  (E)   (As_det1)   (* Kl E d_As))
@@ -465,6 +461,7 @@ def write_reactions(expandModel=None):
 (reaction recovery_Sym_det2   (Sym_det2)   (RSym_det2)   (* Kr_m_D  Sym_det2))
 
 """
+
 
     expand_testDelay_AsSymSys_str = """
 (reaction infection_asymp_det  (E)   (As_preD)   (* Kl E))
@@ -517,9 +514,9 @@ def write_reactions(expandModel=None):
 (reaction recovery_Sym_det2b   (Sym_det2b)   (RSym_det2)   (* Kr_m  Sym_det2b))
  """
 
-    if expandModel == None:
+    if expandModel ==None :
         reaction_str = reaction_str_I + expand_base_str + reaction_str_III
-    if expandModel == "testDelay_SymSys" or expandModel == "uniformtestDelay":
+    if expandModel == "testDelay_SymSys" or  expandModel == "uniformtestDelay" :
         reaction_str = reaction_str_I + expand_testDelay_SymSys_str + reaction_str_III
     if expandModel == 'testDelay_AsSymSys':
         reaction_str = reaction_str_I + expand_testDelay_AsSymSys_str + reaction_str_III
@@ -529,10 +526,12 @@ def write_reactions(expandModel=None):
     return (reaction_str)
 
 
+
 def define_change_detection_and_isolation(reduced_inf_of_det_cases=True,
                                           d_As=True,
                                           d_P=True,
                                           d_Sym_ct=True):
+
     """ Write the emodl chunk for changing detection rates and reduced infectiousness
     to approximate contact tracing or improved health system interventions.
     Helper function called by write_interventions
@@ -566,15 +565,15 @@ def define_change_detection_and_isolation(reduced_inf_of_det_cases=True,
         d_Sym_ct_str = """(d_Sym @d_Sym_ct1@)"""
 
     change_param_str = reduced_inf_of_det_cases_str + d_As_str + d_P_str + d_Sym_ct_str
-    time_event_str = """(time-event contact_tracing_start @contact_tracing_start_1@ ( {change_param} ))""".format(
-        change_param=change_param_str)
+    time_event_str = """(time-event contact_tracing_start @contact_tracing_start_1@ ( {change_param} ))""".format(change_param=change_param_str)
 
     contactTracing_str = d_Sym_ct_param_str + "\n" + time_event_str
 
     return (contactTracing_str)
 
 
-def write_interventions(total_string, scenarioName, change_testDelay=None, trigger_channel=None):
+def write_interventions( total_string, scenarioName, change_testDelay=None, trigger_channel=None) :
+
     param_change_str = """
 (time-event detection1 @detection_time_1@ ((d_Sys @d_Sys_incr1@)))
 (time-event detection2 @detection_time_2@ ((d_Sys @d_Sys_incr2@)))
@@ -618,11 +617,11 @@ def write_interventions(total_string, scenarioName, change_testDelay=None, trigg
 (time-event ki_multiplier_change10 @ki_multiplier_time_10@ ((Ki Ki_red10)))
 (time-event ki_multiplier_change11 @ki_multiplier_time_11@ ((Ki Ki_red11)))
             """
-    rollback_str = """
+    rollback_str ="""
 (time-event ki_multiplier_change_rollback @socialDistance_rollback_time@ ((Ki Ki_red4)))
                 """
 
-    rollbacktriggered_str = """
+    rollbacktriggered_str =  """
 (state-event rollbacktrigger (and (> time @triggertime@) (> {channel} (* @trigger@ @capacity_multiplier@)) ) ((Ki Ki_red4)))
                     """.format(channel=trigger_channel)
 
@@ -634,26 +633,27 @@ def write_interventions(total_string, scenarioName, change_testDelay=None, trigg
 (time-event d_Sym_change5 @d_Sym_change_time_5@ ((d_Sym @d_Sym_change5@)))
     """
 
-    interventionSTOP_str = """
+
+    interventionSTOP_str =  """
 (param Ki_back (* Ki @backtonormal_multiplier@))
 (time-event stopInterventions @socialDistanceSTOP_time@ ((Ki Ki_back)))
         """
 
-    # % change from lowest transmission level - immediate
-    # starting point is lowest level of transmission  Ki_red4
+# % change from lowest transmission level - immediate
+# starting point is lowest level of transmission  Ki_red4
     interventionSTOP_adj_str = """
 (param Ki_back (+ Ki_red4 (* @backtonormal_multiplier@ (- Ki Ki_red4))))
 (time-event stopInterventions @socialDistanceSTOP_time@ ((Ki Ki_back)))
         """
 
-    # % change from current transmission level - immediate
-    # starting point is current level of transmission  Ki_red6
+# % change from current transmission level - immediate
+# starting point is current level of transmission  Ki_red6
     interventionSTOP_adj2_str = """
 (param Ki_back (+ Ki_red6 (* @backtonormal_multiplier@ (- Ki Ki_red6))))
 (time-event stopInterventions @socialDistanceSTOP_time@ ((Ki Ki_back)))
         """
 
-    gradual_reopening_str = """
+    gradual_reopening_str =  """
 (param Ki_back1 (+ Ki_red4 (* @reopening_multiplier_1@ (- Ki Ki_red4))))
 (param Ki_back2 (+ Ki_red4 (* @reopening_multiplier_2@ (- Ki Ki_red4))))
 (param Ki_back3 (+ Ki_red4 (* @reopening_multiplier_3@ (- Ki Ki_red4))))
@@ -664,8 +664,8 @@ def write_interventions(total_string, scenarioName, change_testDelay=None, trigg
 (time-event gradual_reopening4 @gradual_reopening_time4@ ((Ki Ki_back4)))
     """
 
-    # gradual reopening from 'current' transmission level
-    gradual_reopening2_str = """
+# gradual reopening from 'current' transmission level
+    gradual_reopening2_str =  """
 (param Ki_back1 (+ Ki_red6 (* @reopening_multiplier_4@ 0.25 (- Ki Ki_red6))))
 (param Ki_back2 (+ Ki_red6 (* @reopening_multiplier_4@ 0.50 (- Ki Ki_red6))))
 (param Ki_back3 (+ Ki_red6 (* @reopening_multiplier_4@ 0.75 (- Ki Ki_red6))))
@@ -676,20 +676,25 @@ def write_interventions(total_string, scenarioName, change_testDelay=None, trigg
 (time-event gradual_reopening4 @gradual_reopening_time4@ ((Ki Ki_back4)))
         """
 
-    improveHS_str = define_change_detection_and_isolation(reduced_inf_of_det_cases=False,
-                                                          d_As=False,
-                                                          d_P=False,
-                                                          d_Sym_ct=True)
 
-    contactTracing_str = define_change_detection_and_isolation(reduced_inf_of_det_cases=True,
-                                                               d_As=True,
-                                                               d_P=True,
-                                                               d_Sym_ct=False)
+    improveHS_str = define_change_detection_and_isolation( reduced_inf_of_det_cases = False,
+                                    d_As = False,
+                                    d_P = False ,
+                                    d_Sym_ct = True)
 
-    contactTracing_improveHS_str = define_change_detection_and_isolation(reduced_inf_of_det_cases=True,
-                                                                         d_As=True,
-                                                                         d_P=True,
-                                                                         d_Sym_ct=True)
+
+    contactTracing_str = define_change_detection_and_isolation( reduced_inf_of_det_cases = True,
+                                    d_As = True,
+                                    d_P = True ,
+                                    d_Sym_ct = False)
+
+
+    contactTracing_improveHS_str = define_change_detection_and_isolation( reduced_inf_of_det_cases = True,
+                                    d_As = True,
+                                    d_P = True,
+                                    d_Sym_ct = True)
+
+
 
     change_uniformtestDelay_str = """
 (time-event change_testDelay1 @change_testDelay_time1@ ( {} {} {} {} {} {} {} ))
@@ -714,7 +719,7 @@ def write_interventions(total_string, scenarioName, change_testDelay=None, trigg
                "(Kh1_D (/ fraction_hospitalized (- time_to_hospitalization time_D_Sys)))",
                "(Kh2_D (/ fraction_critical (- time_to_hospitalization time_D_Sys) ))",
                "(Kh3_D (/ fraction_dead (- time_to_hospitalization time_D_Sys)))")
-
+               
     change_testDelay_As_str = """
 (time-event change_testDelay1 @change_testDelay_time1@ ( {} {} {} ))
     """.format("(time_D_As @change_testDelay_As_1@)",
@@ -723,70 +728,63 @@ def write_interventions(total_string, scenarioName, change_testDelay=None, trigg
 
     fittedTimeEvents_str = param_change_str + ki_multiplier_change_str + d_Sym_change_str
 
-    if scenarioName == "interventionStop":
+    if scenarioName == "interventionStop" :
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + interventionSTOP_str)
-    if scenarioName == "interventionSTOP_adj":
+    if scenarioName == "interventionSTOP_adj" :
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + interventionSTOP_adj_str)
     if scenarioName == "interventionSTOP_adj2":
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + interventionSTOP_adj2_str)
-    if scenarioName == "gradual_reopening":
+    if scenarioName == "gradual_reopening" :
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening_str)
-    if scenarioName == "gradual_reopening2":
+    if scenarioName == "gradual_reopening2" :
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening2_str)
-    if scenarioName == "continuedSIP":
+    if scenarioName == "continuedSIP" :
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str)
-    if scenarioName == "rollback":
+    if scenarioName == "rollback" :
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + rollback_str)
     if scenarioName == "reopen_rollback":
-        total_string = total_string.replace(';[INTERVENTIONS]',
-                                            fittedTimeEvents_str + interventionSTOP_adj2_str + rollback_str)
-    if scenarioName == "reopen_contactTracing":
-        total_string = total_string.replace(';[INTERVENTIONS]',
-                                            fittedTimeEvents_str + gradual_reopening2_str + contactTracing_str)
-    if scenarioName == "reopen_contactTracing_improveHS":
-        total_string = total_string.replace(';[INTERVENTIONS]',
-                                            fittedTimeEvents_str + gradual_reopening2_str + contactTracing_improveHS_str)
-    if scenarioName == "reopen_improveHS":
-        total_string = total_string.replace(';[INTERVENTIONS]',
-                                            fittedTimeEvents_str + gradual_reopening2_str + improveHS_str)
-    if scenarioName == "contactTracing":
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + interventionSTOP_adj2_str + rollback_str)
+    if scenarioName == "reopen_contactTracing" :
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening2_str + contactTracing_str)
+    if scenarioName == "reopen_contactTracing_improveHS" :
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening2_str + contactTracing_improveHS_str)
+    if scenarioName == "reopen_improveHS" :
+        total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + gradual_reopening2_str + improveHS_str)
+    if scenarioName == "contactTracing" :
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + contactTracing_str)
-    if scenarioName == "contactTracing_improveHS":
+    if scenarioName == "contactTracing_improveHS" :
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + contactTracing_improveHS_str)
-    if scenarioName == "improveHS":
+    if scenarioName == "improveHS" :
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + improveHS_str)
-    if scenarioName == "rollbacktriggered":
+    if scenarioName == "rollbacktriggered" :
         total_string = total_string.replace(';[INTERVENTIONS]', fittedTimeEvents_str + rollbacktriggered_str)
 
-    if change_testDelay != None:
-        if change_testDelay == "uniform":
+    if change_testDelay != None :
+        if change_testDelay == "uniform" :
             total_string = total_string.replace(';[ADDITIONAL_TIMEEVENTS]', change_uniformtestDelay_str)
-        if change_testDelay == "As":
-            total_string = total_string.replace(';[ADDITIONAL_TIMEEVENTS]', change_testDelay_As_str)
-        if change_testDelay == "Sym":
-            total_string = total_string.replace(';[ADDITIONAL_TIMEEVENTS]', change_testDelay_Sym_str)
-        if change_testDelay == "Sys":
-            total_string = total_string.replace(';[ADDITIONAL_TIMEEVENTS]', change_testDelay_Sys_str)
-        if change_testDelay == "AsSym":
-            total_string = total_string.replace(';[ADDITIONAL_TIMEEVENTS]',
-                                                change_testDelay_As_str + '\n' + change_testDelay_Sym_str)
-        if change_testDelay == "SymSys":
-            total_string = total_string.replace(';[ADDITIONAL_TIMEEVENTS]',
-                                                change_testDelay_Sym_str + '\n' + change_testDelay_Sys_str)
-        if change_testDelay == "AsP":
-            total_string = total_string.replace(';[ADDITIONAL_TIMEEVENTS]',
-                                                change_testDelay_As_str + '\n' + change_testDelay_P_str)
-        if change_testDelay == "AsSymSys":
-            total_string = total_string.replace(';[ADDITIONAL_TIMEEVENTS]',
-                                                change_testDelay_As_str + '\n' + change_testDelay_Sym_str + '\n' + change_testDelay_Sys_str)
+        if change_testDelay == "As"  :
+            total_string = total_string.replace(';[ADDITIONAL_TIMEEVENTS]', change_testDelay_As_str )
+        if change_testDelay == "Sym"  :
+            total_string = total_string.replace(';[ADDITIONAL_TIMEEVENTS]', change_testDelay_Sym_str )
+        if change_testDelay == "Sys"  :
+            total_string = total_string.replace(';[ADDITIONAL_TIMEEVENTS]', change_testDelay_Sys_str )
+        if change_testDelay == "AsSym"  :
+            total_string = total_string.replace(';[ADDITIONAL_TIMEEVENTS]', change_testDelay_As_str + '\n' + change_testDelay_Sym_str )
+        if change_testDelay == "SymSys" :
+            total_string = total_string.replace(';[ADDITIONAL_TIMEEVENTS]', change_testDelay_Sym_str + '\n' + change_testDelay_Sys_str)
+        if change_testDelay == "AsP" :
+            total_string = total_string.replace(';[ADDITIONAL_TIMEEVENTS]', change_testDelay_As_str + '\n' + change_testDelay_P_str)
+        if change_testDelay == "AsSymSys"  :
+            total_string = total_string.replace(';[ADDITIONAL_TIMEEVENTS]', change_testDelay_As_str + '\n' +  change_testDelay_Sym_str + '\n' + change_testDelay_Sys_str)
+
+
 
     return (total_string)
 
 
 ###stringing all of my functions together to make the file:
 
-def generate_emodl(file_output, expandModel, add_interventions, observeLevel='secondary', trigger_channel=None,
-                   change_testDelay=None):
+def generate_emodl( file_output, expandModel, add_interventions, observeLevel='all', trigger_channel=None, change_testDelay =None):
     if (os.path.exists(file_output)):
         os.remove(file_output)
 
@@ -810,17 +808,17 @@ def generate_emodl(file_output, expandModel, add_interventions, observeLevel='se
     reaction_string = reaction_string + write_reactions(expandModel)
     functions_string = functions_string + functions
 
-    param_string = write_params(expandModel) + param_string + write_observed_param() + write_N_population()
-    functions_string = functions_string
+    param_string =  write_params(expandModel) + param_string + write_observed_param() +  write_N_population()
+    functions_string = functions_string 
     intervention_string = ";[INTERVENTIONS]\n;[ADDITIONAL_TIMEEVENTS]"
 
-    total_string = total_string + '\n\n' + species_string + '\n\n' + functions_string + '\n\n' + observe_string + '\n\n' + param_string + '\n\n' + intervention_string + '\n\n' + reaction_string + '\n\n' + footer_str
+    total_string = total_string + '\n\n' + species_string + '\n\n' + functions_string + '\n\n' + observe_string + '\n\n' + param_string + '\n\n' + intervention_string +  '\n\n' + reaction_string + '\n\n' + footer_str
 
     ### Custom adjustments for EMS 6 (earliest start date)
     total_string = total_string.replace('(species As::EMS_6 0)', '(species As::EMS_6 1)')
     ### Add interventions (optional)
-    if add_interventions != None:
-        total_string = write_interventions(total_string, add_interventions, change_testDelay, trigger_channel)
+    if add_interventions != None :
+        total_string = write_interventions( total_string, add_interventions, change_testDelay, trigger_channel)
 
     print(total_string)
     emodl = open(file_output, "w")  ## again, can make this more dynamic
@@ -836,66 +834,35 @@ if __name__ == '__main__':
 
     generateBaselineReopeningEmodls = True
     if generateBaselineReopeningEmodls:
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='continuedSIP',
-                       file_output=os.path.join(emodl_dir, 'extendedmodel.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='rollback',
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_rollback.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='reopen_rollback',
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_reopen_rollback.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='interventionSTOP_adj',
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_interventionSTOPadj.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions=None,
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_neverSIP.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='interventionStop',
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_interventionStop.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='gradual_reopening2',
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_gradual_reopening.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='continuedSIP' ,  file_output=os.path.join(emodl_dir, 'extendedmodel.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='rollback' ,  file_output=os.path.join(emodl_dir, 'extendedmodel_rollback.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='reopen_rollback' ,  file_output=os.path.join(emodl_dir, 'extendedmodel_reopen_rollback.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='interventionSTOP_adj' ,  file_output=os.path.join(emodl_dir, 'extendedmodel_interventionSTOPadj.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions=None ,  file_output=os.path.join(emodl_dir, 'extendedmodel_neverSIP.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='interventionStop',   file_output=os.path.join(emodl_dir, 'extendedmodel_interventionStop.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='gradual_reopening2' , file_output=os.path.join(emodl_dir, 'extendedmodel_gradual_reopening.emodl'))
 
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='rollbacktriggered',
-                       trigger_channel="critical",
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_critical_triggeredrollback.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='rollbacktriggered',
-                       trigger_channel="crit_det",
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_criticaldet_triggeredrollback.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='rollbacktriggered',
-                       trigger_channel="hospitalized",
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_hosp_triggeredrollback.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='rollbacktriggered',
-                       trigger_channel="hosp_det",
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_hospdet_triggeredrollback.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='rollbacktriggered', trigger_channel = "critical", file_output=os.path.join(emodl_dir, 'extendedmodel_critical_triggeredrollback.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='rollbacktriggered', trigger_channel = "crit_det", file_output=os.path.join(emodl_dir, 'extendedmodel_criticaldet_triggeredrollback.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='rollbacktriggered', trigger_channel = "hospitalized", file_output=os.path.join(emodl_dir, 'extendedmodel_hosp_triggeredrollback.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='rollbacktriggered', trigger_channel = "hosp_det", file_output=os.path.join(emodl_dir, 'extendedmodel_hospdet_triggeredrollback.emodl'))
 
     generateImprovedDetectionEmodls = True
     if generateImprovedDetectionEmodls:
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='continuedSIP', change_testDelay="Sym",
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_changeTD.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='improveHS',
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_dSym.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='improveHS', change_testDelay="Sym",
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_dSym_TD.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='contactTracing',
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_dAsP.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='contactTracing', change_testDelay="AsSym",
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_dAsP_TD.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='contactTracing_improveHS',
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_dAsPSym.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='contactTracing_improveHS',
-                       change_testDelay="AsSym", file_output=os.path.join(emodl_dir, 'extendedmodel_dAsPSym_TD.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys",  add_interventions='continuedSIP', change_testDelay = "Sym", file_output=os.path.join(emodl_dir, 'extendedmodel_changeTD.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='improveHS',  file_output=os.path.join(emodl_dir, 'extendedmodel_dSym.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='improveHS', change_testDelay = "Sym",  file_output=os.path.join(emodl_dir, 'extendedmodel_dSym_TD.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='contactTracing',  file_output=os.path.join(emodl_dir, 'extendedmodel_dAsP.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='contactTracing', change_testDelay = "AsSym",  file_output=os.path.join(emodl_dir, 'extendedmodel_dAsP_TD.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='contactTracing_improveHS',  file_output=os.path.join(emodl_dir, 'extendedmodel_dAsPSym.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='contactTracing_improveHS',  change_testDelay = "AsSym",  file_output=os.path.join(emodl_dir, 'extendedmodel_dAsPSym_TD.emodl'))
 
     generateImprovedDetectionEmodls_withReopening = True
     if generateImprovedDetectionEmodls_withReopening:
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='gradual_reopening2', change_testDelay="Sym",
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_reopen_changeTD.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='reopen_improveHS',
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_reopen_dSym.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='reopen_improveHS', change_testDelay="Sym",
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_reopen_dSym_TD.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='reopen_contactTracing',
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_reopen_dAsP.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='reopen_contactTracing',
-                       change_testDelay="AsSym",
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_reopen_dAsP_TD.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='reopen_contactTracing_improveHS',
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_reopen_dAsPSym.emodl'))
-        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='reopen_contactTracing_improveHS',
-                       change_testDelay="AsSym",
-                       file_output=os.path.join(emodl_dir, 'extendedmodel_reopen_dAsPSym_TD.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys",  add_interventions='gradual_reopening2', change_testDelay = "Sym", file_output=os.path.join(emodl_dir, 'extendedmodel_reopen_changeTD.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='reopen_improveHS',  file_output=os.path.join(emodl_dir, 'extendedmodel_reopen_dSym.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='reopen_improveHS',  change_testDelay = "Sym",  file_output=os.path.join(emodl_dir, 'extendedmodel_reopen_dSym_TD.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='reopen_contactTracing',  file_output=os.path.join(emodl_dir, 'extendedmodel_reopen_dAsP.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='reopen_contactTracing',  change_testDelay = "AsSym",  file_output=os.path.join(emodl_dir, 'extendedmodel_reopen_dAsP_TD.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='reopen_contactTracing_improveHS',  file_output=os.path.join(emodl_dir, 'extendedmodel_reopen_dAsPSym.emodl'))
+        generate_emodl(expandModel="testDelay_AsSymSys", add_interventions='reopen_contactTracing_improveHS',  change_testDelay = "AsSym",  file_output=os.path.join(emodl_dir, 'extendedmodel_reopen_dAsPSym_TD.emodl'))
