@@ -66,7 +66,7 @@ def plot_sim_and_ref(df, ems_nr, ref_df, channels, data_channel_names,region_lab
         ax.fill_between(mdf_sub['date'], mdf_sub['CI_2pt5'], mdf_sub['CI_97pt5'], color=palette[i], linewidth=0, alpha=0.2)
 
         ax.set_title(titles[c], y=0.8, fontsize=12)
-        ax.legend()
+        #ax.legend()
 
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%d\n%b'))
         ax.set_xlim(first_day, last_day)
@@ -98,6 +98,7 @@ def compare_ems(exp_name,fname, param, ems_nr,first_day,last_day):
         region_label = 'Illinois'
     else:
         region_suffix = "_EMS-" + str(ems_nr)
+        region_suffix2 = "_EMS_" + str(ems_nr)
         region_label = region_suffix.replace('_EMS-', 'COVID-19 Region ')
 
     column_list = ['time', 'startdate', 'scen_num', 'sample_num', 'run_num']
@@ -110,6 +111,8 @@ def compare_ems(exp_name,fname, param, ems_nr,first_day,last_day):
     for channel in outcome_channels:
         column_list.append(channel + region_suffix)
 
+    if "ki" in param.lower() :
+        param = param + region_suffix2
     df = load_sim_data(exp_name, region_suffix=region_suffix, fname=fname, column_list=column_list)
     df = df[(df['date'] >= first_day) & (df['date'] <= last_day)]
     df['critical_with_suspected'] = df['critical']
@@ -117,13 +120,13 @@ def compare_ems(exp_name,fname, param, ems_nr,first_day,last_day):
     sampled_df = pd.read_csv(os.path.join(wdir, 'simulation_output', exp_name, "sampled_parameters.csv"), usecols=['scen_num', param])
     df = pd.merge(how='left', left=df, left_on='scen_num', right=sampled_df, right_on='scen_num')
 
-    channels = ['new_detected_deaths', 'crit_det', 'hosp_det', 'new_deaths', 'new_detected_hospitalized',
+    channels = ['new_detected_deaths', 'crit_det', 'hosp_det', 'new_deaths','new_detected_hospitalized',
                 'new_detected_hospitalized']
-    data_channel_names = ['confirmed_covid_deaths_prev_24h',
-                          'confirmed_covid_icu', 'covid_non_icu', 'deaths', 'inpatient', 'admissions']
-    titles = ['New Detected\nDeaths (EMR)', 'Critical Detected (EMR)', 'Inpatient non-ICU\nCensus (EMR)',
-              'New Detected\nDeaths (LL)',
+    data_channel_names = ['deaths',
+                          'confirmed_covid_icu', 'covid_non_icu', 'deaths','inpatient', 'admissions']
+    titles = ['New Detected\nDeaths (LL)', 'Critical Detected (EMR)', 'Inpatient non-ICU\nCensus (EMR)', 'New Detected\nDeaths (LL)',
               'Covid-like illness\nadmissions (IDPH)', 'New Detected\nHospitalizations (LL)']
+
 
     plot_sim_and_ref(df, ems_nr, ref_df, channels=channels, data_channel_names=data_channel_names, titles=titles,
                      region_label=region_label, logscale=True,param=param,first_day=first_day,last_day=last_day)
@@ -143,7 +146,7 @@ if __name__ == '__main__':
 
     for exp_name in exp_names:
         plot_path = os.path.join(wdir, 'simulation_output', exp_name, '_plots')
-        for ems_nr in range(0, 12):
+        for ems_nr in range(1, 12):
             print("Start processing region " + str(ems_nr))
-            compare_ems(exp_name, fname=trajectoriesName, ems_nr=int(ems_nr), param="recovery_time_crit",
+            compare_ems(exp_name, fname=trajectoriesName, ems_nr=int(ems_nr), param="Ki",
                         first_day=first_plot_day, last_day=last_plot_day)
