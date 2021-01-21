@@ -16,6 +16,7 @@ import matplotlib.dates as mdates
 from datetime import date, timedelta, datetime
 import seaborn as sns
 from processing_helpers import *
+from sample_parameters import make_identifier, gen_combos
 
 def parse_args():
 
@@ -65,7 +66,7 @@ def parse_args():
         help="If specified, plots with top 50% best-fitting trajectories will be generated.",
     )
     return parser.parse_args()
-    
+
 def sum_nll(df_values, ref_df_values):
     try:
         x = -np.log10(scipy.stats.poisson(mu=df_values).pmf(k=ref_df_values))
@@ -115,7 +116,7 @@ def compare_sim_and_ref(df, ems_nr, ref_df, channels, data_channel_names, titles
         else:
             region_suffix = "_EMS-" + str(ems_nr)
             region_label = region_suffix.replace('_EMS-', 'COVID-19 Region ')
-        logscale=False
+
         fig = plt.figure(figsize=(13, 6))
         palette = sns.color_palette('husl', 8)
         k = 0
@@ -184,12 +185,58 @@ def compare_ems(exp_name, ems_nr,first_day,last_day,weights_array,plot_trajector
               'Covid-like illness\nadmissions (IDPH)', 'New Detected\nHospitalizations (LL)']
 
     compare_sim_and_ref(df, ems_nr, ref_df, channels=channels, data_channel_names=data_channel_names, titles=titles,
-                     region_label=region_label,first_day= first_day, last_day= last_day, logscale=True, weights_array=weights_array, plot_trajectories=plot_trajectories)
+                     region_label=region_label,first_day= first_day, last_day= last_day, logscale=False, weights_array=weights_array, plot_trajectories=plot_trajectories)
+
+
+def extract_sample_traces(traces_to_keep_ratio=4, min_traces_to_keep=100, n_traces_to_keep=None):
+
+    sample_df = pd.read_csv(os.path.join(output_path, 'sampled_parameters.csv'))
+    """Drop parameter columns that have equal values in all scenarios (rows) to assess fitted parameters"""
+    nunique = sample_df.apply(pd.Series.nunique)
+    cols_to_drop = nunique[nunique == 1].index
+    sample_df = sample_df.drop(cols_to_drop, axis=1)
+
+    sampleDat = pd.DataFrame()
+    for ems_region in range(1,12):
+
+        rank_export_df = pd.read_csv(os.path.join(output_path, f'traces_ranked_region_{str(ems_region)}.csv'))
+        n_traces_to_keep = int(len(rank_export_df) / traces_to_keep_ratio)
+        if n_traces_to_keep < min_traces_to_keep and len(rank_export_df) >= min_traces_to_keep:
+            n_traces_to_keep = min_traces_to_keep
+        if len(rank_export_df) < min_traces_to_keep:
+            n_traces_to_keep = len(rank_export_df)
+        rank_export_df_sub = rank_export_df[0:n_traces_to_keep]
+
+        sample_df_sub = pd.merge(how='left', left=rank_export_df_sub[['scen_num','norm_rank']], left_on=['scen_num'],
+                                 right=sample_df, right_on=['scen_num'])
+        sample_df_sub = sample_df_sub.sort_values(by=['norm_rank']).reset_index(drop=True)
+        sample_df_sub.columns = sample_df_sub.columns + f'_EMS_{str(ems_region)}'
+        sample_df_sub['row_num'] = sample_df_sub.index
+
+        if sampleDat.empty:
+            sampleDat = sample_df_sub
+        else:
+            sampleDat = pd.merge(how='left', left=sampleDat, left_on=['row_num'], right=sample_df_sub, right_on=['row_num'])
+        del sample_df_sub
+
+    """Export fitting parameters"""
+    sampleDat.to_csv(os.path.join(output_path, f'fitted_parameters_ntraces{n_traces_to_keep}.csv'), index=False)
+    sampleDat.head(n=1).to_csv(os.path.join(output_path, f'fitted_parameters_besttrace.csv'), index=False)
+
+    """Export all parameter columns to be used as simulation input"""
+    sample_df = pd.read_csv(os.path.join(output_path, 'sampled_parameters.csv'))
+    sample_df = sample_df.loc[:n_traces_to_keep+1 , cols_to_drop]
+    sample_df['scen_num'] = sample_df.reset_index().index
+    sampleDat_ntraces = gen_combos(sample_df, sampleDat)
+    sampleDat_besttrace = gen_combos(sample_df, sampleDat.head(n=1))
+    sampleDat_ntraces.to_csv(os.path.join(output_path, f'sample_parameters_ntraces{n_traces_to_keep}.csv'), index=False)
+    sampleDat_besttrace.to_csv(os.path.join(output_path, f'sample_parameters_besttrace.csv'), index=False)
+
 
 if __name__ == '__main__':
 
     args = parse_args()
-    stem = args.stem
+    stem = "20210120_IL_quest_currentModel2_varyParamForFit"
     Location = args.Location
     weights_array = [args.deaths_weight, args.crit_weight, args.non_icu_weight, args.cli_weight]
 
@@ -201,6 +248,7 @@ if __name__ == '__main__':
     exp_names = [x for x in os.listdir(os.path.join(wdir, 'simulation_output')) if stem in x]
     for exp_name in exp_names:
         output_path = os.path.join(wdir, 'simulation_output',exp_name)
-        for ems_nr in range(0,12):
+        for ems_nr in range(1,12):
             print("Start processing region " + str(ems_nr))
             compare_ems(exp_name, ems_nr=int(ems_nr),first_day=first_plot_day,last_day=last_plot_day,weights_array=weights_array, plot_trajectories=args.plot)
+    extract_sample_traces()

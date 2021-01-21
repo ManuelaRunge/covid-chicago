@@ -1,11 +1,7 @@
 import argparse
 import numpy as np
 import pandas as pd
-import subprocess
 import os
-import seaborn as sns
-from datetime import date, timedelta
-import shutil
 import sys
 sys.path.append('../')
 from load_paths import load_box_paths
@@ -26,7 +22,19 @@ def parse_args():
         "--Location",
         type=str,
         help="Local or NUCLUSTER",
-        default = "NUCLUSTER"
+        default = "Local"
+    )
+    parser.add_argument(
+        "--time_start",
+        type=int,
+        help="Lower limit of time steps to keep",
+        default=1
+    )
+    parser.add_argument(
+        "--time_stop",
+        type=int,
+        help="Upper limit of time steps to keep",
+        default=1000
     )
     parser.add_argument(
         "-limit",
@@ -34,6 +42,13 @@ def parse_args():
         type=int,
         help="Number of simulations to combine",
         default = 700
+    )
+    parser.add_argument(
+        "--additional_sample_param",
+        type=str,
+        nargs='+',
+        help="Number of simulations to combine",
+        default = ['']
     )
 
 
@@ -67,16 +82,11 @@ def reprocess(input_fname='trajectories.csv', output_fname=None):
     del adf['index']
     return adf
 
-def trim_trajectories_Dat(df, fname, VarsToKeep, time_start, time_stop,channels=None, grpspecific_params=None, grpnames=None):
+def trim_trajectories_Dat(df, fname,sample_param_to_keep, time_start=1, time_stop=1000,
+                          channels=None, grpspecific_params=None, grpnames=None):
     """Generate a subset of the trajectoriesDat dataframe
     The new csv file is saved under trajectoriesDat_trim.csv, no dataframe is returned
     """
-
-    if VarsToKeep == None :
-        VarsToKeep = ['startdate', 'time', 'scen_num', 'sample_num', 'run_num']
-    if VarsToKeep != None :
-        VarsToKeep = ['startdate', 'time', 'scen_num', 'sample_num', 'run_num'] + VarsToKeep
-        VarsToKeep = [i for n, i in enumerate(VarsToKeep) if i not in VarsToKeep[:n]]
 
     if grpnames == None:
         grpnames = ['All', 'EMS-1', 'EMS-2', 'EMS-3', 'EMS-4', 'EMS-5', 'EMS-6', 'EMS-7', 'EMS-8', 'EMS-9', 'EMS-10', 'EMS-11']
@@ -89,30 +99,28 @@ def trim_trajectories_Dat(df, fname, VarsToKeep, time_start, time_stop,channels=
                     'symp_severe_cumul','symptomatic_severe', 'symp_severe_det_cumul',
                     'hosp_det_cumul', 'hosp_cumul', 'hosp_det', 'hospitalized',
                     'crit_cumul','crit_det_cumul', 'crit_det',  'critical',
-                    'death_det_cumul',  'deaths']
+                    'death_det_cumul', 'deaths']
 
     if grpspecific_params == None:
         grpspecific_params = ['Ki_t']
 
-    column_list = VarsToKeep
+    column_list = ['time', 'run_num'] + sample_param_to_keep
     for channel in channels:
         for grp in grpnames:
             column_list.append(channel + "_" + str(grp))
 
-    param_list = ['startdate', 'time', 'scen_num', 'sample_num', 'run_num']
     for grpspecific_param in grpspecific_params:
         for grp in grpnames_ki:
-            param_list.append(grpspecific_param + "_" + str(grp))
             column_list.append(grpspecific_param + "_" + str(grp))
 
+    """Trim df and save"""
+    df = df[column_list]
     df = df[df['time'] > time_start]
     df = df[df['time'] < time_stop]
-
-    df = df[column_list ]
-    df.to_csv(os.path.join(temp_exp_dir, fname + '_trim.csv'), index=False, date_format='%Y-%m-%d')
+    df.to_csv(os.path.join(exp_dir, fname + '_trim.csv'), index=False, date_format='%Y-%m-%d')
 
 
-def combineTrajectories(VarsToKeep,Nscenarios_start=0, Nscenarios_stop=1000, time_start=1, time_stop=1000, fname='trajectoriesDat.csv',SAVE=True):
+def combineTrajectories(sampledf, Nscenarios_start=0, Nscenarios_stop=1000, fname='trajectoriesDat.csv',SAVE=True):
 
     df_list = []
     n_errors = 0
@@ -134,41 +142,54 @@ def combineTrajectories(VarsToKeep,Nscenarios_start=0, Nscenarios_stop=1000, tim
     dfc = pd.concat(df_list)
     dfc = dfc.dropna()
     if SAVE:
-        dfc.to_csv(os.path.join(temp_exp_dir, fname), index=False, date_format='%Y-%m-%d')
+        dfc.to_csv(os.path.join(exp_dir, fname), index=False, date_format='%Y-%m-%d')
 
-    trim_trajectories_Dat(df=dfc, VarsToKeep=VarsToKeep,
-                          time_start=time_start, time_stop=time_stop,
-                          channels=None, grpspecific_params=None, grpnames=None,
-                          fname=fname.split(".csv")[0])
+    return dfc
 
 
 if __name__ == '__main__':
 
     args = parse_args()  
     stem = args.stem
+    time_start = args.time_start
+    time_stop = args.time_stop
     Location = args.Location
+    additional_sample_param = args.additional_sample_param
     Scenario_save_limit = args.scen_limit
 
+    """Define parameters to keep"""
+    sample_param_to_keep = ['startdate', 'scen_num', 'sample_num'] + ['N_EMS_%d' % x for x in range(1, 12)]
+    sample_param_to_keep = sample_param_to_keep + additional_sample_param
+
     datapath, projectpath, wdir, exe_dir, git_dir = load_box_paths(Location=Location)
+    sim_out_dir = os.path.join(wdir, "simulation_output")
+    if Location == "NUCLUSTER":
+        sim_out_dir = os.path.join(git_dir, "_temp")
     exp_names = [x for x in os.listdir(sim_out_dir) if stem in x]
-
-    time_start = 1
-    time_stop = 1000
-    VarsToKeepI = ['startdate',  'scen_num', 'sample_num'] 
-    VarsToKeep = ['time', 'run_num'] + VarsToKeepI
-
 
     for exp_name in exp_names:
         print(exp_name)
+        exp_dir = os.path.join(sim_out_dir, exp_name)
+        trajectoriesDat = os.path.join(exp_dir, 'trajectories')
 
-        trajectoriesDat = os.path.join(git_dir, 'trajectories')
-        temp_exp_dir = git_dir
-        sampledf = pd.read_csv(os.path.join(temp_exp_dir, "sampled_parameters.csv"))
-        sampledf = sampledf[VarsToKeepI]
+        sampledf = pd.read_csv(os.path.join(exp_dir, "sampled_parameters.csv"), usecols= sample_param_to_keep)
         Nscenario = max(sampledf['scen_num'])
 
         if Nscenario <= Scenario_save_limit:
-            combineTrajectories(VarsToKeep=VarsToKeep,Nscenarios_start=0, Nscenarios_stop=Nscenario+1,time_start=time_start, time_stop=time_stop)
+            fname = "trajectoriesDat.csv"
+            if not os.path.exists(os.path.join(exp_dir, fname)):
+                dfc = combineTrajectories(sampledf=sampledf,
+                                          Nscenarios_start=0,
+                                          Nscenarios_stop=Nscenario + 1,
+                                          fname=fname)
+            else:
+                dfc = pd.read_csv(os.path.join(exp_dir, fname))
+
+            trim_trajectories_Dat(df=dfc,
+                                  sample_param_to_keep = sample_param_to_keep,
+                                  time_start=time_start,
+                                  time_stop=time_stop,
+                                  fname=fname.split(".csv")[0])
         if Nscenario > Scenario_save_limit:
             n_subsets = int(Nscenario/Scenario_save_limit)
 
@@ -177,8 +198,17 @@ if __name__ == '__main__':
                 if i > 1 : Nscenario_stop = Nscenario_stop + Scenario_save_limit
                 print(Nscenario_stop)
                 Nscenarios_start = Nscenario_stop-Scenario_save_limit
-                combineTrajectories(VarsToKeep=VarsToKeep,
-                                    Nscenarios_start=Nscenarios_start,
-                                    Nscenarios_stop=Nscenario_stop,
-                                    time_start=time_start, time_stop=time_stop,
-                                    fname='trajectoriesDat_'+str(Nscenario_stop)+'.csv')
+                fname = 'trajectoriesDat_'+str(Nscenario_stop)+'.csv'
+                if not os.path.exists(os.path.join(exp_dir, fname)):
+                    dfc = combineTrajectories(sampledf=sampledf,
+                                              Nscenarios_start=Nscenarios_start,
+                                              Nscenarios_stop=Nscenario_stop,
+                                              fname=fname)
+                else:
+                    dfc = pd.read_csv(os.path.join(exp_dir, fname))
+
+                trim_trajectories_Dat(df=dfc,
+                                      sample_param_to_keep=sample_param_to_keep,
+                                      time_start=time_start,
+                                      time_stop=time_stop,
+                                      fname=fname.split(".csv")[0])

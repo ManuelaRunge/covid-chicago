@@ -209,7 +209,7 @@ echo end""")
 
         if "spatial_EMS" in experiment_config :
             file = open(os.path.join(temp_exp_dir, '0_runTrimTrajectories.bat'), 'w')
-            file.write(f'cd {plotters_dir} \n python trim_trajectoriesDat.py "{exp_name}" "{120}" "{15}" \n')
+            file.write(f'cd {plotters_dir} \n python trim_trajectoriesDat.py "{exp_name}" \n')
 
             file = open(os.path.join(temp_exp_dir, '0_createAdditionalPlots.bat'), 'w')
             file.write(f'cd {plotters_dir} \n python hosp_icu_deaths_forecast_plotter.py --stem "{exp_name}"  \n')
