@@ -248,6 +248,10 @@ intervention_parameters:
   'trigger_delay_days':
     np.random: uniform
     function_kwargs: {'low':1, 'high':1}  
+  ### ---- VACCINE  ----------------------
+  'vacc_daily_cov':
+    np: linspace
+    function_kwargs: {'start':0.0002675, 'stop':0.0002675, 'num' : 1}
   ### ---- AGE MODEL SPECIFIC ----------------------
   ### Adjusts transmission among elderly during 2nd wave (age model only)
   'multiplier_elderly':
@@ -407,6 +411,9 @@ time_parameters:
   'contact_tracing_stop1':
     custom_function: DateToTimestep
     function_kwargs: {'dates': 2022-05-30}
+  'vaccination_start_time':
+    custom_function: DateToTimestep
+    function_kwargs: {'dates': 2021-01-01}    
   ### Specific for age model
   'start_time_2ndWave':
     custom_function: DateToTimestep
