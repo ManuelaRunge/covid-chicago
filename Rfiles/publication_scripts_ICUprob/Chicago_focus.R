@@ -249,21 +249,159 @@ pplot_bottom <- ggplot(data = subset(dat_prob, region=="Region 11" & rollback !=
 pplot <- plot_grid(pplot_top, pplot_bottom, nrow=2)
 pplot
 
-#f_save_plot(
-#=#  plot_name = "ICU_prob_trajectories_sub50_v1_resampled_reg11", pplot = pplot,
-#  plot_dir = file.path(sim_dir, "ICU_prob_plots"), width = 12, height = 8
-#)
+
+
+dat_prob$capacity_multiplier_rev <- factor(dat_prob$capacity_multiplier, levels=rev(seq(0,1,0.1)), labels=rev(seq(0,1,0.1))*100)
+
+pplot_bottom2 <- ggplot(data = subset(dat_prob, region=="Region 11" & rollback !="counterfactual")) +
+  geom_line(aes(
+    x = capacity_multiplier_rev, y = prob * 100,
+    col = reopen_fct2,
+    alpha=rollback_fct,
+    group = interaction(reopen,rollback)
+  ), size = 1.3) +
+  facet_wrap( ~ reopen_fct2, scales = "free", nrow=1) +
+  scale_y_continuous(
+    lim = c(0, 102), expand = c(0, 0),
+    breaks = seq(0, 100, 20),
+    minor_breaks = seq(0, 100, 10)
+  ) +
+  scale_color_manual(values = c(TwoCols_seq)) +
+  scale_fill_manual(values = c(TwoCols_seq)) +
+  scale_alpha_manual(values = c(1, 0.75, 0.5, 0.2, 0.1)) +
+  customTheme +
+  guides(fill = FALSE, 
+         color = FALSE)  +
+  theme(
+    panel.spacing = unit(2, "lines"),
+    legend.position = "right",
+    panel.grid.major = element_line(),
+    panel.grid.minor = element_line(size = 0.75)
+  ) +
+  labs(
+    y = "Probability of ICU overflow (%)",
+    x = "Trigger threshold\n(% of available ICU beds)",
+    color = "Transmission increase", fill = "Transmission increase",
+    alpha = "Mitigation strengths"
+  )
+
+
+f_save_plot(
+  plot_name = "ICU_prob_trajectories_sub50_v1_resampled_reg11", pplot = pplot_bottom2,
+  plot_dir = file.path(sim_dir, "ICU_chicago_plots"), width = 14, height = 6
+)
+
 
 dat_prob %>% filter(region=="Region 11" & rollback !="counterfactual") %>%
   filter(capacity_multiplier==0.8) %>%
   select(exp_name, rollback, prob_lower, prob_upper,   prob) %>%
-as.data.frame()
+  as.data.frame()
 
 
 dat_prob %>% filter(region=="Region 11" & rollback !="counterfactual") %>%
   filter(capacity_multiplier==0.8) %>%
   select(exp_name, rollback, prob_lower, prob_upper,   prob) %>%
-as.data.frame()
+  as.data.frame()
 
 
 
+################################################################
+
+
+plotdat <- dat %>%
+  filter((delay == "counterfactual" | delay == delay_values[2])) %>%
+  filter((delay == "counterfactual" | capacity_multiplier %in% c(0, 0.2, 0.4, 0.6, 0.8, 1)))
+annotationDat <- unique(plotdat[, c("region", "avg_resource_available")])
+
+
+pplot_bottom2 <- ggplot(data = subset(dat_prob, region=="Region 11" & rollback !="counterfactual")) +
+  geom_line(aes(
+    x = capacity_multiplier_rev, y = prob * 100,
+    col = reopen_fct2,
+    alpha=rollback_fct,
+    group = interaction(reopen,rollback)
+  ), size = 1.3) +
+  facet_wrap( ~ reopen_fct2, scales = "free", nrow=1) +
+  scale_y_continuous(
+    lim = c(0, 102), expand = c(0, 0),
+    breaks = seq(0, 100, 20),
+    minor_breaks = seq(0, 100, 10)
+  ) +
+  scale_color_manual(values = c(TwoCols_seq)) +
+  scale_fill_manual(values = c(TwoCols_seq)) +
+  scale_alpha_manual(values = c(1, 0.75, 0.5, 0.2, 0.1)) +
+  customTheme +
+  guides(fill = FALSE, 
+         color = FALSE)  +
+  theme(
+    panel.spacing = unit(2, "lines"),
+    legend.position = "right",
+    panel.grid.major = element_line(),
+    panel.grid.minor = element_line(size = 0.75)
+  ) +
+  labs(
+    y = "Probability of ICU overflow (%)",
+    x = "Trigger threshold\n(% of available ICU beds)",
+    color = "Transmission increase", fill = "Transmission increase",
+    alpha = "Mitigation strengths"
+  )
+
+
+f_save_plot(
+  plot_name = "ICU_prob_trajectories_sub50_v1_resampled_reg11", pplot = pplot_bottom2,
+  plot_dir = file.path(sim_dir, "ICU_chicago_plots"), width = 14, height = 6
+)
+
+
+
+
+
+
+
+
+
+
+
+plotdat$capacity_multiplier_rev <- factor(plotdat$capacity_multiplier, levels=rev(c(seq(0,1, 0.2),-9)), labels=rev(c(seq(0,1, 0.2)*100,"none")))
+  
+pplot <- ggplot(data = subset(plotdat, (rollback=="pr6" | rollback=="counterfactual"))) +
+  geom_bar( aes(
+    x = capacity_multiplier_rev,
+    y = critical_median, group = reopen, fill = reopen
+  ),
+  stat = "identity", position = position_dodge(width = 0.9), width = 0.8,
+  ) +
+  geom_errorbar(aes(
+    x = capacity_multiplier_rev,
+    ymin = critical_95CI_lower,
+    ymax = critical_95CI_upper, group = reopen
+  ),
+  position = position_dodge(width = 0.9), width = 0
+  ) +
+  labs(
+    y = "Predictd peak in ICU census\nuntil end of December",
+    x = "Trigger threshold\n (% of ICU capacity)"
+  ) +
+  geom_hline(
+    data = annotationDat,
+    aes(yintercept = avg_resource_available),
+    linetype = "dashed", col = capacity_col, size = 1
+  ) +
+  facet_wrap(~reopen,  nrow=2) +
+  scale_fill_manual(values = c(TwoCols_seq)) +
+  geom_hline(yintercept = c(0)) +
+  theme(
+    legend.position = "none",
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank()
+  ) +
+  customTheme
+
+pplot
+
+
+
+f_save_plot(
+  plot_name = "ICU_barplot_reg11", pplot = pplot,
+  plot_dir = file.path(sim_dir, "ICU_chicago_plots"), width = 14, height = 10
+)
